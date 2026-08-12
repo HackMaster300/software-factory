@@ -202,22 +202,25 @@ export const Header: React.FC<HeaderProps> = ({
         {/* + New Project Quick Action Button */}
         <button
           onClick={() => setActiveView('scaffolder')}
+          aria-label="New Project"
           className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer shadow-sm shadow-blue-600/30"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">New Project</span>
         </button>
 
         {/* AI Architect Assistant Button */}
         <button
           onClick={toggleAIDrawer}
+          aria-label="AI Architect"
+          aria-pressed={isAIDrawerOpen}
           className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
             isAIDrawerOpen
               ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30'
               : 'bg-[#1c2230] text-blue-300 border-blue-500/30 hover:bg-blue-900/30'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">AI Architect</span>
         </button>
 
@@ -226,22 +229,24 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={handleExportState}
             title="Export Workspace JSON"
+            aria-label="Export Workspace JSON"
             className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-[#222630] rounded cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
 
-          <label title="Import Workspace JSON" className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-[#222630] rounded cursor-pointer">
-            <Upload className="w-3.5 h-3.5" />
+          <label title="Import Workspace JSON" aria-label="Import Workspace JSON" className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-[#222630] rounded cursor-pointer">
+            <Upload className="w-3.5 h-3.5" aria-hidden="true" />
             <input type="file" accept=".json" onChange={handleImportState} className="hidden" />
           </label>
 
           <button
             onClick={handleResetData}
             title="Reset to Factory Seed Data"
+            aria-label="Reset to Factory Seed Data"
             className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-[#222630] rounded cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
       </div>

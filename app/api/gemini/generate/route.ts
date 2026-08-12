@@ -3,7 +3,27 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, systemInstruction, role = 'Software Architect' } = await req.json();
+    const body = await req.json().catch(() => null);
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Request body must be a JSON object.' }, { status: 400 });
+    }
+
+    const { prompt, systemInstruction, role = 'Software Architect' } = body as {
+      prompt?: unknown;
+      systemInstruction?: unknown;
+      role?: unknown;
+    };
+
+    if (typeof prompt !== 'string' || prompt.trim().length === 0) {
+      return NextResponse.json({ error: '"prompt" is required and must be a non-empty string.' }, { status: 400 });
+    }
+    if (systemInstruction !== undefined && typeof systemInstruction !== 'string') {
+      return NextResponse.json({ error: '"systemInstruction" must be a string when provided.' }, { status: 400 });
+    }
+    if (typeof role !== 'string' || role.trim().length === 0) {
+      return NextResponse.json({ error: '"role" must be a non-empty string when provided.' }, { status: 400 });
+    }
 
     const apiKey = process.env.GEMINI_API_KEY;
 

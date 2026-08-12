@@ -175,9 +175,10 @@ export default function SoftwareFactoryPage() {
             <button
               onClick={() => setIsAdvisorOpen(false)}
               title="Collapse Advisor Panel"
+              aria-label="Collapse Advisor Panel"
               className="absolute left-[-12px] top-4 z-20 p-1 rounded-full bg-[#1e222d] border border-[#2e3444] text-gray-400 hover:text-white cursor-pointer shadow-md"
             >
-              <PanelRightClose className="w-3.5 h-3.5" />
+              <PanelRightClose className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
             <ProjectAdvisorPanel
               blueprint={selectedBlueprint}
@@ -188,9 +189,10 @@ export default function SoftwareFactoryPage() {
           <button
             onClick={() => setIsAdvisorOpen(true)}
             title="Expand Advisor Panel"
+            aria-label="Expand Advisor Panel"
             className="absolute right-3 top-3 z-20 p-2 rounded-lg bg-[#1a1d24] border border-[#2e3340] text-gray-400 hover:text-blue-400 cursor-pointer shadow-lg flex items-center gap-1.5 text-xs font-medium"
           >
-            <PanelRightOpen className="w-4 h-4 text-blue-400" />
+            <PanelRightOpen className="w-4 h-4 text-blue-400" aria-hidden="true" />
             <span className="hidden xl:inline">Advisor ({selectedBlueprint.name.split(' ')[0]})</span>
           </button>
         )}
