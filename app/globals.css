@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@layer base {
+  :root {
+    --bg-ide-dark: #121316;
+    --bg-ide-panel: #181a1f;
+    --bg-ide-card: #20232a;
+    --bg-ide-hover: #2a2e37;
+    --border-ide: #2e333d;
+    --accent-ide: #3b82f6;
+    --text-ide-primary: #f3f4f6;
+    --text-ide-secondary: #9ca3af;
+    --text-ide-muted: #6b7280;
+  }
+}
+
+/* Custom IDE Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #141619;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b303b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3d4454;
+}
+
+body {
+  background-color: #0f1013;
+  color: #f3f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+.mono-font {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+

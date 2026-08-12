@@ -1,0 +1,6 @@
+{
+  "name": "Software Factory",
+  "description": "AI-powered Software Factory Platform for engineering solution blueprints and architectural standards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
