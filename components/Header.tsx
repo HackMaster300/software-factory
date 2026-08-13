@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Layers,
   Cpu,
@@ -17,11 +17,13 @@ import {
   ShieldCheck,
   Plus,
   Wand2,
+  Settings2,
 } from 'lucide-react';
 import { StorageService, useOrganizations, useWorkspaces } from '../services/storageService';
 import { ValidationService } from '../services/validationService';
 import { AdvisorService } from '../services/advisorService';
 import { Blueprint } from '../types/factory';
+import { OrganizationWorkspaceModal } from './OrganizationWorkspaceModal';
 
 interface HeaderProps {
   activeView: string;
@@ -42,8 +44,27 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const orgs = useOrganizations();
   const workspaces = useWorkspaces();
-  const [selectedOrgId, setSelectedOrgId] = useState('');
-  const [selectedWsId, setSelectedWsId] = useState('');
+  const [selectedOrgIdOverride, setSelectedOrgIdOverride] = useState('');
+  const [selectedWsIdOverride, setSelectedWsIdOverride] = useState('');
+  const [isOrgModalOpen, setIsOrgModalOpen] = useState(false);
+
+  // Derive the effective selection instead of syncing it via an effect: fall
+  // back to the first available entity whenever the explicit selection no
+  // longer points at something real (e.g. it was deleted, or nothing has
+  // been picked yet). This keeps the pickers pointed at a real entity as the
+  // underlying lists change (created/deleted via the management modal).
+  const selectedOrgId = orgs.some((o) => o.id === selectedOrgIdOverride)
+    ? selectedOrgIdOverride
+    : orgs[0]?.id || '';
+
+  const scopedWorkspaces = workspaces.filter((w) => w.organizationId === selectedOrgId);
+
+  const selectedWsId = scopedWorkspaces.some((w) => w.id === selectedWsIdOverride)
+    ? selectedWsIdOverride
+    : scopedWorkspaces[0]?.id || '';
+
+  const setSelectedOrgId = setSelectedOrgIdOverride;
+  const setSelectedWsId = setSelectedWsIdOverride;
 
   const validationMsgs = ValidationService.validateBlueprint(selectedBlueprint);
   const scores = AdvisorService.calculateScores(selectedBlueprint);
@@ -93,6 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
     rules: 'Architecture Rules & Policy Engine',
     stacks: 'Technology Stacks & Infrastructure Profiles',
     ai: 'AI Providers & Prompt Engineering',
+    plugins: 'Plugins & Extensibility',
     decisions: 'Decision Logs & Audit History',
     impact: 'Compatibility & Setting Change Analyzer',
   };
@@ -136,13 +158,13 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340]">
             <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
-            {workspaces.length > 0 ? (
+            {scopedWorkspaces.length > 0 ? (
               <select
                 value={selectedWsId}
                 onChange={(e) => setSelectedWsId(e.target.value)}
                 className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
               >
-                {workspaces.map((w) => (
+                {scopedWorkspaces.map((w) => (
                   <option key={w.id} value={w.id} className="bg-[#1c1f26] text-gray-200">
                     {w.name}
                   </option>
@@ -152,6 +174,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-gray-500 italic">No workspace yet</span>
             )}
           </div>
+
+          <button
+            onClick={() => setIsOrgModalOpen(true)}
+            title="Manage Organizations & Workspaces"
+            aria-label="Manage Organizations & Workspaces"
+            className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#1c1f26] rounded border border-transparent hover:border-[#2e3340] cursor-pointer"
+          >
+            <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
         </div>
 
         {/* Active View Title */}
@@ -258,6 +289,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </div>
+
+      <OrganizationWorkspaceModal isOpen={isOrgModalOpen} onClose={() => setIsOrgModalOpen(false)} />
     </header>
   );
 };
