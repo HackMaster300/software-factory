@@ -310,9 +310,10 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
           <button
             onClick={handleExportPolicy}
             title="Export Ruleset JSON"
+            aria-label="Export Ruleset JSON"
             className="p-2 bg-[#202430] hover:bg-[#282d3d] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -496,14 +497,16 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                 <button
                   onClick={() => handleOpenEditModal(rule)}
                   title="Edit Rule"
+                  aria-label={`Edit rule ${rule.name}`}
                   className="p-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
                 >
-                  <Edit3 className="w-3.5 h-3.5" />
+                  <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
 
                 <button
                   onClick={() => handleDeleteRule(rule.id)}
                   title="Delete Rule"
+                  aria-label={`Delete rule ${rule.name}`}
                   className="p-1.5 bg-[#222734] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

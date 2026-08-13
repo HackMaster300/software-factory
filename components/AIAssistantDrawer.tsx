@@ -125,8 +125,8 @@ User Request: ${currentPrompt}
           </div>
         </div>
 
-        <button onClick={onClose} className="p-1 text-gray-400 hover:text-white rounded cursor-pointer">
-          <X className="w-4 h-4" />
+        <button onClick={onClose} aria-label="Close AI assistant" className="p-1 text-gray-400 hover:text-white rounded cursor-pointer">
+          <X className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -225,9 +225,10 @@ User Request: ${currentPrompt}
           <button
             onClick={handleSend}
             disabled={!inputPrompt.trim() || isLoading}
+            aria-label="Send prompt"
             className="p-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 disabled:hover:bg-blue-600 transition-colors cursor-pointer"
           >
-            <Send className="w-3.5 h-3.5" />
+            <Send className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
         <div className="mt-1.5 text-[10px] text-gray-500 text-center font-mono">

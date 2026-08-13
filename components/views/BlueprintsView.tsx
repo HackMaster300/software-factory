@@ -401,8 +401,9 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
                           onClick={(e) => handleRemoveModule(proj.id, e)}
                           className="ml-2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 cursor-pointer"
                           title="Remove project module"
+                          aria-label={`Remove module ${proj.name}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                       </div>
                     </div>

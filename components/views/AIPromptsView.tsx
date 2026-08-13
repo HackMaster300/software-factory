@@ -697,16 +697,18 @@ export const AIPromptsView: React.FC = () => {
                     <button
                       onClick={() => handleOpenEditPrompt(template)}
                       title="Edit Template"
+                      aria-label={`Edit template ${template.name}`}
                       className="p-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => handleDeletePromptTemplate(template.id)}
                       title="Delete Template"
+                      aria-label={`Delete template ${template.name}`}
                       className="p-1.5 bg-[#222734] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
