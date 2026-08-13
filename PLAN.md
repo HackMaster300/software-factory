@@ -97,23 +97,38 @@ create/edit/delete UI). AI Agent and Plugins are net-new, but intentionally simp
 engine, consistent with how the rest of the app already "simulates" rather than actually runs
 things).
 
-- [ ] Organization: Create + Edit + Delete UI (a place to do this doesn't exist yet — Header's
-      org dropdown only *selects*; add it there or in a small dedicated Settings/Org area,
-      whichever fits existing navigation conventions better).
-- [ ] Workspace: same, scoped to the selected Organization.
-- [ ] AI Agent: let the user define a custom persona (name, role description, system-prompt
-      style) beyond the 6 hardcoded roles in `AIAssistantDrawer`; new agents should appear
-      alongside the hardcoded ones in the role picker.
-- [ ] Plugins: minimal viable entity — name, description, category, active toggle. Add the type
-      to `types/factory.ts`, a repository (following the Phase 0 pattern — interface +
-      `LocalStorage*Repository` + singleton, not raw `StorageService` calls), and a simple
-      list+create+edit+delete view (new sidebar entry, or a tab on an existing view — use
-      judgment based on where it fits).
-- [ ] Vitest coverage for whatever new service/repository logic this adds (validation rules,
-      default-value handling, etc. — not UI rendering, that's what Playwright is for).
-- [ ] Verify: lint, build, test, and a Playwright pass with `localStorage.clear()` first (the
-      empty-state work in Phase 1 only shows correctly from a truly empty state — clear storage
-      before checking, like Phase 1's own verification had to).
+- [x] Organization: Create + Edit + Delete UI. Added a small dedicated modal
+      (`components/OrganizationWorkspaceModal.tsx`) opened via a new "Manage Organizations &
+      Workspaces" gear icon next to Header's org/workspace pickers — chosen over overloading the
+      `<select>` dropdown itself, since create/edit/delete needs form fields (name/code/plan) that
+      don't fit in a dropdown, and a modal keeps it one click away without a new top-level nav
+      item for what's fundamentally workspace-scoping metadata, not a content view.
+- [x] Workspace: same pattern, scoped to the currently-selected Organization in the same modal
+      (right-hand column, filtered by the organization selected in the left-hand column).
+      Deletion policy: **cascade-delete** — deleting an Organization also deletes its Workspaces
+      (with a confirmation that names the count), since a Workspace has no meaning without its
+      parent Organization and nothing else in this app enforces referential integrity for us.
+- [x] AI Agent: added `AIAgent { id, name, description, systemPromptStyle }` to `types/factory.ts`,
+      `aiAgent.repository.ts` + `useAIAgents()` hook, and a "Custom AI Agents" tab in
+      `AIPromptsView.tsx` (alongside the existing Prompt Library / AI Providers tabs) for
+      create/edit/delete. `AIAssistantDrawer`'s role picker now appends custom agents after the 6
+      hardcoded roles; selecting one passes its `systemPromptStyle` through to
+      `AIService.requestAnalysis` as the `systemInstruction` param.
+- [x] Plugins: added `Plugin { id, name, description, category, isActive }` to `types/factory.ts`,
+      `plugin.repository.ts` + `usePlugins()` hook, and a new `PluginsView.tsx` list view with
+      create/edit/delete/toggle-active. Wired in as a new `'plugins'` Sidebar entry (between "AI &
+      Prompts" and "Decision Logs") and `renderActiveView()` case in `app/page.tsx`, following the
+      exact existing pattern for other views.
+- [x] Vitest coverage added: `organization.repository.test.ts`, `workspace.repository.test.ts`,
+      `aiAgent.repository.test.ts`, `plugin.repository.test.ts` (round-trip, empty-start,
+      delete-by-filter, and — for Plugin — active-toggle). 21/21 tests passing (13 new).
+- [x] Verified: lint clean (zero warnings), build clean, test 21/21 passing, and a full Playwright
+      pass starting from `localStorage.clear()` — created an Organization, created a Workspace
+      under it, created a custom AI Agent and confirmed it appears in the AI Assistant drawer's
+      role picker (selectable with no console errors), created a Plugin and toggled it
+      active/inactive, then deleted the Plugin, the Agent, and the Organization (cascade-deleting
+      its Workspace) and confirmed every empty state returned correctly. No console errors beyond
+      an unrelated favicon 404.
 
 ### Phase 2b — Feature Manifest, Rule Set, Technology Stack, remaining Profiles
 
@@ -192,6 +207,18 @@ the Scaffolder, which already works well and wasn't something the user asked to 
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-13 — **Phase 2a complete**: Organization/Workspace CRUD via a new "Manage Organizations
+  & Workspaces" modal off the Header (cascade-deletes Workspaces when their Organization is
+  deleted); custom AI Agent persona (`AIAgent` type + repository + `useAIAgents()` + a "Custom AI
+  Agents" tab in `AIPromptsView`, appended to `AIAssistantDrawer`'s role picker); Plugins entity
+  (`Plugin` type + repository + `usePlugins()` + new `PluginsView` + Sidebar entry). Repository/
+  storage foundation (`dc9859a`), Organization & Workspace UI (`7706e87`), Custom AI Agent UI
+  (`27a3522`), Plugins UI (`390ebde`). Vitest 21/21 passing (13 new repository tests), lint clean,
+  build clean. Full Playwright pass from `localStorage.clear()`: created Org → Workspace → custom
+  AI Agent (confirmed in role picker, selectable, zero console errors) → Plugin (toggled
+  active/inactive) → deleted all three (Org delete cascade-removed its Workspace) → every empty
+  state returned correctly. Next: Phase 2b (Feature Manifest, Rule Set, Technology Stack, remaining
+  Profiles).
 - 2026-08-13 — **Phase 1 complete**: `initialOrganizations`/`initialWorkspaces`/`initialProjects`/
   `initialDecisionLogs` emptied to `[]` in `mockSeedData.ts`; catalog data (tech stacks, feature
   manifests, rule presets, AI providers, templates, blueprints) left untouched. Added first-run

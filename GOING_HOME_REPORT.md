@@ -2,6 +2,90 @@
 
 Autonomous work log. Newest session on top.
 
+## PLAN.md Phase 2a complete (2026-08-13)
+
+Implemented Phase 2a ("Organization, Workspace, AI Agent, Plugins") per `PLAN.md`.
+
+- **Organization CRUD**: no dedicated place to create/edit/delete Organizations existed —
+  Header's org dropdown only *selected*. Added `components/OrganizationWorkspaceModal.tsx`, opened
+  via a new gear icon ("Manage Organizations & Workspaces") next to Header's org/workspace
+  pickers. Chose a modal over expanding the dropdown itself because create/edit needs real form
+  fields (name/code/plan), and a modal keeps this one click away without needing a new top-level
+  nav entry for what's fundamentally scoping metadata rather than a content view users browse
+  often. Added `saveOrganizations`/`saveWorkspaces` to `StorageService`, made
+  `IOrganizationRepository`/`IWorkspaceRepository` read/write (they were read-only stubs left over
+  from Phase 0, by design, since no UI existed yet).
+- **Workspace CRUD**: same modal, right-hand column, scoped to whichever Organization is selected
+  in the left-hand column. **Deletion policy decision**: deleting an Organization **cascade-deletes**
+  its Workspaces (confirmation dialog names the workspace count before proceeding), rather than
+  blocking the delete. Rationale: a Workspace has no meaning without its parent Organization, and
+  nothing else in this app enforces referential integrity for us (Projects reference
+  `organizationId`/`workspaceId` as free-form strings, not foreign keys) — a hard block would just
+  force the user to manually delete workspaces first with no other benefit.
+- Fixed a related latent issue in `Header.tsx` while wiring this in: the org/workspace `<select>`
+  values were plain `useState('')` with no logic to point at a real entity once one existed, and no
+  effect to re-sync if the selected one got deleted. Replaced with derived values (`orgs.some(id) ?
+  override : orgs[0]?.id`) computed during render instead of synced via `useEffect` + `setState`
+  (the latter tripped the `react-hooks/set-state-in-effect` lint rule and is the pattern React docs
+  advise against for exactly this "derive from props/state" case).
+- **AI Agent**: added `AIAgent { id, name, description, systemPromptStyle }` to `types/factory.ts`,
+  `services/repositories/aiAgent.repository.ts` + `useAIAgents()` hook in `storageService.ts`. UI
+  lives in `AIPromptsView.tsx` as a new "Custom AI Agents" tab (4th tab, alongside the existing
+  Playground/Prompt Library/AI Providers tabs) — natural home since it's the same
+  "AI configuration" surface as the Provider manager, per the plan's own suggestion.
+  `AIAssistantDrawer.tsx`'s role picker now appends custom agents (mapped with a generic `UserCog`
+  icon) after the 6 hardcoded roles; selecting a custom agent passes its `systemPromptStyle` into
+  `AIService.requestAnalysis`'s existing (previously unused from this call site) `systemInstruction`
+  parameter, so the persona actually flows through to the (simulated/fallback) AI call.
+- **Plugins**: added `Plugin { id, name, description, category, isActive }` to `types/factory.ts`,
+  `services/repositories/plugin.repository.ts` + `usePlugins()` hook, and a new
+  `components/views/PluginsView.tsx` with the established list/search/empty-state/create/edit/
+  delete/toggle-active pattern (modeled directly on `DecisionLogsView.tsx`'s empty-state and
+  `AIPromptsView.tsx`'s provider-card layout). Wired in as a new Sidebar entry ("Plugins", `Puzzle`
+  icon) between "AI & Prompts" and "Decision Logs", and a `'plugins'` case in
+  `app/page.tsx`'s `renderActiveView()` + `VALID_VIEWS` — exactly the existing pattern, no new
+  wiring approach invented. No execution semantics, consistent with how the rest of the app already
+  simulates (Feature Manifests don't run code either).
+- Extended `StorageService.exportFullWorkspaceState()`/`importWorkspaceState()` to include
+  organizations/workspaces/aiAgents/plugins so the existing JSON export/import (Header's
+  download/upload buttons) round-trips the new entities too — not explicitly required by the plan
+  but a one-line-per-field addition and an obvious gap to leave otherwise (the export would have
+  silently dropped user-created orgs/workspaces/agents/plugins).
+- **Vitest coverage**: `organization.repository.test.ts`, `workspace.repository.test.ts`,
+  `aiAgent.repository.test.ts`, `plugin.repository.test.ts` — round-trip, genuinely-empty-start,
+  and delete-by-filter for each, plus an active-toggle test for Plugin. 21/21 tests passing (13 new
+  since Phase 1's 8).
+- **Verification, all actually run and observed, not assumed**:
+  - `npm run lint` — clean, zero warnings (hit one real issue mid-implementation: the first draft
+    synced Header's derived org/workspace selection via `useEffect` + `setState`, which
+    `react-hooks/set-state-in-effect` correctly flagged; fixed by deriving the value during render
+    instead, see above).
+  - `npm run build` — clean production build after `rm -rf .next` (stale cache, same known
+    class of issue noted in earlier sessions, not a real bug).
+  - `npm run test` — 7 test files, 21/21 passing.
+  - **Playwright**, against `npm run start` on port 3000 (verified nothing else was already
+    listening first), starting from `await page.evaluate(() => localStorage.clear())` + reload:
+    created an Organization ("Contoso Robotics", Enterprise plan) via the new modal — appeared
+    immediately in Header's picker and Dashboard's hero subtitle; created a Workspace ("Core
+    Platform") scoped to it — appeared in Header's workspace picker; created a custom AI Agent
+    ("Compliance Reviewer") — confirmed the empty state showed first, then the agent appeared in
+    the "Custom AI Agents" tab, then opened the AI Assistant drawer and confirmed "Compliance
+    Reviewer" appears in the role picker alongside the 6 hardcoded roles, clicked to select it with
+    zero console errors; created a Plugin ("Dependency Vulnerability Scanner") — confirmed empty
+    state first, then toggled it Active → Inactive and back via the ACTIVE/INACTIVE chip; deleted
+    the Plugin (confirmed empty state returned), deleted the Agent (confirmed empty state
+    returned), then deleted the Organization with the cascade-delete confirmation dialog correctly
+    naming "and its 1 workspace(s)" — accepted it and confirmed both the Organization and its
+    Workspace were gone and the "No organizations yet" empty state was back. Console messages
+    across the whole session: zero errors except one pre-existing, unrelated `favicon.ico` 404.
+- Nothing blocked, nothing needed human approval — no new npm dependency was required (React
+  state, Tailwind, lucide-react `UserCog`/`Puzzle`/`Settings2` icons, all already available).
+- Committed in logically separate commits (see git log) and updated `PLAN.md` (Phase 2a checkboxes
+  checked off, progress log entry added) and this report.
+- **Next up: Phase 2b (Feature Manifest / Rule Set / Technology Stack / remaining Profiles create+
+  edit+delete UI)** per `PLAN.md` — the heavier half of Phase 2, two of its entities (Encryption/
+  Deployment/Authentication Profile) need brand-new types first.
+
 ## PLAN.md Phase 1 complete (2026-08-13)
 
 Implemented Phase 1 ("Remove invented data, start genuinely empty") per `PLAN.md`.
