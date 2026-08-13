@@ -38,22 +38,24 @@ each provider's REST API, not new SDKs.
 
 ## Phase 0 — Repository pattern (architecture foundation)
 
-- [ ] Add `services/repositories/` with one interface per aggregate: `IProjectRepository`,
+- [x] Add `services/repositories/` with one interface per aggregate: `IProjectRepository`,
       `ITemplateRepository`, `IFeatureManifestRepository`, `IRuleSetRepository`,
-      `ITechStackRepository`, `IProfileRepository` (security/db/docker/cache/logging/encryption/
-      deployment/auth), `IAIProviderRepository`, `IPromptTemplateRepository`,
-      `IDecisionLogRepository`, `IOrganizationRepository`, `IWorkspaceRepository`.
-- [ ] One `LocalStorage*Repository` implementation per interface, built on top of the existing
-      `StorageService` primitives (reuse `getItem`/`setItem`/`notifyStorageChange`, don't rewrite
-      them).
-- [ ] Refactor each `XService` (FeatureService, ProjectService, RuleService, AdvisorService,
-      ValidationService, ImpactService, DecisionService, TemplateService) to take its repository
-      via a module-level singleton (`export const projectRepository: IProjectRepository = new
-      LocalStorageProjectRepository()`) instead of importing `StorageService` directly. Business
-      logic (smart dependencies, scoring, validation) stays in the services; only persistence
-      moves to repositories.
+      `ITechStackRepository`, `IProfileRepository` (security/db/docker/cache/logging — encryption/
+      deployment/auth deliberately excluded, those types don't exist yet, that's Phase 2),
+      `IAIProviderRepository`, `IPromptTemplateRepository`, `IDecisionLogRepository`,
+      `IOrganizationRepository`, `IWorkspaceRepository`. (`1560001`)
+- [x] One `LocalStorage*Repository` implementation per interface, built on top of the existing
+      `StorageService` primitives. (`1560001`)
+- [x] Refactor each `XService` that had a `StorageService` dependency (FeatureService,
+      ProjectService, RuleService, AdvisorService, ValidationService, DecisionService,
+      TemplateService) to use its repository singleton instead. `ImpactService` needed no change —
+      it never depended on `StorageService` to begin with (pure canned-copy generator). Verified via
+      diff review: every change is a pure dependency swap, no business logic altered. (`1560001`)
 - [ ] Add unit tests (Vitest) per repository and per service as they're touched, so this refactor
-      can't silently change behavior.
+      can't silently change behavior. **Not done yet** — `vitest` still needs to actually be added
+      as a devDependency (pre-approved per the user's auto-approve instruction, but no one has
+      run the `npm install -D vitest` + config step yet). Do this before Phase 0 is considered
+      fully closed, ideally before Phase 1 starts touching the same services further.
 - [ ] Verify: lint, build, full manual click-through of every view, Playwright smoke pass.
 
 ## Phase 1 — Remove invented data, start genuinely empty
