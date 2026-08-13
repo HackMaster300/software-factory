@@ -51,11 +51,13 @@ each provider's REST API, not new SDKs.
       TemplateService) to use its repository singleton instead. `ImpactService` needed no change —
       it never depended on `StorageService` to begin with (pure canned-copy generator). Verified via
       diff review: every change is a pure dependency swap, no business logic altered. (`1560001`)
-- [ ] Add unit tests (Vitest) per repository and per service as they're touched, so this refactor
-      can't silently change behavior. **Not done yet** — `vitest` still needs to actually be added
-      as a devDependency (pre-approved per the user's auto-approve instruction, but no one has
-      run the `npm install -D vitest` + config step yet). Do this before Phase 0 is considered
-      fully closed, ideally before Phase 1 starts touching the same services further.
+- [x] Add unit tests (Vitest) per repository and per service as they're touched, so this refactor
+      can't silently change behavior. Installed `vitest`/`@vitejs/plugin-react`/`jsdom`, added
+      `npm run test`, wrote regression tests for the repository round-trip, Smart Dependencies
+      resolution, and the Zip Slip sanitizer. 8/8 passing. (`8322ce3`)
+
+**Phase 0 complete.** `npm run test` now exists and should be run (alongside lint/build) as part
+of verifying every subsequent phase.
 - [ ] Verify: lint, build, full manual click-through of every view, Playwright smoke pass.
 
 ## Phase 1 — Remove invented data, start genuinely empty
@@ -130,3 +132,8 @@ Add Create + Edit + Delete UI (reuse existing modal/drawer/property-grid convent
 ## Progress log
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
+
+- 2026-08-13 — **Phase 0 complete**: repository pattern in place across 7 services + 11 new
+  repositories (`1560001`), Vitest installed with regression tests for the repository swap, Smart
+  Dependencies, and the Zip Slip fix (`8322ce3`). Lint/build/test all green. Next: Phase 1 (remove
+  invented seed data).
