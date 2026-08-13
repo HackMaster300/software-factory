@@ -135,6 +135,18 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
           </div>
 
           <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
+            {filteredLogs.length === 0 && (
+              <div className="text-center py-10 space-y-1 text-gray-500">
+                <p className="text-xs">No decision logs match &quot;{searchQuery}&quot;.</p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
+
             {filteredLogs.map((log) => {
               const isSelected = selectedLogId === log.id;
               return (

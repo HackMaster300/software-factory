@@ -446,6 +446,18 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
 
       {/* Rules List Grid */}
       <div className="space-y-3">
+        {filteredRules.length === 0 && (
+          <div className="text-center py-10 space-y-1 text-gray-500">
+            <p className="text-xs">No rules match &quot;{searchQuery}&quot;.</p>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
+
         {filteredRules.map((rule) => (
           <div
             key={rule.id}

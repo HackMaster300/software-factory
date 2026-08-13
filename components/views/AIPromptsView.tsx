@@ -666,6 +666,26 @@ export const AIPromptsView: React.FC = () => {
 
           {/* List of prompt templates */}
           <div className="space-y-3">
+            {filteredTemplates.length === 0 && (
+              <div className="text-center py-10 space-y-1 text-gray-500">
+                <p className="text-xs">
+                  No prompt templates match{promptSearchQuery ? ` "${promptSearchQuery}"` : ''}
+                  {selectedCategory !== 'all' ? ` in this category` : ''}.
+                </p>
+                {(promptSearchQuery || selectedCategory !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setPromptSearchQuery('');
+                      setSelectedCategory('all');
+                    }}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            )}
+
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
