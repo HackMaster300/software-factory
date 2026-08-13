@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useSyncExternalStore } from 'react';
 import { Header } from '../components/Header';
 import { Sidebar } from '../components/Sidebar';
 import { ProjectAdvisorPanel } from '../components/ProjectAdvisorPanel';
@@ -22,8 +22,31 @@ import { initialTemplates } from '../services/mockSeedData';
 import { Blueprint } from '../types/factory';
 import { SlidersHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
+const ACTIVE_VIEW_STORAGE_KEY = 'sf_active_view_v1';
+const VALID_VIEWS = ['dashboard', 'blueprints', 'features', 'scaffolder', 'rules', 'stacks', 'ai', 'decisions', 'impact'];
+const activeViewListeners = new Set<() => void>();
+
+function getActiveViewSnapshot(): string {
+  const stored = window.localStorage.getItem(ACTIVE_VIEW_STORAGE_KEY);
+  return stored && VALID_VIEWS.includes(stored) ? stored : 'dashboard';
+}
+
+function getActiveViewServerSnapshot(): string {
+  return 'dashboard';
+}
+
+function subscribeActiveView(callback: () => void): () => void {
+  activeViewListeners.add(callback);
+  return () => activeViewListeners.delete(callback);
+}
+
+function persistActiveView(view: string): void {
+  window.localStorage.setItem(ACTIVE_VIEW_STORAGE_KEY, view);
+  activeViewListeners.forEach((listener) => listener());
+}
+
 export default function SoftwareFactoryPage() {
-  const [activeView, setActiveView] = useState<string>('dashboard');
+  const activeView = useSyncExternalStore(subscribeActiveView, getActiveViewSnapshot, getActiveViewServerSnapshot);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isAIDrawerOpen, setIsAIDrawerOpen] = useState<boolean>(false);
   const [aiDrawerPrompt, setAiDrawerPrompt] = useState<string>('');
@@ -49,6 +72,8 @@ export default function SoftwareFactoryPage() {
       version: '2.5.0',
     }
   );
+
+  const setActiveView = persistActiveView;
 
   // Keyboard shortcuts (Cmd+K for command palette, Cmd+B for sidebar, Cmd+J for AI)
   useEffect(() => {
