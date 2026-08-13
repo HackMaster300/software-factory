@@ -136,6 +136,27 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
 
           {/* Feature List */}
           <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+            {filteredFeatures.length === 0 && (
+              <div className="text-center py-10 space-y-1 text-gray-500">
+                <Search className="w-5 h-5 mx-auto text-gray-600" aria-hidden="true" />
+                <p className="text-xs">
+                  No features match{searchQuery ? ` "${searchQuery}"` : ''}
+                  {selectedCategory !== 'All' ? ` in ${selectedCategory}` : ''}.
+                </p>
+                {(searchQuery || selectedCategory !== 'All') && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory('All');
+                    }}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            )}
+
             {filteredFeatures.map((feat) => {
               const isActive = activeFeatureIds.includes(feat.id);
               const isSelected = selectedFeatureId === feat.id;
