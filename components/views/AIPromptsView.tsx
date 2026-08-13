@@ -23,17 +23,27 @@ import {
   Layers,
   ArrowUpRight,
   X,
+  UserCog,
 } from 'lucide-react';
-import { AIProviderConfig, PromptTemplate } from '../../types/factory';
-import { StorageService } from '../../services/storageService';
+import { AIProviderConfig, PromptTemplate, AIAgent } from '../../types/factory';
+import { StorageService, useAIAgents } from '../../services/storageService';
+import { aiAgentRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
 
 export const AIPromptsView: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'playground' | 'prompts' | 'providers'>('playground');
+  const [activeTab, setActiveTab] = useState<'playground' | 'prompts' | 'providers' | 'agents'>('playground');
 
   // Storage states
   const [providers, setProviders] = useState<AIProviderConfig[]>(StorageService.getAIProviders());
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>(StorageService.getPromptTemplates());
+  const customAgents = useAIAgents();
+
+  // Custom AI Agent modal state
+  const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<AIAgent | null>(null);
+  const [agentName, setAgentName] = useState('');
+  const [agentDescription, setAgentDescription] = useState('');
+  const [agentSystemPromptStyle, setAgentSystemPromptStyle] = useState('');
 
   // Playground state
   const [selectedProviderId, setSelectedProviderId] = useState<string>(providers[0]?.id || 'ai-gemini');
@@ -298,6 +308,51 @@ export const AIPromptsView: React.FC = () => {
     StorageService.saveAIProviders(updated);
   };
 
+  // Save/Edit/Delete Custom AI Agents
+  const handleOpenAddAgent = () => {
+    setEditingAgent(null);
+    setAgentName('');
+    setAgentDescription('');
+    setAgentSystemPromptStyle('');
+    setIsAgentModalOpen(true);
+  };
+
+  const handleOpenEditAgent = (agent: AIAgent) => {
+    setEditingAgent(agent);
+    setAgentName(agent.name);
+    setAgentDescription(agent.description);
+    setAgentSystemPromptStyle(agent.systemPromptStyle);
+    setIsAgentModalOpen(true);
+  };
+
+  const handleSaveAgent = () => {
+    if (!agentName.trim() || !agentSystemPromptStyle.trim()) {
+      alert('Please fill in Agent Name and System Prompt Style.');
+      return;
+    }
+
+    const id = editingAgent ? editingAgent.id : `agent-${Date.now()}`;
+    const newAgent: AIAgent = {
+      id,
+      name: agentName.trim(),
+      description: agentDescription.trim(),
+      systemPromptStyle: agentSystemPromptStyle.trim(),
+    };
+
+    const updated = editingAgent
+      ? customAgents.map((a) => (a.id === id ? newAgent : a))
+      : [...customAgents, newAgent];
+
+    aiAgentRepository.saveAIAgents(updated);
+    setIsAgentModalOpen(false);
+  };
+
+  const handleDeleteAgent = (id: string) => {
+    if (confirm('Are you sure you want to delete this custom AI agent?')) {
+      aiAgentRepository.saveAIAgents(customAgents.filter((a) => a.id !== id));
+    }
+  };
+
   const handleExportPromptConfig = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify({ providers, promptTemplates }, null, 2));
     const downloadAnchor = document.createElement('a');
@@ -352,6 +407,15 @@ export const AIPromptsView: React.FC = () => {
             </button>
           )}
 
+          {activeTab === 'agents' && (
+            <button
+              onClick={handleOpenAddAgent}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" /> Create Custom Agent
+            </button>
+          )}
+
           <button
             onClick={handleExportPromptConfig}
             title="Export Prompts & Providers JSON"
@@ -398,6 +462,18 @@ export const AIPromptsView: React.FC = () => {
         >
           <Bot className="w-3.5 h-3.5 text-purple-400" />
           <span>AI Providers ({providers.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('agents')}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors ${
+            activeTab === 'agents'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+              : 'bg-[#181a20] text-gray-400 hover:text-gray-200 border border-[#2b303d]'
+          }`}
+        >
+          <UserCog className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Custom AI Agents ({customAgents.length})</span>
         </button>
       </div>
 
@@ -811,6 +887,137 @@ export const AIPromptsView: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TAB 4: CUSTOM AI AGENTS */}
+      {activeTab === 'agents' && (
+        <div className="space-y-4">
+          {customAgents.length === 0 ? (
+            <div className="text-center py-12 bg-[#181a20] border border-[#2b303d] rounded-xl space-y-2">
+              <UserCog className="w-6 h-6 mx-auto text-gray-600" aria-hidden="true" />
+              <p className="text-xs text-gray-400">
+                No custom AI agents yet. Define a persona beyond the built-in roles (Software
+                Architect, Security Engineer, etc.) to use in the AI Assistant drawer.
+              </p>
+              <button
+                onClick={handleOpenAddAgent}
+                className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+              >
+                Create your first custom agent
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {customAgents.map((agent) => (
+                <div
+                  key={agent.id}
+                  className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition-all"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <UserCog className="w-4 h-4 text-emerald-400" />
+                      <span className="font-bold text-sm text-white">{agent.name}</span>
+                    </div>
+                    <p className="text-xs text-gray-400">{agent.description}</p>
+                    <pre className="p-2.5 bg-[#12141a] border border-[#232734] rounded text-[11px] text-gray-300 font-mono whitespace-pre-wrap">
+                      {agent.systemPromptStyle}
+                    </pre>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
+                    <button
+                      onClick={() => handleOpenEditAgent(agent)}
+                      aria-label={`Edit agent ${agent.name}`}
+                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAgent(agent.id)}
+                      aria-label={`Delete agent ${agent.name}`}
+                      className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CREATE / EDIT CUSTOM AI AGENT MODAL */}
+      {isAgentModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
+              <span className="font-bold text-sm text-white flex items-center gap-2">
+                <UserCog className="w-4 h-4 text-emerald-400" />
+                {editingAgent ? 'Edit Custom AI Agent' : 'Create Custom AI Agent'}
+              </span>
+              <button
+                onClick={() => setIsAgentModalOpen(false)}
+                aria-label="Close dialog"
+                className="p-1 rounded text-gray-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Agent Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Compliance Reviewer"
+                  value={agentName}
+                  onChange={(e) => setAgentName(e.target.value)}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Short Description</label>
+                <input
+                  type="text"
+                  placeholder="What this persona focuses on"
+                  value={agentDescription}
+                  onChange={(e) => setAgentDescription(e.target.value)}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">System Prompt Style</label>
+                <textarea
+                  rows={4}
+                  placeholder="You are a meticulous Compliance Reviewer who flags regulatory risk..."
+                  value={agentSystemPromptStyle}
+                  onChange={(e) => setAgentSystemPromptStyle(e.target.value)}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2.5 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500 leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
+              <button
+                type="button"
+                onClick={() => setIsAgentModalOpen(false)}
+                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAgent}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
+              >
+                Save Agent
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

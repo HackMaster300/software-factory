@@ -16,9 +16,11 @@ import {
   Loader2,
   Copy,
   Check,
+  UserCog,
 } from 'lucide-react';
 import { AIService } from '../services/aiService';
 import { Blueprint } from '../types/factory';
+import { useAIAgents } from '../services/storageService';
 
 interface AIAssistantDrawerProps {
   isOpen: boolean;
@@ -42,6 +44,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
   blueprint,
   initialPrompt,
 }) => {
+  const customAgents = useAIAgents();
   const [selectedRole, setSelectedRole] = useState('Software Architect');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -65,7 +68,10 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
     { name: 'Cloud Architect', icon: Cloud },
     { name: 'Performance Engineer', icon: Zap },
     { name: 'DevOps Engineer', icon: Terminal },
+    ...customAgents.map((agent) => ({ name: agent.name, icon: UserCog })),
   ];
+
+  const selectedCustomAgent = customAgents.find((a) => a.name === selectedRole);
 
   const handleSend = async () => {
     if (!inputPrompt.trim() || isLoading) return;
@@ -90,7 +96,11 @@ Active Feature IDs: ${blueprint.featureIds.join(', ')}
 User Request: ${currentPrompt}
 `;
 
-    const response = await AIService.requestAnalysis(contextPrompt, selectedRole);
+    const response = await AIService.requestAnalysis(
+      contextPrompt,
+      selectedRole,
+      selectedCustomAgent?.systemPromptStyle
+    );
 
     const aiMsg: ChatMessage = {
       id: `ai-${Date.now()}`,
