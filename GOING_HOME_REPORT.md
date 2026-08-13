@@ -8,13 +8,18 @@ Autonomous work log. Newest session on top.
 
 **Status:** In progress — this is the first real unattended `going-home-front` run (`ScheduleWakeup` loop active with the `<<autonomous-loop-dynamic>>` prompt). The user is stepping away; this session will keep cycling review mode → improvement mode until runway is nearly exhausted.
 
-- Did (this cycle, still supervised/manual before handing off to the loop):
-  - Fixed remaining icon-only buttons with no accessible name in `components/views/ProjectScaffolderView.tsx`: close-export-modal (`X`, had neither title nor aria-label), remove-module, remove-package, delete-env-var (these three had `title` but no `aria-label`). Added `aria-label` (naming the specific item where relevant) and `aria-hidden="true"` on their icons.
-  - Verified: `npm run lint` and `npm run build` both clean after the change. Committed as `c0a23c0`.
-- New features/improvements added: none this cycle (pure a11y fix, continuing from previous session's findings).
-- Found but needs your approval: **adding a test framework** (e.g. Vitest) — there is currently no test suite of any kind in this repo (no Jest/Vitest/Playwright config). This is the single highest-value next improvement, but it requires a new `devDependency`, which is outside this skill's auto-approve scope. Recommend approving `vitest` (or your preferred alternative) so the loop can add real unit tests for the pure logic in `services/*.ts`.
-- Blocked on: the above approval, for that specific item only — the loop will continue with other independent work (rest of the accessibility/design pass across `components/views/*.tsx`, further code/architecture review) in the meantime rather than stalling.
-- Next step if continuing: full accessibility + design pass across the remaining `components/views/*.tsx` files (most were not yet reviewed in depth: `AIPromptsView`, `BlueprintsView`, `DashboardView`, `DecisionLogsView`, `FeatureManifestsView`, `ImpactAnalyzerView`, `RuleEngineView`, `TechStacksView`), then move into improvement mode for real feature additions once review is clean.
+- Did (now running as a genuine unattended loop, several `ScheduleWakeup` cycles so far):
+  - Fixed remaining icon-only buttons with no accessible name in `components/views/ProjectScaffolderView.tsx`: close-export-modal (`X`, had neither title nor aria-label), remove-module, remove-package, delete-env-var (these three had `title` but no `aria-label`). Committed `c0a23c0`.
+  - Swept every other component for the same issue and fixed all remaining cases: `BlueprintsView` (remove-module), `AIPromptsView` (edit/delete-template), `RuleEngineView` (export-ruleset, edit-rule, delete-rule), `CommandPalette` (close), `AIAssistantDrawer` (close, send-prompt). Committed `7fb5e77`.
+  - Found and fixed one more: `DecisionLogsView`'s "Add Decision" modal close button had only a raw `✕` glyph as content, no `aria-label`. Committed `f889d22`.
+  - **Accessibility pass across the entire `components/` tree is now complete** — every icon-only interactive element has an `aria-label`, and every purely decorative icon next to visible text has `aria-hidden="true"`.
+  - Code review: found and removed dead code in `services/featureService.ts` — `resolveBlueprintFeatures` computed a `recFeat` lookup twice that was never read (leftover from a refactor). Committed `6c136a4`.
+  - Skimmed the larger service files (`blueprintService.ts` 509 lines, mostly static per-stack/architecture project templates and keyword-based package suggestions — no bugs found; `aiService.ts` — already handles non-OK responses gracefully, including the new 400s from the validation added last session) — no further findings at this depth of review.
+  - Lint + build re-verified clean after every change in this session.
+- New features/improvements added: none yet this session (still in review mode) — next cycle moves into improvement mode (§2a) now that the accessibility/code review pass is genuinely clean.
+- Found but needs your approval: **adding a test framework** (e.g. Vitest) — still the single highest-value next step; there is no test suite at all in this repo. Needs a new `devDependency`, which is outside auto-approve. Please approve `vitest` (or your preferred alternative) when you're back so the loop can add real unit tests for `services/*.ts`.
+- Blocked on: the above approval, for that specific item only — the loop continues with other independent work meanwhile.
+- Next step if continuing: enter improvement mode — likely candidates already spotted while reading the code: (1) `FeatureManifestsView` has category filtering but no text search across feature names/descriptions, (2) `services/projectService.ts` (579 lines) and `services/advisorService.ts` (216 lines) haven't been read in depth yet and are worth a closer look before adding anything there.
 
 ## Session — 2026-08-12 (supervised test run)
 
