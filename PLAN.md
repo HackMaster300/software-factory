@@ -87,19 +87,64 @@ of verifying every subsequent phase.
 
 ## Phase 2 — Close CRUD gaps (the original "create everything" list)
 
-Add Create + Edit + Delete UI (reuse existing modal/drawer/property-grid conventions) for:
-- [ ] Organization, Workspace
-- [ ] Feature Manifest (full builder: name/category/dependencies/questions/generated files)
-- [ ] Rule Set as a container (today only individual rules within one fixed set are editable)
-- [ ] Technology Stack (user-defined language/framework/testing/runtime)
-- [ ] Cache Profile, Logging Profile (currently no UI at all)
-- [ ] Encryption Profile, Deployment Profile, Authentication Profile (add types + storage + UI —
-      none of these exist in `types/factory.ts` today)
-- [ ] AI Agent (custom persona, beyond the 6 hardcoded roles)
-- [ ] Plugins (minimal viable: named add-on, description, category, active toggle — no real
-      execution, consistent with how the rest of the app already "simulates")
-- Backlog, not this pass: a standalone global Package catalog (packages stay scoped per-module,
-  which already works well).
+Split into two sub-phases so each lands as its own reviewable, independently-committed chunk
+rather than one giant change touching every view and `types/factory.ts` at once. Do 2a before 2b.
+
+### Phase 2a — Organization, Workspace, AI Agent, Plugins
+
+No new types needed for Organization/Workspace (already in `types/factory.ts`, just missing
+create/edit/delete UI). AI Agent and Plugins are net-new, but intentionally simple (no execution
+engine, consistent with how the rest of the app already "simulates" rather than actually runs
+things).
+
+- [ ] Organization: Create + Edit + Delete UI (a place to do this doesn't exist yet — Header's
+      org dropdown only *selects*; add it there or in a small dedicated Settings/Org area,
+      whichever fits existing navigation conventions better).
+- [ ] Workspace: same, scoped to the selected Organization.
+- [ ] AI Agent: let the user define a custom persona (name, role description, system-prompt
+      style) beyond the 6 hardcoded roles in `AIAssistantDrawer`; new agents should appear
+      alongside the hardcoded ones in the role picker.
+- [ ] Plugins: minimal viable entity — name, description, category, active toggle. Add the type
+      to `types/factory.ts`, a repository (following the Phase 0 pattern — interface +
+      `LocalStorage*Repository` + singleton, not raw `StorageService` calls), and a simple
+      list+create+edit+delete view (new sidebar entry, or a tab on an existing view — use
+      judgment based on where it fits).
+- [ ] Vitest coverage for whatever new service/repository logic this adds (validation rules,
+      default-value handling, etc. — not UI rendering, that's what Playwright is for).
+- [ ] Verify: lint, build, test, and a Playwright pass with `localStorage.clear()` first (the
+      empty-state work in Phase 1 only shows correctly from a truly empty state — clear storage
+      before checking, like Phase 1's own verification had to).
+
+### Phase 2b — Feature Manifest, Rule Set, Technology Stack, remaining Profiles
+
+Heavier: two of these need new domain types first.
+
+- [ ] Feature Manifest: full create/edit builder — name, category, dependencies, optional/
+      recommended dependencies, conflicting features, questions, generated files preview,
+      security warnings, impact scores. Reuse the existing detail-view fields in
+      `FeatureManifestsView` as the shape of the edit form; don't invent new fields.
+- [ ] Rule Set: today only individual rules within one fixed, pre-seeded rule set are editable.
+      Add the ability to create a whole new Rule Set (name, description) and switch a Blueprint's
+      active rule set between them.
+- [ ] Technology Stack: user-defined language/framework/package-manager/testing-framework/
+      target-runtime — currently `TechStacksView` is read-only display of the seeded catalog only.
+- [ ] Cache Profile, Logging Profile: these exist in `types/factory.ts` and `StorageService`
+      already but have **zero UI** — `TechStacksView`'s tabs only cover stacks/db/security/docker.
+      Add the missing tabs, plus create/edit/delete.
+- [ ] Encryption Profile, Deployment Profile, Authentication Profile: **don't exist in
+      `types/factory.ts` at all yet.** Add minimal but real types (look at the shape of
+      `ProfileSecurity`/`ProfileDatabase` for the pattern — id/name plus a handful of
+      domain-relevant fields, not a kitchen sink), a repository each (Phase 0 pattern), storage
+      keys in `StorageService`, and list+create+edit+delete UI (extend `TechStacksView`'s tabs
+      again, keeping one consistent "Technology & Profiles" surface rather than scattering these
+      across unrelated views).
+- [ ] Vitest coverage for new services/repositories/validation logic.
+- [ ] Verify: lint, build, test, Playwright pass (cleared `localStorage`) confirming every new
+      entity type can actually be created, edited, and deleted from the UI — not just that the
+      code compiles.
+
+Backlog, not this plan: a standalone global Package catalog (packages stay scoped per-module in
+the Scaffolder, which already works well and wasn't something the user asked to change).
 
 ## Phase 3 — Bring-your-own AI provider key
 
