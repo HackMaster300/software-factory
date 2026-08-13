@@ -257,9 +257,10 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
+                aria-label="Close dialog"
                 className="text-gray-400 hover:text-white cursor-pointer"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
