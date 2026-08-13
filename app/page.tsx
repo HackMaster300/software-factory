@@ -14,6 +14,7 @@ import { ProjectScaffolderView } from '../components/views/ProjectScaffolderView
 import { RuleEngineView } from '../components/views/RuleEngineView';
 import { TechStacksView } from '../components/views/TechStacksView';
 import { AIPromptsView } from '../components/views/AIPromptsView';
+import { PluginsView } from '../components/views/PluginsView';
 import { DecisionLogsView } from '../components/views/DecisionLogsView';
 import { ImpactAnalyzerView } from '../components/views/ImpactAnalyzerView';
 
@@ -23,7 +24,7 @@ import { Blueprint } from '../types/factory';
 import { SlidersHorizontal, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 const ACTIVE_VIEW_STORAGE_KEY = 'sf_active_view_v1';
-const VALID_VIEWS = ['dashboard', 'blueprints', 'features', 'scaffolder', 'rules', 'stacks', 'ai', 'decisions', 'impact'];
+const VALID_VIEWS = ['dashboard', 'blueprints', 'features', 'scaffolder', 'rules', 'stacks', 'ai', 'plugins', 'decisions', 'impact'];
 const activeViewListeners = new Set<() => void>();
 
 function getActiveViewSnapshot(): string {
@@ -149,6 +150,9 @@ export default function SoftwareFactoryPage() {
 
       case 'ai':
         return <AIPromptsView />;
+
+      case 'plugins':
+        return <PluginsView />;
 
       case 'decisions':
         return <DecisionLogsView openAIRefactor={openAIRefactor} />;

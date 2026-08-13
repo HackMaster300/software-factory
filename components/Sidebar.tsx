@@ -13,6 +13,7 @@ import {
   GitCompare,
   Settings,
   HelpCircle,
+  Puzzle,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
     { id: 'rules', label: 'Architecture Rules', icon: ShieldAlert, badge: '6' },
     { id: 'stacks', label: 'Tech Stacks & Profiles', icon: Server, badge: null },
     { id: 'ai', label: 'AI & Prompts', icon: Bot, badge: 'Gemini' },
+    { id: 'plugins', label: 'Plugins', icon: Puzzle, badge: null },
     { id: 'decisions', label: 'Decision Logs', icon: FileSpreadsheet, badge: null },
     { id: 'impact', label: 'Impact Analyzer', icon: GitCompare, badge: 'What-If' },
   ];
