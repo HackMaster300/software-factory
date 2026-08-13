@@ -2,6 +2,28 @@
 
 Autonomous work log. Newest session on top.
 
+## PLAN.md Phase 0 complete (2026-08-13)
+
+Dispatched a background subagent to implement Phase 0 (repository pattern). It delivered solid
+work — 11 repository interfaces + LocalStorage implementations in `services/repositories/`, 7
+services refactored to depend on them instead of `StorageService` directly, verified via diff
+review to be pure dependency swaps with zero business-logic changes — but it did **not** commit
+its own work, add tests, or update `PLAN.md`/this report as instructed; I did all of that myself
+afterward: committed the refactor (`1560001`), installed Vitest and wrote regression tests for the
+repository swap, Smart Dependencies resolution, and the Zip Slip fix (`8322ce3`), then checked off
+Phase 0 in `PLAN.md` (`0735b23`). Lesson for next time a subagent is dispatched for a plan phase:
+explicitly re-verify commit/test/doc completion before trusting the agent's own "done" framing —
+its final message here was actually a stray "I'll hold here until the build's notification
+arrives," not a real completion summary, and the task-notification's "completed" status did not
+mean everything requested actually happened.
+
+Also worth a note: hit a transient `.next` build cache corruption (`ENOENT` renaming `500.html`)
+right after the agent's changes — a `rm -rf .next` + rebuild fixed it immediately; not a real code
+issue, just add it to the list of "stale/corrupted `.next` directory" symptoms already noted in an
+earlier session entry.
+
+**Next up: Phase 1 (remove invented/fake seed data) per `PLAN.md`.**
+
 ## PLAN.md is now the source of truth (added 2026-08-13, `3a5714d`)
 
 The user reviewed how the current app compares to their original vision (`pipelines/context.md`)
