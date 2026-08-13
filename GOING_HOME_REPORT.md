@@ -2,6 +2,59 @@
 
 Autonomous work log. Newest session on top.
 
+## PLAN.md Phase 1 complete (2026-08-13)
+
+Implemented Phase 1 ("Remove invented data, start genuinely empty") per `PLAN.md`.
+
+- `services/mockSeedData.ts`: emptied `initialOrganizations`, `initialWorkspaces`,
+  `initialProjects`, and `initialDecisionLogs` to `[]`. These previously contained fabricated user
+  history presented as real usage — fake companies ("Acme Enterprise Solutions", "FinTech Cloud
+  Core"), fake projects ("Core Payment Gateway Solution"), fake decision-log authors ("Lead
+  Architect Alex Rivers") and fake cost figures ("$45,000/yr"). Left every legitimate catalog/
+  reference array untouched exactly as instructed: `initialTechStacks`, `initialFeatureManifests`,
+  `initialRuleSets`, `initialTemplates`, `initialBlueprints`, `initialAIProviders`,
+  `initialPromptTemplates`, and the security/database/docker/cache/logging profile catalogs. One
+  thing flagged but deliberately *not* touched per explicit scope: `initialAIProviders`'
+  `costPer1k`/`latency` fields are still illustrative placeholder numbers rather than measured
+  benchmarks — worth a follow-up pass, but out of scope for this phase since the instruction was to
+  keep that array exactly as-is.
+- Grepped `components/` and `services/` for hardcoded IDs (`org-1`, `ws-1`, `proj-acme-1`,
+  `proj-payment-gateway`, etc.) that assumed at least one Organization/Workspace/Project existed.
+  Found and fixed three:
+  - `components/Header.tsx`: org/workspace `<select>` dropdowns now render "No organization yet" /
+    "No workspace yet" instead of an empty, unusable `<select>` when the lists are empty.
+  - `components/views/DashboardView.tsx`: hero subtitle hardcoded "Acme Enterprise Workspaces" —
+    replaced with `{organizations[0]?.name || 'No organization yet'}`. Also added a genuine
+    first-run empty state to the Decision Log panel (previously would just render an empty box
+    with no explanation).
+  - `components/views/DecisionLogsView.tsx`: distinguished a true "no decisions yet" first-run
+    empty state (with a "Log your first decision" CTA) from the existing "no search matches"
+    empty state, which would otherwise have fired on every load of an empty log with a confusing
+    `No decision logs match ""` message. Also replaced the hardcoded placeholder `projectId:
+    'proj-acme-1'` used when logging a decision with `'unassigned'`, since `proj-acme-1` no longer
+    corresponds to anything and was itself a leftover fabricated reference.
+  - `components/views/ProjectScaffolderView.tsx`: the "complete generation" step hardcoded
+    `organizationId: 'org-1'` / `workspaceId: 'ws-1'` on every newly created project. Switched to
+    `StorageService.getOrganizations()[0]?.id || ''` / same for workspaces, so a freshly generated
+    project degrades honestly (empty string) instead of silently pointing at a non-existent
+    organization. Full "create an Organization/Workspace from scratch" UI is explicitly Phase 2
+    scope, not touched here.
+- `services/repositories/project.repository.test.ts` had a test asserting the old fake-seed-data
+  fallback behavior (`falls back to the seeded default projects when nothing has been saved yet`,
+  asserting `loaded.length > 0`) — this was flagged in Phase 0's own test comment as needing an
+  update once Phase 1 landed. Updated it to assert the repository now starts genuinely empty
+  (`expect(loaded).toEqual([])`).
+- Verification: `npm run test` — 3 test files, 8/8 passing. `npm run lint` — clean, zero warnings.
+  `npm run build` — clean production build, no errors. All three run after every substantive change,
+  not just once at the end.
+- Committed as `0475221`. Updated `PLAN.md` (Phase 1 checkboxes checked off, progress log entry
+  added) and this report. Nothing blocked or needing approval this session — no new dependencies,
+  no destructive git operations, no push (per plan, `git push` stays out of scope for the
+  unattended loop).
+- **Next up: Phase 2 (close CRUD gaps — Organization/Workspace/Feature Manifest/Rule Set/Tech
+  Stack/Cache/Logging/Encryption/Deployment/Authentication Profile/AI Agent/Plugins create+edit+
+  delete UI)** per `PLAN.md`.
+
 ## PLAN.md Phase 0 complete (2026-08-13)
 
 Dispatched a background subagent to implement Phase 0 (repository pattern). It delivered solid

@@ -147,6 +147,14 @@ Add Create + Edit + Delete UI (reuse existing modal/drawer/property-grid convent
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-13 — **Phase 1 complete**: `initialOrganizations`/`initialWorkspaces`/`initialProjects`/
+  `initialDecisionLogs` emptied to `[]` in `mockSeedData.ts`; catalog data (tech stacks, feature
+  manifests, rule presets, AI providers, templates, blueprints) left untouched. Added first-run
+  empty states to Header (org/workspace pickers), DashboardView (hero subtitle + decision log
+  panel), and DecisionLogsView (true empty state vs. no-search-matches state). Fixed
+  ProjectScaffolderView's hardcoded `'org-1'`/`'ws-1'` wizard defaults to degrade honestly.
+  Updated `project.repository.test.ts`'s stale fallback-to-seed-data assertion. Lint, build, and
+  Vitest (8/8) all green. (`0475221`) Next: Phase 2 (close CRUD gaps).
 - 2026-08-13 — **Phase 0 complete**: repository pattern in place across 7 services + 11 new
   repositories (`1560001`), Vitest installed with regression tests for the repository swap, Smart
   Dependencies, and the Zip Slip fix (`8322ce3`). Lint/build/test all green. Next: Phase 1 (remove
