@@ -523,15 +523,30 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
     };
   }
 
+  /**
+   * Strips path separators, ".." traversal segments, and leading dots from a single
+   * path component so user- or import-supplied names can never escape the zip root
+   * (Zip Slip) when used as a JSZip file/folder name.
+   */
+  private static sanitizeZipEntryName(name: string): string {
+    const cleaned = name
+      .replace(/[\\/]+/g, '_')
+      .split('_')
+      .filter((part) => part !== '' && part !== '.' && part !== '..')
+      .join('_');
+    return cleaned || 'unnamed';
+  }
+
   static async downloadSolutionZip(solutionTree: SolutionTreeNode[], projectName: string): Promise<void> {
     const zip = new JSZip();
 
     function addNodesToZip(nodes: SolutionTreeNode[], currentFolder: JSZip) {
       for (const node of nodes) {
+        const safeName = ProjectService.sanitizeZipEntryName(node.name);
         if (node.type === 'file') {
-          currentFolder.file(node.name, node.contentSnippet || '');
+          currentFolder.file(safeName, node.contentSnippet || '');
         } else if (node.type === 'folder' || node.type === 'project') {
-          const subFolder = currentFolder.folder(node.name);
+          const subFolder = currentFolder.folder(safeName);
           if (subFolder && node.children) {
             addNodesToZip(node.children, subFolder);
           }
@@ -539,7 +554,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
       }
     }
 
-    const rootFolder = zip.folder(projectName) || zip;
+    const rootFolder = zip.folder(ProjectService.sanitizeZipEntryName(projectName)) || zip;
     addNodesToZip(solutionTree, rootFolder);
 
     const blob = await zip.generateAsync({ type: 'blob' });
