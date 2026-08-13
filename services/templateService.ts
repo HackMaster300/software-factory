@@ -1,9 +1,9 @@
 import { Template, Blueprint } from '../types/factory';
-import { StorageService } from './storageService';
+import { templateRepository } from './repositories/template.repository';
 
 export class TemplateService {
   static getTemplates(): Template[] {
-    return StorageService.getTemplates();
+    return templateRepository.getTemplates();
   }
 
   static getTemplateById(id: string): Template | undefined {
@@ -18,7 +18,7 @@ export class TemplateService {
     } else {
       templates.push(template);
     }
-    StorageService.saveTemplates(templates);
+    templateRepository.saveTemplates(templates);
   }
 
   static updateTemplateBlueprint(templateId: string, blueprint: Blueprint): void {
@@ -27,7 +27,7 @@ export class TemplateService {
     if (template) {
       template.blueprint = blueprint;
       template.updatedAt = new Date().toISOString().slice(0, 10);
-      StorageService.saveTemplates(templates);
+      templateRepository.saveTemplates(templates);
     }
   }
 }

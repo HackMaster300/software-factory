@@ -1,11 +1,12 @@
 import { Blueprint, AdvisorScores, ScoreRationale } from '../types/factory';
-import { StorageService } from './storageService';
+import { featureManifestRepository } from './repositories/featureManifest.repository';
+import { techStackRepository } from './repositories/techStack.repository';
 import { FeatureService } from './featureService';
 
 export class AdvisorService {
   static calculateScores(blueprint: Blueprint): AdvisorScores {
-    const allFeatures = StorageService.getFeatureManifests();
-    const techStacks = StorageService.getTechStacks();
+    const allFeatures = featureManifestRepository.getFeatureManifests();
+    const techStacks = techStackRepository.getTechStacks();
     const selectedStack = techStacks.find((s) => s.id === blueprint.techStackId) || techStacks[0];
 
     const { activeFeatureIds, disabledRecommendedFeatures } = FeatureService.resolveBlueprintFeatures(blueprint);

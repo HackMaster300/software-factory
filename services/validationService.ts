@@ -1,11 +1,12 @@
 import { Blueprint, ValidationMessage } from '../types/factory';
-import { StorageService } from './storageService';
+import { ruleSetRepository } from './repositories/ruleSet.repository';
+import { profileRepository } from './repositories/profile.repository';
 import { FeatureService } from './featureService';
 
 export class ValidationService {
   static validateBlueprint(blueprint: Blueprint): ValidationMessage[] {
     const messages: ValidationMessage[] = [];
-    const ruleSets = StorageService.getRuleSets();
+    const ruleSets = ruleSetRepository.getRuleSets();
     const activeRuleSet = ruleSets.find((rs) => rs.id === blueprint.ruleSetId) || ruleSets[0];
     const { activeFeatureIds, disabledRecommendedFeatures } = FeatureService.resolveBlueprintFeatures(blueprint);
 
@@ -70,7 +71,7 @@ export class ValidationService {
     }
 
     // 3. Database & ORM Profile Compatibility Checks
-    const dbProfiles = StorageService.getDatabaseProfiles();
+    const dbProfiles = profileRepository.getDatabaseProfiles();
     const activeDbProf = dbProfiles.find((p) => p.id === blueprint.profiles.databaseProfileId);
     if (activeDbProf) {
       if (activeDbProf.provider === 'PostgreSQL' && !activeFeatureIds.includes('feat-postgres-ef')) {
@@ -88,7 +89,7 @@ export class ValidationService {
     }
 
     // 4. Security Profile Checks
-    const secProfiles = StorageService.getSecurityProfiles();
+    const secProfiles = profileRepository.getSecurityProfiles();
     const activeSecProf = secProfiles.find((p) => p.id === blueprint.profiles.securityProfileId);
     if (activeSecProf && activeSecProf.tokenLifetimeMinutes > 120) {
       messages.push({

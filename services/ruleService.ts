@@ -1,5 +1,5 @@
 import { RuleSet, Rule, Blueprint } from '../types/factory';
-import { StorageService } from './storageService';
+import { ruleSetRepository } from './repositories/ruleSet.repository';
 
 export interface RuleViolation {
   ruleId: string;
@@ -31,7 +31,7 @@ export interface RuleValidationReport {
 
 export class RuleService {
   static getRuleSets(): RuleSet[] {
-    return StorageService.getRuleSets();
+    return ruleSetRepository.getRuleSets();
   }
 
   static getRuleSetById(id: string): RuleSet | undefined {
@@ -45,7 +45,7 @@ export class RuleService {
       const rule = rs.rules.find((r) => r.id === ruleId);
       if (rule) {
         rule.isEnabled = isEnabled;
-        StorageService.saveRuleSets(ruleSets);
+        ruleSetRepository.saveRuleSets(ruleSets);
       }
     }
   }
@@ -55,7 +55,7 @@ export class RuleService {
     const rs = ruleSets.find((r) => r.id === ruleSetId);
     if (rs) {
       rs.rules.unshift(newRule);
-      StorageService.saveRuleSets(ruleSets);
+      ruleSetRepository.saveRuleSets(ruleSets);
     }
   }
 
@@ -64,7 +64,7 @@ export class RuleService {
     const rs = ruleSets.find((r) => r.id === ruleSetId);
     if (rs) {
       rs.rules = rs.rules.filter((r) => r.id !== ruleId);
-      StorageService.saveRuleSets(ruleSets);
+      ruleSetRepository.saveRuleSets(ruleSets);
     }
   }
 
@@ -78,7 +78,7 @@ export class RuleService {
       } else {
         rs.rules.push(updatedRule);
       }
-      StorageService.saveRuleSets(ruleSets);
+      ruleSetRepository.saveRuleSets(ruleSets);
     }
   }
 

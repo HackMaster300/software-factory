@@ -1,5 +1,6 @@
 import { Project, Blueprint, FeatureManifest } from '../types/factory';
-import { StorageService } from './storageService';
+import { projectRepository } from './repositories/project.repository';
+import { techStackRepository } from './repositories/techStack.repository';
 import { FeatureService } from './featureService';
 import JSZip from 'jszip';
 
@@ -25,7 +26,7 @@ export interface SolutionTreeNode {
 
 export class ProjectService {
   static getProjects(): Project[] {
-    return StorageService.getProjects();
+    return projectRepository.getProjects();
   }
 
   static getProjectById(id: string): Project | undefined {
@@ -40,7 +41,7 @@ export class ProjectService {
     } else {
       projects.push(project);
     }
-    StorageService.saveProjects(projects);
+    projectRepository.saveProjects(projects);
   }
 
   /**
@@ -122,7 +123,7 @@ export class ProjectService {
     const { activeFeatureIds } = FeatureService.resolveBlueprintFeatures(blueprint);
     const activeFeatures = allFeatures.filter((f) => activeFeatureIds.includes(f.id));
 
-    const techStacks = StorageService.getTechStacks();
+    const techStacks = techStackRepository.getTechStacks();
     const selectedStack = techStacks.find((s) => s.id === blueprint.techStackId) || techStacks[0];
     const lang = selectedStack?.language || 'csharp';
 

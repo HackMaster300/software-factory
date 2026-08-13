@@ -1,9 +1,9 @@
 import { FeatureManifest, Blueprint } from '../types/factory';
-import { StorageService } from './storageService';
+import { featureManifestRepository } from './repositories/featureManifest.repository';
 
 export class FeatureService {
   static getAllFeatures(): FeatureManifest[] {
-    return StorageService.getFeatureManifests();
+    return featureManifestRepository.getFeatureManifests();
   }
 
   static getFeatureById(id: string): FeatureManifest | undefined {
@@ -18,7 +18,7 @@ export class FeatureService {
     } else {
       features.push(feature);
     }
-    StorageService.saveFeatureManifests(features);
+    featureManifestRepository.saveFeatureManifests(features);
   }
 
   /**
