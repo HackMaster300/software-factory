@@ -18,15 +18,11 @@ import {
 } from '../types/factory';
 import { BlueprintService } from './blueprintService';
 
-export const initialOrganizations: Organization[] = [
-  { id: 'org-1', name: 'Acme Enterprise Solutions', code: 'ACME', plan: 'Enterprise' },
-  { id: 'org-2', name: 'FinTech Cloud Core', code: 'FTCC', plan: 'Team' },
-];
+// Phase 1 (see PLAN.md): fabricated Organization/Workspace history removed.
+// The app now starts genuinely empty — no invented orgs/workspaces are seeded.
+export const initialOrganizations: Organization[] = [];
 
-export const initialWorkspaces: Workspace[] = [
-  { id: 'ws-1', organizationId: 'org-1', name: 'Cloud Native Microservices', description: 'Core architecture standards for all backend microservices' },
-  { id: 'ws-2', organizationId: 'org-1', name: 'Frontend & API Blueprints', description: 'Web application and edge gateway templates' },
-];
+export const initialWorkspaces: Workspace[] = [];
 
 export const initialTechStacks: TechStack[] = [
   {
@@ -1067,69 +1063,11 @@ export const initialTemplates: Template[] = [
   },
 ];
 
-export const initialProjects: Project[] = [
-  {
-    id: 'proj-payment-gateway',
-    name: 'Core Payment Gateway Solution',
-    slug: 'core-payment-gateway',
-    description: 'High-security payment processing service handling PCI-DSS transactions, webhooks, and ledger sync',
-    organizationId: 'org-1',
-    workspaceId: 'ws-1',
-    templateId: 'tmpl-clean-dotnet9',
-    blueprint: initialBlueprints[0],
-    status: 'configuring',
-    createdAt: '2026-07-25',
-    updatedAt: '2026-08-02',
-    customConfig: {
-      merchantIdPrefix: 'MCH_',
-      enable3DSecure: true,
-    },
-  },
-  {
-    id: 'proj-identity-auth',
-    name: 'Enterprise Identity Authority Service',
-    slug: 'enterprise-identity-authority',
-    description: 'Centralized OAuth2 / OpenID Connect authorization server with multi-tenant RBAC policies',
-    organizationId: 'org-1',
-    workspaceId: 'ws-1',
-    templateId: 'tmpl-clean-dotnet9',
-    blueprint: initialBlueprints[0],
-    status: 'generated',
-    createdAt: '2026-07-10',
-    updatedAt: '2026-07-29',
-    customConfig: {},
-  },
-];
+// Phase 1 (see PLAN.md): fabricated Project/Decision Log usage history removed.
+// The app now starts genuinely empty — no invented projects/decisions are seeded.
+export const initialProjects: Project[] = [];
 
-export const initialDecisionLogs: DecisionLogItem[] = [
-  {
-    id: 'dec-101',
-    projectId: 'proj-payment-gateway',
-    decision: 'Selected PostgreSQL over SQL Server for core ledger persistence',
-    date: '2026-07-28 14:32',
-    reason: 'Reduced licensing cost by $45,000/yr and superior native JSONB indexing performance for payment metadata',
-    impact: 'Replaced System.Data.SqlClient with Npgsql.EFCore.PostgreSQL. Added Postgres service container to docker-compose.yml.',
-    warningsIgnored: ['SQL Server native stored procedures legacy migration requires EF Core LINQ rewrite'],
-    aiRecommendations: [
-      'Enable JSONB indexing on TransactionMetadata columns for sub-10ms query execution.',
-      'Configure connection pooling via PgBouncer in production cluster.',
-    ],
-    userJustification: 'PostgreSQL JSONB meets all metadata query requirements and matches our Kubernetes cloud native standard.',
-    author: 'Lead Architect (Alex Rivers)',
-  },
-  {
-    id: 'dec-102',
-    projectId: 'proj-payment-gateway',
-    decision: 'Activated Redis Distributed Caching for Idempotency Token Checks',
-    date: '2026-07-29 09:15',
-    reason: 'Prevent duplicate payment charges during transient network retry storms',
-    impact: 'Added StackExchange.Redis NuGet package, registered IDistributedCache in Infrastructure container.',
-    warningsIgnored: [],
-    aiRecommendations: ['Set idempotency token TTL to 24 hours in Redis.'],
-    userJustification: 'Idempotency is mandatory for PCI-DSS compliance.',
-    author: 'Security Architect (Elena Vance)',
-  },
-];
+export const initialDecisionLogs: DecisionLogItem[] = [];
 
 export const initialAIProviders: AIProviderConfig[] = [
   {

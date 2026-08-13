@@ -62,14 +62,28 @@ of verifying every subsequent phase.
 
 ## Phase 1 — Remove invented data, start genuinely empty
 
-- [ ] Strip fictional Organizations/Workspaces/Projects/Decision Logs from `mockSeedData.ts`.
-- [ ] Keep legitimate reference/catalog data (Tech Stack definitions, Feature Manifest library,
+- [x] Strip fictional Organizations/Workspaces/Projects/Decision Logs from `mockSeedData.ts`.
+      (`initialOrganizations`, `initialWorkspaces`, `initialProjects`, `initialDecisionLogs` are
+      now `[]`.)
+- [x] Keep legitimate reference/catalog data (Tech Stack definitions, Feature Manifest library,
       Rule presets, supported AI provider list) — that's platform knowledge, not fabricated user
-      history. Audit it for anything presented as a real measurement (benchmarks, costs) that
-      isn't.
-- [ ] Add a first-run empty state / onboarding prompt ("Create your first Organization") wherever
-      the org/workspace/project lists are now empty by default.
-- [ ] Confirm every list view has the empty-state pattern already established this session.
+      history. Left `initialTechStacks`, `initialFeatureManifests`, `initialRuleSets`,
+      `initialTemplates`, `initialBlueprints`, `initialAIProviders`, `initialPromptTemplates`, and
+      the profile catalogs untouched, per explicit scope. (Note: `initialAIProviders`'
+      `costPer1k`/`latency` fields are still illustrative placeholder numbers, not measured
+      benchmarks — flagged here for a future pass; out of scope to alter in this phase per the
+      explicit "keep exactly as-is" instruction.)
+- [x] Add a first-run empty state / onboarding prompt wherever the org/workspace/project/decision
+      lists are now empty by default: Header's org/workspace dropdowns now show "No organization
+      yet" / "No workspace yet" instead of an empty `<select>`; DashboardView's decision-log panel
+      and hero subtitle no longer assume seeded data (`{organizations[0]?.name || 'No organization
+      yet'}`); DecisionLogsView now distinguishes a true first-run empty state ("Log your first
+      decision") from a search-with-no-matches state.
+- [x] Confirm every list view has the empty-state pattern already established this session — audited
+      Header, DashboardView, DecisionLogsView, and ProjectScaffolderView (the latter had no list to
+      empty, only a wizard default that referenced hardcoded `'org-1'`/`'ws-1'` — switched to
+      `StorageService.getOrganizations()[0]?.id || ''` so it degrades honestly instead of pointing
+      at a non-existent org).
 
 ## Phase 2 — Close CRUD gaps (the original "create everything" list)
 

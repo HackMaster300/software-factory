@@ -49,7 +49,7 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
     if (!newDecision.trim() || !newReason.trim()) return;
 
     const created = DecisionService.addDecisionLog({
-      projectId: 'proj-acme-1',
+      projectId: 'unassigned',
       decision: newDecision,
       reason: newReason,
       impact: newImpact || 'Architectural compliance verified against enterprise policy.',
@@ -133,16 +133,32 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
           </div>
 
           <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
-            {filteredLogs.length === 0 && (
-              <div className="text-center py-10 space-y-1 text-gray-500">
-                <p className="text-xs">No decision logs match &quot;{searchQuery}&quot;.</p>
+            {logs.length === 0 ? (
+              <div className="text-center py-10 space-y-2 text-gray-500">
+                <FileSpreadsheet className="w-6 h-6 mx-auto text-gray-600" aria-hidden="true" />
+                <p className="text-xs">No architectural decisions logged yet.</p>
+                <p className="text-[11px] text-gray-600">
+                  Decisions record the &quot;why&quot; behind architecture choices as you build.
+                </p>
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => setShowAddModal(true)}
                   className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
                 >
-                  Clear search
+                  Log your first decision
                 </button>
               </div>
+            ) : (
+              filteredLogs.length === 0 && (
+                <div className="text-center py-10 space-y-1 text-gray-500">
+                  <p className="text-xs">No decision logs match &quot;{searchQuery}&quot;.</p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )
             )}
 
             {filteredLogs.map((log) => {
@@ -250,7 +266,11 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
               )}
             </>
           ) : (
-            <div className="text-gray-500 text-center py-10">Select an ADR decision record to view details.</div>
+            <div className="text-gray-500 text-center py-10">
+              {logs.length === 0
+                ? 'No decisions recorded yet. Log your first architectural decision to see it here.'
+                : 'Select an ADR decision record to view details.'}
+            </div>
           )}
         </div>
       </div>

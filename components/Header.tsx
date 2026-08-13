@@ -42,8 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const orgs = useOrganizations();
   const workspaces = useWorkspaces();
-  const [selectedOrgId, setSelectedOrgId] = useState('org-1');
-  const [selectedWsId, setSelectedWsId] = useState('ws-1');
+  const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [selectedWsId, setSelectedWsId] = useState('');
 
   const validationMsgs = ValidationService.validateBlueprint(selectedBlueprint);
   const scores = AdvisorService.calculateScores(selectedBlueprint);
@@ -115,34 +115,42 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="hidden md:flex items-center gap-2 text-xs">
           <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340]">
             <Building2 className="w-3.5 h-3.5 text-gray-400" />
-            <select
-              value={selectedOrgId}
-              onChange={(e) => setSelectedOrgId(e.target.value)}
-              className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
-            >
-              {orgs.map((o) => (
-                <option key={o.id} value={o.id} className="bg-[#1c1f26] text-gray-200">
-                  {o.name}
-                </option>
-              ))}
-            </select>
+            {orgs.length > 0 ? (
+              <select
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
+                className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
+              >
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id} className="bg-[#1c1f26] text-gray-200">
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-gray-500 italic">No organization yet</span>
+            )}
           </div>
 
           <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
 
           <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340]">
             <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
-            <select
-              value={selectedWsId}
-              onChange={(e) => setSelectedWsId(e.target.value)}
-              className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
-            >
-              {workspaces.map((w) => (
-                <option key={w.id} value={w.id} className="bg-[#1c1f26] text-gray-200">
-                  {w.name}
-                </option>
-              ))}
-            </select>
+            {workspaces.length > 0 ? (
+              <select
+                value={selectedWsId}
+                onChange={(e) => setSelectedWsId(e.target.value)}
+                className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
+              >
+                {workspaces.map((w) => (
+                  <option key={w.id} value={w.id} className="bg-[#1c1f26] text-gray-200">
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-gray-500 italic">No workspace yet</span>
+            )}
           </div>
         </div>
 

@@ -24,6 +24,7 @@ import {
   useProjects,
   useRuleSets,
   useDecisionLogs,
+  useOrganizations,
 } from '../../services/storageService';
 import { AdvisorService } from '../../services/advisorService';
 import { ValidationService } from '../../services/validationService';
@@ -44,6 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const projects = useProjects();
   const ruleSets = useRuleSets();
   const decisionLogs = useDecisionLogs();
+  const organizations = useOrganizations();
 
   const scores = AdvisorService.calculateScores(selectedBlueprint);
   const validationMsgs = ValidationService.validateBlueprint(selectedBlueprint);
@@ -60,7 +62,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Factory Operating System
             </span>
             <span className="text-gray-500 text-xs">•</span>
-            <span className="text-xs text-gray-400 font-mono">Acme Enterprise Workspaces</span>
+            <span className="text-xs text-gray-400 font-mono">
+              {organizations[0]?.name || 'No organization yet'}
+            </span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">Software Factory Engineering Control Plane</h1>
           <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
@@ -237,16 +241,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
-            {decisionLogs.slice(0, 3).map((log) => (
-              <div key={log.id} className="p-3 bg-[#13151b] border border-[#262934] rounded-lg space-y-1.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-semibold text-gray-200 text-xs">{log.decision}</div>
-                  <span className="text-[10px] font-mono text-gray-500 shrink-0">{log.date}</span>
-                </div>
-                <div className="text-[11px] text-gray-400 leading-normal">{log.reason}</div>
-                <div className="text-[10px] font-mono text-blue-400">{log.author}</div>
+            {decisionLogs.length === 0 ? (
+              <div className="text-center py-6 space-y-2 text-gray-500">
+                <GitCommit className="w-5 h-5 mx-auto text-gray-600" aria-hidden="true" />
+                <p className="text-xs">No architectural decisions logged yet.</p>
+                <button
+                  onClick={() => setActiveView('decisions')}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                >
+                  Log your first decision
+                </button>
               </div>
-            ))}
+            ) : (
+              decisionLogs.slice(0, 3).map((log) => (
+                <div key={log.id} className="p-3 bg-[#13151b] border border-[#262934] rounded-lg space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-semibold text-gray-200 text-xs">{log.decision}</div>
+                    <span className="text-[10px] font-mono text-gray-500 shrink-0">{log.date}</span>
+                  </div>
+                  <div className="text-[11px] text-gray-400 leading-normal">{log.reason}</div>
+                  <div className="text-[10px] font-mono text-blue-400">{log.author}</div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Quick Tools */}

@@ -46,10 +46,8 @@ describe('projectRepository (LocalStorageProjectRepository)', () => {
     expect(loaded[0].id).toBe('proj-test-1');
   });
 
-  it('falls back to the seeded default projects when nothing has been saved yet', () => {
-    // NOTE: this seed-data fallback is exactly what PLAN.md Phase 1 removes
-    // (no invented/fake data) — update this test when that lands.
+  it('starts genuinely empty when nothing has been saved yet (PLAN.md Phase 1: no invented seed data)', () => {
     const loaded = projectRepository.getProjects();
-    expect(loaded.length).toBeGreaterThan(0);
+    expect(loaded).toEqual([]);
   });
 });
