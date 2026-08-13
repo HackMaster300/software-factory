@@ -16,8 +16,7 @@ import {
   ArrowRight,
   ShieldAlert,
 } from 'lucide-react';
-import { DecisionLogItem } from '../../types/factory';
-import { StorageService } from '../../services/storageService';
+import { useDecisionLogs } from '../../services/storageService';
 import { DecisionService } from '../../services/decisionService';
 
 interface DecisionLogsViewProps {
@@ -25,7 +24,7 @@ interface DecisionLogsViewProps {
 }
 
 export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefactor }) => {
-  const [logs, setLogs] = useState<DecisionLogItem[]>(StorageService.getDecisionLogs());
+  const logs = useDecisionLogs();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLogId, setSelectedLogId] = useState<string>(logs[0]?.id || '');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -60,7 +59,6 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
       author: newAuthor,
     });
 
-    setLogs(StorageService.getDecisionLogs());
     setSelectedLogId(created.id);
     setNewDecision('');
     setNewReason('');
