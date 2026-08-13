@@ -1160,8 +1160,9 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       onClick={() => handleRemoveModule(proj.id)}
                       className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 transition-colors cursor-pointer"
                       title="Remove module"
+                      aria-label={`Remove module ${proj.name}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                   </div>
 
@@ -1282,8 +1283,9 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                                 onClick={() => handleRemovePackageFromProj(proj.id, pkg.name)}
                                 className="text-gray-500 hover:text-red-400 p-0.5 rounded cursor-pointer"
                                 title="Remove package"
+                                aria-label={`Remove package ${pkg.name}`}
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3 h-3" aria-hidden="true" />
                               </button>
                             </div>
                           </div>
@@ -1509,6 +1511,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                         onClick={() => handleRemoveEnvVar(v.key)}
                         className="text-gray-500 hover:text-red-400 p-1 cursor-pointer"
                         title="Delete key"
+                        aria-label={`Delete environment variable ${v.key}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1733,9 +1736,10 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
               </div>
               <button
                 onClick={() => setShowIdeExportModal(false)}
+                aria-label="Close export dialog"
                 className="p-1 text-gray-400 hover:text-white rounded-lg bg-[#1e2230] hover:bg-[#282d40] cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
