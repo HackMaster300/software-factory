@@ -2,6 +2,20 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-13 (real unattended run starting now)
+
+**Detected stack:** Next.js 15 (App Router) + React 19 + TypeScript, Tailwind v4, client-side state in `localStorage`. Same as previous session.
+
+**Status:** In progress — this is the first real unattended `going-home-front` run (`ScheduleWakeup` loop active with the `<<autonomous-loop-dynamic>>` prompt). The user is stepping away; this session will keep cycling review mode → improvement mode until runway is nearly exhausted.
+
+- Did (this cycle, still supervised/manual before handing off to the loop):
+  - Fixed remaining icon-only buttons with no accessible name in `components/views/ProjectScaffolderView.tsx`: close-export-modal (`X`, had neither title nor aria-label), remove-module, remove-package, delete-env-var (these three had `title` but no `aria-label`). Added `aria-label` (naming the specific item where relevant) and `aria-hidden="true"` on their icons.
+  - Verified: `npm run lint` and `npm run build` both clean after the change. Committed as `c0a23c0`.
+- New features/improvements added: none this cycle (pure a11y fix, continuing from previous session's findings).
+- Found but needs your approval: **adding a test framework** (e.g. Vitest) — there is currently no test suite of any kind in this repo (no Jest/Vitest/Playwright config). This is the single highest-value next improvement, but it requires a new `devDependency`, which is outside this skill's auto-approve scope. Recommend approving `vitest` (or your preferred alternative) so the loop can add real unit tests for the pure logic in `services/*.ts`.
+- Blocked on: the above approval, for that specific item only — the loop will continue with other independent work (rest of the accessibility/design pass across `components/views/*.tsx`, further code/architecture review) in the meantime rather than stalling.
+- Next step if continuing: full accessibility + design pass across the remaining `components/views/*.tsx` files (most were not yet reviewed in depth: `AIPromptsView`, `BlueprintsView`, `DashboardView`, `DecisionLogsView`, `FeatureManifestsView`, `ImpactAnalyzerView`, `RuleEngineView`, `TechStacksView`), then move into improvement mode for real feature additions once review is clean.
+
 ## Session — 2026-08-12 (supervised test run)
 
 **Detected stack:** Next.js 15 (App Router) + React 19 + TypeScript, Tailwind v4, client-side state persisted in `localStorage` (no backend DB). Single API route (`/api/gemini/generate`) proxying Google Gemini with a graceful simulated-response fallback when no API key is set.
