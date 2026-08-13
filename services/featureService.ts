@@ -66,7 +66,6 @@ export class FeatureService {
         for (const recId of feat.recommendedDependencies || []) {
           if (disabledSet.has(recId)) {
             // User explicitly disabled this recommended feature!
-            const recFeat = allFeatures.find((f) => f.id === recId);
             disabledRecommendedFeatures.push({
               id: recId,
               reason: `Recommended by '${feat.name}' but explicitly disabled by architect`,
@@ -74,7 +73,6 @@ export class FeatureService {
           } else if (!activeSet.has(recId)) {
             // Auto-activate recommended feature
             activeSet.add(recId);
-            const recFeat = allFeatures.find((f) => f.id === recId);
             autoActivatedFeatures.push({
               id: recId,
               reason: `Automatically recommended by '${feat.name}' (Smart Dependency)`,
