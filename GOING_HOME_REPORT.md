@@ -2,6 +2,18 @@
 
 Autonomous work log. Newest session on top.
 
+## PLAN.md is now the source of truth (added 2026-08-13, `3a5714d`)
+
+The user reviewed how the current app compares to their original vision (`pipelines/context.md`)
+and gave a new, larger mandate: repository-pattern architecture, remove invented/fake seed data,
+close CRUD gaps for entities that should be user-creatable, let the user bring their own AI
+provider API key, and clean up visual design + responsiveness. Full detail and phase breakdown is
+in `PLAN.md` at the repo root — **read that file first at the start of every cycle from now on**
+and work through its phases in order, checking items off with commit hashes as they land. The
+ad-hoc "review mode / improvement mode" cycles below this point are superseded by `PLAN.md` for
+as long as it has unchecked items; fall back to general review/improvement mode only once it's
+fully checked off.
+
 ## Session — 2026-08-13 (real unattended run starting now)
 
 **Detected stack:** Next.js 15 (App Router) + React 19 + TypeScript, Tailwind v4, client-side state in `localStorage`. Same as previous session.
