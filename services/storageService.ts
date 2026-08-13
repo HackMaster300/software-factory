@@ -15,6 +15,8 @@ import {
   DecisionLogItem,
   AIProviderConfig,
   PromptTemplate,
+  AIAgent,
+  Plugin,
 } from '../types/factory';
 
 import {
@@ -33,6 +35,8 @@ import {
   initialDecisionLogs,
   initialAIProviders,
   initialPromptTemplates,
+  initialAIAgents,
+  initialPlugins,
 } from './mockSeedData';
 
 const STORAGE_KEYS = {
@@ -51,6 +55,8 @@ const STORAGE_KEYS = {
   DECISION_LOGS: 'sf_decision_logs_v2',
   AI_PROVIDERS: 'sf_ai_providers_v2',
   PROMPT_TEMPLATES: 'sf_prompt_templates_v2',
+  AI_AGENTS: 'sf_ai_agents_v2',
+  PLUGINS: 'sf_plugins_v2',
 };
 
 type StorageListener = () => void;
@@ -123,6 +129,14 @@ export function usePromptTemplates() {
   return useStorage(() => StorageService.getPromptTemplates(), initialPromptTemplates);
 }
 
+export function useAIAgents() {
+  return useStorage(() => StorageService.getAIAgents(), initialAIAgents);
+}
+
+export function usePlugins() {
+  return useStorage(() => StorageService.getPlugins(), initialPlugins);
+}
+
 const memoryCache: Record<string, { raw: string | null; parsed: any }> = {};
 
 function getItem<T>(key: string, defaultValue: T): T {
@@ -184,6 +198,8 @@ export class StorageService {
       setItem(STORAGE_KEYS.DECISION_LOGS, initialDecisionLogs);
       setItem(STORAGE_KEYS.AI_PROVIDERS, initialAIProviders);
       setItem(STORAGE_KEYS.PROMPT_TEMPLATES, initialPromptTemplates);
+      setItem(STORAGE_KEYS.AI_AGENTS, initialAIAgents);
+      setItem(STORAGE_KEYS.PLUGINS, initialPlugins);
     }
   }
 
@@ -191,8 +207,16 @@ export class StorageService {
     return getItem(STORAGE_KEYS.ORGANIZATIONS, initialOrganizations);
   }
 
+  static saveOrganizations(organizations: Organization[]): void {
+    setItem(STORAGE_KEYS.ORGANIZATIONS, organizations);
+  }
+
   static getWorkspaces(): Workspace[] {
     return getItem(STORAGE_KEYS.WORKSPACES, initialWorkspaces);
+  }
+
+  static saveWorkspaces(workspaces: Workspace[]): void {
+    setItem(STORAGE_KEYS.WORKSPACES, workspaces);
   }
 
   static getTechStacks(): TechStack[] {
@@ -275,6 +299,22 @@ export class StorageService {
     setItem(STORAGE_KEYS.PROMPT_TEMPLATES, prompts);
   }
 
+  static getAIAgents(): AIAgent[] {
+    return getItem(STORAGE_KEYS.AI_AGENTS, initialAIAgents);
+  }
+
+  static saveAIAgents(agents: AIAgent[]): void {
+    setItem(STORAGE_KEYS.AI_AGENTS, agents);
+  }
+
+  static getPlugins(): Plugin[] {
+    return getItem(STORAGE_KEYS.PLUGINS, initialPlugins);
+  }
+
+  static savePlugins(plugins: Plugin[]): void {
+    setItem(STORAGE_KEYS.PLUGINS, plugins);
+  }
+
   static exportFullWorkspaceState(): string {
     const data = {
       organizations: this.getOrganizations(),
@@ -287,6 +327,8 @@ export class StorageService {
       decisionLogs: this.getDecisionLogs(),
       aiProviders: this.getAIProviders(),
       promptTemplates: this.getPromptTemplates(),
+      aiAgents: this.getAIAgents(),
+      plugins: this.getPlugins(),
       exportedAt: new Date().toISOString(),
     };
     return JSON.stringify(data, null, 2);
@@ -300,6 +342,10 @@ export class StorageService {
       if (data.projects) setItem(STORAGE_KEYS.PROJECTS, data.projects);
       if (data.ruleSets) setItem(STORAGE_KEYS.RULE_SETS, data.ruleSets);
       if (data.decisionLogs) setItem(STORAGE_KEYS.DECISION_LOGS, data.decisionLogs);
+      if (data.organizations) setItem(STORAGE_KEYS.ORGANIZATIONS, data.organizations);
+      if (data.workspaces) setItem(STORAGE_KEYS.WORKSPACES, data.workspaces);
+      if (data.aiAgents) setItem(STORAGE_KEYS.AI_AGENTS, data.aiAgents);
+      if (data.plugins) setItem(STORAGE_KEYS.PLUGINS, data.plugins);
       notifyStorageChange();
       return true;
     } catch (e) {

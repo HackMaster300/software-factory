@@ -15,6 +15,8 @@ import {
   DecisionLogItem,
   AIProviderConfig,
   PromptTemplate,
+  AIAgent,
+  Plugin,
 } from '../types/factory';
 import { BlueprintService } from './blueprintService';
 
@@ -23,6 +25,12 @@ import { BlueprintService } from './blueprintService';
 export const initialOrganizations: Organization[] = [];
 
 export const initialWorkspaces: Workspace[] = [];
+
+// Phase 2a (see PLAN.md): AI Agent and Plugin are net-new entities. No fabricated
+// history — the app starts genuinely empty for these too.
+export const initialAIAgents: AIAgent[] = [];
+
+export const initialPlugins: Plugin[] = [];
 
 export const initialTechStacks: TechStack[] = [
   {

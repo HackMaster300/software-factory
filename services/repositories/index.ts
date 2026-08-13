@@ -9,3 +9,5 @@ export * from './promptTemplate.repository';
 export * from './decisionLog.repository';
 export * from './organization.repository';
 export * from './workspace.repository';
+export * from './aiAgent.repository';
+export * from './plugin.repository';

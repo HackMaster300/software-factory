@@ -287,6 +287,21 @@ export interface Workspace {
   description: string;
 }
 
+export interface AIAgent {
+  id: string;
+  name: string;
+  description: string;
+  systemPromptStyle: string;
+}
+
+export interface Plugin {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  isActive: boolean;
+}
+
 export interface AffectedComponentImpact {
   type: 'ConnectionString' | 'Package' | 'Docker' | 'HealthCheck' | 'ORMProvider' | 'MigrationProject' | 'Documentation' | 'CodeFile';
   name: string;
