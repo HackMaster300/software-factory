@@ -21,6 +21,9 @@ import {
 import { AIService } from '../services/aiService';
 import { Blueprint } from '../types/factory';
 import { useAIAgents, useAIProviders } from '../services/storageService';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Badge } from './ui/Badge';
 
 interface AIAssistantDrawerProps {
   isOpen: boolean;
@@ -183,11 +186,7 @@ User Request: ${currentPrompt}
                 <>
                   <Bot className="w-3 h-3 text-blue-400" />
                   <span className="font-semibold text-blue-300">{msg.role}</span>
-                  {msg.isSimulated && (
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-                      Offline Mode
-                    </span>
-                  )}
+                  {msg.isSimulated && <Badge tone="warning">Offline Mode</Badge>}
                 </>
               )}
               <span>• {msg.timestamp}</span>
@@ -208,7 +207,7 @@ User Request: ${currentPrompt}
                     onClick={() => handleCopy(msg.id, msg.text)}
                     className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white cursor-pointer"
                   >
-                    {copiedId === msg.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    {copiedId === msg.id ? <Check className="w-3 h-3 text-emerald-400" aria-hidden="true" /> : <Copy className="w-3 h-3" aria-hidden="true" />}
                     <span>{copiedId === msg.id ? 'Copied' : 'Copy Response'}</span>
                   </button>
                 </div>
@@ -227,23 +226,18 @@ User Request: ${currentPrompt}
 
       {/* Input Form */}
       <div className="p-3 border-t border-[#2e3342] bg-[#181a22]">
-        <div className="flex items-center gap-2 bg-[#202430] border border-[#303648] rounded-lg p-1.5 focus-within:border-blue-500 transition-colors">
-          <input
+        <div className="flex items-center gap-2">
+          <Input
             type="text"
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={`Ask ${selectedRole} for advice or review...`}
-            className="flex-1 bg-transparent px-2 text-xs text-gray-100 focus:outline-none placeholder-gray-500"
+            className="flex-1"
           />
-          <button
-            onClick={handleSend}
-            disabled={!inputPrompt.trim() || isLoading}
-            aria-label="Send prompt"
-            className="p-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-40 disabled:hover:bg-blue-600 transition-colors cursor-pointer"
-          >
+          <Button variant="primary" size="icon" onClick={handleSend} disabled={!inputPrompt.trim() || isLoading} aria-label="Send prompt">
             <Send className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
         <div className="mt-1.5 text-[10px] text-gray-500 text-center font-mono">
           AI suggests architecture & trade-offs • Final decisions belong to the Architect
