@@ -24,6 +24,8 @@ import { ValidationService } from '../services/validationService';
 import { AdvisorService } from '../services/advisorService';
 import { Blueprint } from '../types/factory';
 import { OrganizationWorkspaceModal } from './OrganizationWorkspaceModal';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
 
 interface HeaderProps {
   activeView: string;
@@ -128,9 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Cpu className="w-4 h-4" />
           </div>
           <span className="font-semibold text-white tracking-tight mono-font">SoftwareFactory</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">
-            IDE v2.5
-          </span>
+          <Badge tone="brand" className="normal-case">IDE v2.5</Badge>
         </div>
 
         {/* Org & Workspace Picker */}
@@ -175,14 +175,16 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setIsOrgModalOpen(true)}
             title="Manage Organizations & Workspaces"
             aria-label="Manage Organizations & Workspaces"
-            className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-[#1c1f26] rounded border border-transparent hover:border-[#2e3340] cursor-pointer"
+            className="hover:text-blue-400"
           >
             <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
 
         {/* Active View Title */}
@@ -239,54 +241,59 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* + New Project Quick Action Button */}
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => setActiveView('scaffolder')}
           aria-label="New Project"
-          className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer shadow-sm shadow-blue-600/30"
         >
           <Plus className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">New Project</span>
-        </button>
+        </Button>
 
         {/* AI Architect Assistant Button */}
-        <button
+        <Button
+          size="sm"
           onClick={toggleAIDrawer}
           aria-label="AI Architect"
           aria-pressed={isAIDrawerOpen}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+          className={
             isAIDrawerOpen
-              ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30'
-              : 'bg-[#1c2230] text-blue-300 border-blue-500/30 hover:bg-blue-900/30'
-          }`}
+              ? 'bg-blue-600 text-white border border-blue-500 shadow-sm shadow-blue-500/30 hover:bg-blue-500'
+              : 'bg-[#1c2230] text-blue-300 border border-blue-500/30 hover:bg-blue-900/30'
+          }
         >
           <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">AI Architect</span>
-        </button>
+        </Button>
 
         {/* Reset Data & JSON Backup */}
         <div className="flex items-center gap-1 pl-2 border-l border-[#2b303c]">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleExportState}
             title="Export Workspace JSON"
             aria-label="Export Workspace JSON"
-            className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-[#222630] rounded cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          </Button>
 
-          <label title="Import Workspace JSON" aria-label="Import Workspace JSON" className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-[#222630] rounded cursor-pointer">
+          <label title="Import Workspace JSON" aria-label="Import Workspace JSON" className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-[#1c2029] rounded-md cursor-pointer">
             <Upload className="w-3.5 h-3.5" aria-hidden="true" />
             <input type="file" accept=".json" onChange={handleImportState} className="hidden" />
           </label>
 
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleResetData}
             title="Reset to Factory Seed Data"
             aria-label="Reset to Factory Seed Data"
-            className="p-1.5 text-gray-400 hover:text-amber-400 hover:bg-[#222630] rounded cursor-pointer"
+            className="hover:text-amber-400"
           >
             <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
       </div>
 

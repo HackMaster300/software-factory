@@ -15,6 +15,8 @@ import {
   HelpCircle,
   Puzzle,
 } from 'lucide-react';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
 
 interface SidebarProps {
   activeView: string;
@@ -45,13 +47,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
         </div>
 
         <div className="px-2 mb-2">
-          <button
+          <Button
+            variant="primary"
             onClick={() => setActiveView('scaffolder')}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all cursor-pointer shadow-md shadow-blue-600/30"
+            className="w-full rounded-lg py-2"
           >
             <Wand2 className="w-3.5 h-3.5" />
             <span>+ New Project</span>
-          </button>
+          </Button>
         </div>
 
         <nav className="mt-1 space-y-0.5 px-1.5">
@@ -62,10 +65,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
               <button
                 key={item.id}
                 onClick={() => setActiveView(item.id)}
-                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 shadow-sm'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1d24]'
+                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1d24] border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-2.5 truncate">
@@ -73,13 +76,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span
-                    className={`text-[9px] font-mono px-1.5 py-0.2 rounded ${
-                      isActive ? 'bg-blue-500/30 text-blue-200' : 'bg-[#222630] text-gray-400'
-                    }`}
-                  >
+                  <Badge tone={isActive ? 'brand' : 'neutral'} className="border-0 normal-case">
                     {item.badge}
-                  </span>
+                  </Badge>
                 )}
               </button>
             );

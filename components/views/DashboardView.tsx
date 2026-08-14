@@ -29,6 +29,9 @@ import {
 import { AdvisorService } from '../../services/advisorService';
 import { ValidationService } from '../../services/validationService';
 import { Blueprint } from '../../types/factory';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
 
 interface DashboardViewProps {
   setActiveView: (view: string) => void;
@@ -55,12 +58,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Hero Header */}
-      <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-lg">
+      <Card className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-mono font-semibold uppercase">
-              Factory Operating System
-            </span>
+            <Badge tone="brand">Factory Operating System</Badge>
             <span className="text-gray-500 text-xs">•</span>
             <span className="text-xs text-gray-400 font-mono">
               {organizations[0]?.name || 'No organization yet'}
@@ -73,70 +74,66 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setActiveView('scaffolder')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-blue-600/30 transition-all cursor-pointer"
-          >
+          <Button variant="primary" onClick={() => setActiveView('scaffolder')}>
             <Wand2 className="w-4 h-4" />
             <span>Launch Solution Wizard</span>
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      {/* Metrics Row */}
+      {/* Metrics Row — a single brand accent (blue) plus real status color
+          (emerald/red for validation), instead of a different decorative
+          hue per card. */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-lg p-3.5 space-y-1">
+        <Card className="p-3 space-y-1">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-medium">Quality Index</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-xl font-bold text-emerald-400 font-mono">{scores.qualityScore}%</div>
+          <div className="text-xl font-bold text-white font-mono">{scores.qualityScore}%</div>
           <div className="text-[10px] text-gray-500">Real-time score</div>
-        </div>
+        </Card>
 
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-lg p-3.5 space-y-1">
+        <Card className="p-3 space-y-1">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-medium">Active Templates</span>
             <Layers className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-xl font-bold text-white font-mono">{templates.length}</div>
-          <div className="text-[10px] text-blue-400 font-mono">Enterprise Standard</div>
-        </div>
+          <div className="text-[10px] text-gray-500">Enterprise Standard</div>
+        </Card>
 
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-lg p-3.5 space-y-1">
+        <Card className="p-3 space-y-1">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-medium">Feature Manifests</span>
-            <Box className="w-4 h-4 text-purple-400" />
+            <Box className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-xl font-bold text-white font-mono">{features.length}</div>
-          <div className="text-[10px] text-purple-400 font-mono">Smart Modules</div>
-        </div>
+          <div className="text-[10px] text-gray-500">Smart Modules</div>
+        </Card>
 
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-lg p-3.5 space-y-1">
+        <Card className="p-3 space-y-1">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-medium">Rule Policies</span>
-            <Cpu className="w-4 h-4 text-amber-400" />
+            <Cpu className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-xl font-bold text-white font-mono">{ruleSets[0]?.rules.length || 6}</div>
-          <div className="text-[10px] text-amber-400 font-mono">Enforced</div>
-        </div>
+          <div className="text-[10px] text-gray-500">Enforced</div>
+        </Card>
 
-        <div
-          onClick={() => setActiveView('scaffolder')}
-          className="bg-[#181a20] border border-[#2b303d] hover:border-cyan-500/50 cursor-pointer transition-all rounded-lg p-3.5 space-y-1 group"
-        >
+        <Card interactive onClick={() => setActiveView('scaffolder')} className="p-3 space-y-1 group">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[11px] font-medium group-hover:text-cyan-300">Active Projects</span>
-            <Server className="w-4 h-4 text-cyan-400" />
+            <span className="text-[11px] font-medium group-hover:text-blue-300">Active Projects</span>
+            <Server className="w-4 h-4 text-blue-400" />
           </div>
           <div className="text-xl font-bold text-white font-mono">{projects.length}</div>
-          <div className="text-[10px] text-cyan-400 font-mono flex items-center gap-1">
+          <div className="text-[10px] text-blue-400 font-mono flex items-center gap-1">
             <span>+ Create Project</span>
             <ArrowRight className="w-3 h-3" />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-lg p-3.5 space-y-1">
+        <Card className="p-3 space-y-1">
           <div className="flex items-center justify-between text-gray-400">
             <span className="text-[11px] font-medium">Validation Status</span>
             {errorCount > 0 ? (
@@ -153,7 +150,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             )}
           </div>
           <div className="text-[10px] text-gray-500">{warningCount} Warnings</div>
-        </div>
+        </Card>
       </div>
 
       {/* Main Grid: Active Templates & Recent Decision Log */}
@@ -176,40 +173,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="space-y-3">
             {templates.map((tmpl) => (
-              <div
-                key={tmpl.id}
-                className="bg-[#181a20] border border-[#2b303d] hover:border-blue-500/50 rounded-xl p-4 transition-all space-y-3 group"
-              >
+              <Card key={tmpl.id} className="p-4 space-y-3 group hover:border-blue-500/50">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-gray-100 text-sm group-hover:text-blue-300 transition-colors">
                         {tmpl.name}
                       </span>
-                      {tmpl.isOfficial && (
-                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono">
-                          Official
-                        </span>
-                      )}
+                      {tmpl.isOfficial && <Badge tone="success">Official</Badge>}
                       <span className="text-xs font-mono text-gray-500">v{tmpl.version}</span>
                     </div>
                     <p className="text-xs text-gray-400 leading-relaxed">{tmpl.description}</p>
                   </div>
 
-                  <button
-                    onClick={() => setActiveView('scaffolder')}
-                    className="px-3 py-1.5 bg-[#222733] hover:bg-blue-600 text-gray-300 hover:text-white rounded-md text-xs font-medium transition-colors cursor-pointer shrink-0"
-                  >
+                  <Button size="sm" onClick={() => setActiveView('scaffolder')} className="shrink-0">
                     Use Template
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#262a36] text-[11px] text-gray-400">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {tmpl.tags.map((tag) => (
-                      <span key={tag} className="px-2 py-0.5 rounded bg-[#202430] border border-[#2e3444] text-gray-300 text-[10px] font-mono">
-                        {tag}
-                      </span>
+                      <Badge key={tag} className="normal-case">{tag}</Badge>
                     ))}
                   </div>
 
@@ -219,7 +204,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <span>{tmpl.blueprint.featureIds.length} Features</span>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -228,7 +213,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-              <GitCommit className="w-4 h-4 text-purple-400" />
+              <GitCommit className="w-4 h-4 text-blue-400" />
               <span>Architectural Decision Log</span>
             </h2>
             <button
@@ -240,7 +225,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
 
-          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+          <Card className="p-4 space-y-3">
             {decisionLogs.length === 0 ? (
               <div className="text-center py-6 space-y-2 text-gray-500">
                 <GitCommit className="w-5 h-5 mx-auto text-gray-600" aria-hidden="true" />
@@ -253,26 +238,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </button>
               </div>
             ) : (
-              decisionLogs.slice(0, 3).map((log) => (
-                <div key={log.id} className="p-3 bg-[#13151b] border border-[#262934] rounded-lg space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="font-semibold text-gray-200 text-xs">{log.decision}</div>
-                    <span className="text-[10px] font-mono text-gray-500 shrink-0">{log.date}</span>
+              decisionLogs.slice(0, 3).map((log, i) => (
+                <div key={log.id}>
+                  {i > 0 && <div className="border-t border-[#262a36] my-3" />}
+                  <div className="space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-semibold text-gray-200 text-xs">{log.decision}</div>
+                      <span className="text-[10px] font-mono text-gray-500 shrink-0">{log.date}</span>
+                    </div>
+                    <div className="text-[11px] text-gray-400 leading-normal">{log.reason}</div>
+                    <div className="text-[10px] font-mono text-blue-400">{log.author}</div>
                   </div>
-                  <div className="text-[11px] text-gray-400 leading-normal">{log.reason}</div>
-                  <div className="text-[10px] font-mono text-blue-400">{log.author}</div>
                 </div>
               ))
             )}
-          </div>
+          </Card>
 
           {/* Quick Tools */}
-          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+          <Card className="p-4 space-y-3">
             <div className="font-semibold text-xs text-gray-200">Architectural Tools</div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 onClick={() => setActiveView('impact')}
-                className="p-2.5 bg-[#202430] hover:bg-[#282e3d] border border-[#2e3444] rounded-lg text-left text-gray-300 hover:text-white transition-colors cursor-pointer space-y-1"
+                className="p-2.5 bg-[#13151b] hover:bg-[#1c2029] rounded-md text-left text-gray-300 hover:text-white transition-colors cursor-pointer space-y-1"
               >
                 <div className="font-medium text-blue-400">Impact Analyzer</div>
                 <div className="text-[10px] text-gray-400">What-if setting change</div>
@@ -280,13 +268,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <button
                 onClick={() => setActiveView('features')}
-                className="p-2.5 bg-[#202430] hover:bg-[#282e3d] border border-[#2e3444] rounded-lg text-left text-gray-300 hover:text-white transition-colors cursor-pointer space-y-1"
+                className="p-2.5 bg-[#13151b] hover:bg-[#1c2029] rounded-md text-left text-gray-300 hover:text-white transition-colors cursor-pointer space-y-1"
               >
-                <div className="font-medium text-purple-400">Feature Manifests</div>
+                <div className="font-medium text-blue-400">Feature Manifests</div>
                 <div className="text-[10px] text-gray-400">Smart dependencies</div>
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
