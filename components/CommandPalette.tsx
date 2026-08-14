@@ -65,7 +65,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             className="bg-transparent border-none text-sm p-0 focus:ring-0"
             autoFocus
           />
-          <button onClick={onClose} aria-label="Close command palette" className="p-1 text-gray-500 hover:text-gray-300 rounded cursor-pointer">
+          <button onClick={onClose} aria-label="Close command palette" className="min-w-11 min-h-11 inline-flex items-center justify-center text-gray-500 hover:text-gray-300 rounded cursor-pointer">
             <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>

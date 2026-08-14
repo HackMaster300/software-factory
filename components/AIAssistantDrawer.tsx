@@ -142,7 +142,7 @@ User Request: ${currentPrompt}
           </div>
         </div>
 
-        <button onClick={onClose} aria-label="Close AI assistant" className="p-1 text-gray-400 hover:text-white rounded cursor-pointer">
+        <button onClick={onClose} aria-label="Close AI assistant" className="min-w-11 min-h-11 inline-flex items-center justify-center text-gray-400 hover:text-white rounded cursor-pointer">
           <X className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
@@ -235,7 +235,14 @@ User Request: ${currentPrompt}
             placeholder={`Ask ${selectedRole} for advice or review...`}
             className="flex-1"
           />
-          <Button variant="primary" size="icon" onClick={handleSend} disabled={!inputPrompt.trim() || isLoading} aria-label="Send prompt">
+          <Button
+            variant="primary"
+            size="icon"
+            onClick={handleSend}
+            disabled={!inputPrompt.trim() || isLoading}
+            aria-label="Send prompt"
+            className="min-w-11 min-h-11"
+          >
             <Send className="w-3.5 h-3.5" aria-hidden="true" />
           </Button>
         </div>

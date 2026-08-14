@@ -630,7 +630,7 @@ export const TechStacksView: React.FC = () => {
                 <Cpu className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingStackId ? 'Edit Technology Stack' : 'Create Technology Stack'}
               </span>
-              <button onClick={() => setIsStackModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsStackModalOpen(false)} aria-label="Close dialog" className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
@@ -687,7 +687,7 @@ export const TechStacksView: React.FC = () => {
                 <Zap className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingCacheId ? 'Edit Cache Profile' : 'Create Cache Profile'}
               </span>
-              <button onClick={() => setIsCacheModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsCacheModalOpen(false)} aria-label="Close dialog" className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
@@ -730,7 +730,7 @@ export const TechStacksView: React.FC = () => {
                 <Activity className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingLoggingId ? 'Edit Logging Profile' : 'Create Logging Profile'}
               </span>
-              <button onClick={() => setIsLoggingModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsLoggingModalOpen(false)} aria-label="Close dialog" className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
@@ -785,7 +785,7 @@ export const TechStacksView: React.FC = () => {
                 <Lock className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingEncryptionId ? 'Edit Encryption Profile' : 'Create Encryption Profile'}
               </span>
-              <button onClick={() => setIsEncryptionModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsEncryptionModalOpen(false)} aria-label="Close dialog" className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
@@ -834,7 +834,7 @@ export const TechStacksView: React.FC = () => {
                 <Rocket className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingDeploymentId ? 'Edit Deployment Profile' : 'Create Deployment Profile'}
               </span>
-              <button onClick={() => setIsDeploymentModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsDeploymentModalOpen(false)} aria-label="Close dialog" className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
@@ -883,7 +883,7 @@ export const TechStacksView: React.FC = () => {
                 <KeyRound className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingAuthId ? 'Edit Authentication Profile' : 'Create Authentication Profile'}
               </span>
-              <button onClick={() => setIsAuthModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsAuthModalOpen(false)} aria-label="Close dialog" className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>

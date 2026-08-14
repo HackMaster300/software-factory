@@ -1643,7 +1643,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
               <button
                 onClick={() => setShowIdeExportModal(false)}
                 aria-label="Close export dialog"
-                className="p-1 text-gray-400 hover:text-white rounded-lg cursor-pointer"
+                className="min-w-11 min-h-11 inline-flex items-center justify-center text-gray-400 hover:text-white rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>

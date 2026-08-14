@@ -742,7 +742,7 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
               <button
                 onClick={() => setIsRuleSetModalOpen(false)}
                 aria-label="Close dialog"
-                className="p-1 rounded text-gray-400 hover:text-white cursor-pointer"
+                className="min-w-11 min-h-11 inline-flex items-center justify-center rounded text-gray-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>
