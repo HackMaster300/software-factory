@@ -5,7 +5,6 @@ import {
   ShieldAlert,
   CheckCircle2,
   AlertTriangle,
-  Info,
   Code,
   Sparkles,
   Plus,
@@ -13,9 +12,7 @@ import {
   Trash2,
   Edit3,
   Download,
-  Upload,
   Search,
-  Filter,
   Wrench,
   X,
   Play,
@@ -24,6 +21,10 @@ import {
 } from 'lucide-react';
 import { RuleSet, Rule, Blueprint } from '../../types/factory';
 import { RuleService, RuleValidationReport, RuleViolation } from '../../services/ruleService';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Input, Textarea, Select } from '../ui/Input';
 
 interface RuleEngineViewProps {
   openAIRefactor: (prompt: string) => void;
@@ -318,12 +319,10 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono text-[10px] font-semibold">
-              Policy Engine
-            </span>
+            <Badge tone="brand">Policy Engine</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">
               {activeRuleSet.rules.filter((r) => r.isEnabled).length} / {activeRuleSet.rules.length} Active Rules
@@ -339,88 +338,82 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleRunValidation}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm"
-          >
+          <Button onClick={handleRunValidation} className="shrink-0">
             <Play className="w-3.5 h-3.5" /> Run Real-time Validation
-          </button>
-          <button
-            onClick={handleOpenAddModal}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleOpenAddModal} className="shrink-0">
             <Plus className="w-3.5 h-3.5" /> Add Custom Rule
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => openAIRefactor('Evaluate architecture rules. Suggest 3 additional enterprise security and maintainability rules.')}
-            className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-blue-400 border border-blue-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+            className="shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5" /> AI Rule Generator
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleExportPolicy}
             title="Export Ruleset JSON"
             aria-label="Export Ruleset JSON"
-            className="p-2 bg-[#202430] hover:bg-[#282d3d] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
+            className="border border-[#2b303d]"
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Rule Set Container Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-[#181a20] border border-[#2b303d] rounded-xl p-3">
+      <Card className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2 flex-1">
           <span className="text-[10px] text-gray-400 font-semibold shrink-0">Active Rule Set:</span>
-          <select
+          <Select
             value={activeRuleSet.id}
             onChange={(e) => handleSwitchRuleSet(e.target.value)}
             disabled={!blueprint || !setSelectedBlueprint}
-            className="flex-1 bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+            className="flex-1"
           >
             {ruleSets.map((rs) => (
               <option key={rs.id} value={rs.id}>
                 {rs.name} ({rs.rules.length} rules)
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handleOpenCreateRuleSet}
-            className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-emerald-400 border border-emerald-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-          >
+          <Button onClick={handleOpenCreateRuleSet}>
             <Plus className="w-3.5 h-3.5" aria-hidden="true" /> New Rule Set
-          </button>
+          </Button>
           {ruleSets.length > 1 && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => handleDeleteRuleSet(activeRuleSet.id)}
               aria-label={`Delete rule set ${activeRuleSet.name}`}
-              className="p-2 bg-[#202430] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
+              className="border border-[#2b303d] hover:text-red-400"
             >
               <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Real-time Validation Report Card */}
       {validationReport && (
-        <div className="bg-[#141720] border border-[#2b3142] rounded-xl p-4 space-y-3">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#252b3b]">
+        <Card className="space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-[#2b303d]">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${validationReport.failedCount > 0 ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+              <div className={`p-2 rounded-lg border ${validationReport.failedCount > 0 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
                 {validationReport.failedCount > 0 ? <ShieldAlert className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
               </div>
               <div>
                 <div className="font-bold text-sm text-white flex items-center gap-2">
                   <span>Architecture Compliance Audit Report</span>
                   {validationReport.failedCount === 0 ? (
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">100% PASS</span>
+                    <Badge tone="success">100% Pass</Badge>
                   ) : (
-                    <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 text-[10px] font-mono">
-                      {validationReport.failedCount} VIOLATION(S)
-                    </span>
+                    <Badge tone="danger">{validationReport.failedCount} Violation(s)</Badge>
                   )}
                 </div>
                 <div className="text-gray-400 text-xs mt-0.5 font-mono">
@@ -431,18 +424,18 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
 
             {/* Audit Score Summary Badges */}
             <div className="flex items-center gap-2 font-mono text-[11px]">
-              <span className="px-2.5 py-1 bg-emerald-950/40 text-emerald-400 border border-emerald-800/50 rounded flex items-center gap-1">
+              <Badge tone="success" className="normal-case">
                 <Check className="w-3 h-3" /> {validationReport.passedCount} Passed
-              </span>
+              </Badge>
               {validationReport.errorCount > 0 && (
-                <span className="px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-800/50 rounded flex items-center gap-1">
+                <Badge tone="danger" className="normal-case">
                   <ShieldAlert className="w-3 h-3" /> {validationReport.errorCount} Errors
-                </span>
+                </Badge>
               )}
               {validationReport.warningCount > 0 && (
-                <span className="px-2.5 py-1 bg-amber-950/40 text-amber-400 border border-amber-800/50 rounded flex items-center gap-1">
+                <Badge tone="warning" className="normal-case">
                   <AlertTriangle className="w-3 h-3" /> {validationReport.warningCount} Warnings
-                </span>
+                </Badge>
               )}
             </div>
           </div>
@@ -453,15 +446,11 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
               <div className="text-[11px] font-semibold text-gray-300">Detected Policy Violations & Recommended Remediation:</div>
               <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1">
                 {validationReport.violations.map((violation, idx) => (
-                  <div key={idx} className="p-3 bg-[#1a1e2b] border border-[#2b3142] rounded-lg space-y-2">
+                  <div key={idx} className="p-3 bg-[#13151b] border border-[#2b303d] rounded-lg space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase font-bold rounded border ${
-                            violation.severity === 'error' ? 'bg-red-950/50 text-red-400 border-red-800/50' : 'bg-amber-950/50 text-amber-400 border-amber-800/50'
-                          }`}>
-                            {violation.severity}
-                          </span>
+                          <Badge tone={violation.severity === 'error' ? 'danger' : 'warning'}>{violation.severity}</Badge>
                           <span className="font-semibold text-white text-xs">{violation.ruleName}</span>
                           <span className="text-[10px] text-gray-400 font-mono">[{violation.target}]</span>
                         </div>
@@ -469,16 +458,17 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                       </div>
 
                       {violation.canAutoFix && (
-                        <button
+                        <Button
+                          size="sm"
                           onClick={() => handleAutoFixViolation(violation)}
-                          className="px-2.5 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/40 rounded text-[10px] font-mono font-medium cursor-pointer flex items-center gap-1 shrink-0"
+                          className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 shrink-0"
                         >
                           <Wrench className="w-3 h-3 text-blue-400" /> Auto-Fix Policy
-                        </button>
+                        </Button>
                       )}
                     </div>
 
-                    <div className="p-2 bg-[#12141c] border border-[#232736] rounded text-[11px] text-emerald-300 font-mono">
+                    <div className="p-2 bg-[#12141a] border border-[#2b303d] rounded text-[11px] text-emerald-300 font-mono">
                       <strong>Remediation:</strong> {violation.remediation}
                     </div>
                   </div>
@@ -490,11 +480,11 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
               <CheckCircle2 className="w-4 h-4 text-emerald-400" /> All active architecture rules pass cleanly against the current blueprint graph.
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#181a20] border border-[#2b303d] rounded-xl p-3">
+      <Card className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           {[
             { id: 'all', label: 'All Rules' },
@@ -510,7 +500,7 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
               className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
                 selectedCategory === cat.id
                   ? 'bg-blue-600 text-white'
-                  : 'bg-[#222734] text-gray-400 hover:text-gray-200'
+                  : 'bg-[#1c2029] text-gray-400 hover:text-gray-200'
               }`}
             >
               {cat.label}
@@ -520,15 +510,15 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
 
         <div className="relative w-full sm:w-64 shrink-0">
           <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
-          <input
+          <Input
             type="text"
             placeholder="Search rules..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#12141a] border border-[#2b303d] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+            className="pl-8"
           />
         </div>
-      </div>
+      </Card>
 
       {/* Rules List Grid */}
       <div className="space-y-3">
@@ -545,34 +535,15 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
         )}
 
         {filteredRules.map((rule) => (
-          <div
-            key={rule.id}
-            className={`bg-[#181a20] border rounded-xl p-4 transition-all space-y-3 ${
-              rule.isEnabled ? 'border-[#2b303d] hover:border-gray-500' : 'border-[#202430] opacity-60'
-            }`}
-          >
+          <Card key={rule.id} className={`space-y-3 ${!rule.isEnabled ? 'opacity-60' : ''}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-gray-100 text-sm">{rule.name}</span>
-
-                  {/* Severity Badge */}
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase border ${
-                      rule.severity === 'error'
-                        ? 'bg-red-950/40 text-red-400 border-red-800/50'
-                        : rule.severity === 'warning'
-                        ? 'bg-amber-950/40 text-amber-400 border-amber-800/50'
-                        : 'bg-blue-950/40 text-blue-400 border-blue-800/50'
-                    }`}
-                  >
+                  <Badge tone={rule.severity === 'error' ? 'danger' : rule.severity === 'warning' ? 'warning' : 'brand'}>
                     {rule.severity}
-                  </span>
-
-                  <span className="px-2 py-0.5 rounded bg-[#232838] text-gray-300 font-mono text-[10px]">
-                    Category: {rule.category}
-                  </span>
-
+                  </Badge>
+                  <Badge tone="neutral" className="normal-case">Category: {rule.category}</Badge>
                   <span className="text-[10px] font-mono text-gray-500">{rule.id}</span>
                 </div>
                 <p className="text-xs text-gray-400 leading-relaxed">{rule.description}</p>
@@ -580,41 +551,46 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
 
               {/* Action Buttons */}
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleToggleRule(rule.id, rule.isEnabled)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                  className={
                     rule.isEnabled
-                      ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
-                      : 'bg-[#222734] text-gray-400 border border-[#303748]'
-                  }`}
+                      ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20'
+                      : ''
+                  }
                 >
                   <Power className="w-3.5 h-3.5" />
                   <span>{rule.isEnabled ? 'Enabled' : 'Disabled'}</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleOpenEditModal(rule)}
                   title="Edit Rule"
                   aria-label={`Edit rule ${rule.name}`}
-                  className="p-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
+                  className="border border-[#2b303d]"
                 >
                   <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => handleDeleteRule(rule.id)}
                   title="Delete Rule"
                   aria-label={`Delete rule ${rule.name}`}
-                  className="p-1.5 bg-[#222734] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
+                  className="border border-[#2b303d] hover:text-red-400"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Expression Box & Remediation */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-2 border-t border-[#262a36]">
-              <div className="p-2.5 bg-[#12141a] border border-[#252834] rounded-lg space-y-1 font-mono">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-2 border-t border-[#2b303d]">
+              <div className="p-2.5 bg-[#13151b] border border-[#2b303d] rounded-lg space-y-1 font-mono">
                 <div className="text-[10px] text-gray-400 flex items-center gap-1">
                   <Code className="w-3 h-3 text-blue-400" />
                   <span>Rule Expression (Declarative Policy)</span>
@@ -622,18 +598,18 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                 <div className="text-blue-300 text-[11px]">{rule.expression}</div>
               </div>
 
-              <div className="p-2.5 bg-[#12141a] border border-[#252834] rounded-lg space-y-1">
+              <div className="p-2.5 bg-[#13151b] border border-[#2b303d] rounded-lg space-y-1">
                 <div className="text-[10px] text-emerald-400 font-semibold">Remediation Guidance</div>
                 <div className="text-gray-300 text-[11px]">{rule.remediation}</div>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
 
         {filteredRules.length === 0 && (
-          <div className="text-center py-12 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-400">
+          <Card className="text-center py-12 text-gray-400">
             No architecture rules found matching your query or filter category.
-          </div>
+          </Card>
         )}
       </div>
 
@@ -663,7 +639,7 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => handleSelectPreset(tmpl)}
-                    className="px-2 py-1 bg-[#222734] hover:bg-blue-600/30 text-gray-300 hover:text-blue-300 border border-[#303748] rounded text-[10px] font-mono cursor-pointer transition-colors"
+                    className="px-2 py-1 bg-[#1c2029] hover:bg-blue-600/20 text-gray-300 hover:text-blue-300 border border-[#2e3340] rounded text-[10px] font-mono cursor-pointer transition-colors"
                   >
                     + {tmpl.name}
                   </button>
@@ -674,94 +650,81 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Rule Name</label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g. Domain Cannot Reference Infrastructure"
                   value={ruleName}
                   onChange={(e) => setRuleName(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Category</label>
-                  <select
+                  <Select
                     value={ruleCategory}
-                    onChange={(e) => setRuleCategory(e.target.value as any)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                    onChange={(e) => setRuleCategory(e.target.value as typeof ruleCategory)}
                   >
                     <option value="dependency">Dependency</option>
                     <option value="code-standard">Code Standard</option>
                     <option value="security">Security</option>
                     <option value="performance">Performance</option>
                     <option value="naming">Naming</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Severity</label>
-                  <select
+                  <Select
                     value={ruleSeverity}
-                    onChange={(e) => setRuleSeverity(e.target.value as any)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                    onChange={(e) => setRuleSeverity(e.target.value as typeof ruleSeverity)}
                   >
                     <option value="error">Error (Blocking)</option>
                     <option value="warning">Warning</option>
                     <option value="info">Info</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
             </div>
 
             <div>
               <label className="text-[10px] text-gray-400 block mb-1">Rule Expression (Declarative Policy)</label>
-              <input
+              <Input
                 type="text"
                 placeholder='e.g. Projects["Domain"].References.Includes("Infrastructure") == false'
                 value={ruleExpression}
                 onChange={(e) => setRuleExpression(e.target.value)}
-                className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-blue-300 focus:outline-none focus:border-blue-500"
+                className="font-mono text-blue-300"
               />
             </div>
 
             <div>
               <label className="text-[10px] text-gray-400 block mb-1">Description</label>
-              <textarea
+              <Textarea
                 rows={2}
                 placeholder="Explain the architectural rationale behind this rule..."
                 value={ruleDescription}
                 onChange={(e) => setRuleDescription(e.target.value)}
-                className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
               />
             </div>
 
             <div>
               <label className="text-[10px] text-gray-400 block mb-1">Remediation Guidance</label>
-              <input
+              <Input
                 type="text"
                 placeholder="Steps developers must take to fix violations of this rule..."
                 value={ruleRemediation}
                 onChange={(e) => setRuleRemediation(e.target.value)}
-                className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button
-                type="button"
-                onClick={() => setIsRuleModalOpen(false)}
-                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
-              >
+              <Button variant="secondary" onClick={() => setIsRuleModalOpen(false)}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveRule}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
-              >
+              </Button>
+              <Button variant="primary" onClick={handleSaveRule}>
                 Save Policy Rule
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -788,41 +751,31 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Rule Set Name</label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g. Fintech Compliance Policy"
                   value={newRuleSetName}
                   onChange={(e) => setNewRuleSetName(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Description</label>
-                <textarea
+                <Textarea
                   rows={2}
                   placeholder="What this rule set enforces..."
                   value={newRuleSetDescription}
                   onChange={(e) => setNewRuleSetDescription(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button
-                type="button"
-                onClick={() => setIsRuleSetModalOpen(false)}
-                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
-              >
+              <Button variant="secondary" onClick={() => setIsRuleSetModalOpen(false)}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateRuleSet}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
-              >
+              </Button>
+              <Button variant="primary" onClick={handleCreateRuleSet}>
                 Create Rule Set
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -830,4 +783,3 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
     </div>
   );
 };
-
