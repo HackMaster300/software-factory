@@ -17,15 +17,67 @@ import {
   ChevronRight,
   XCircle,
   Sparkles,
+  Edit3,
+  Trash2,
+  X,
 } from 'lucide-react';
-import { FeatureManifest, FeatureCategory, Blueprint } from '../../types/factory';
+import { FeatureManifest, FeatureCategory, FeatureQuestion, GeneratedFile, Blueprint } from '../../types/factory';
 import { FeatureService } from '../../services/featureService';
-import { StorageService } from '../../services/storageService';
+import { useFeatureManifests } from '../../services/storageService';
+import { featureManifestRepository } from '../../services/repositories';
 
 interface FeatureManifestsViewProps {
   blueprint: Blueprint;
   setBlueprint: (bp: Blueprint) => void;
   openAIRefactor: (prompt: string) => void;
+}
+
+const FEATURE_CATEGORIES: FeatureCategory[] = [
+  'Infrastructure',
+  'Database',
+  'Security',
+  'Observability',
+  'API',
+  'Messaging',
+  'DevOps',
+  'Testing',
+  'Architecture',
+];
+
+const emptyImpactScores = {
+  security: 0,
+  architecture: 0,
+  performance: 0,
+  scalability: 0,
+  maintainability: 0,
+  complexity: 0,
+};
+
+function blankFeatureForm(): FeatureManifest {
+  return {
+    id: '',
+    name: '',
+    description: '',
+    category: 'Infrastructure',
+    tags: [],
+    dependencies: [],
+    optionalDependencies: [],
+    recommendedDependencies: [],
+    conflictingFeatures: [],
+    questions: [],
+    configuration: {},
+    generatedFiles: [],
+    generatedPackages: [],
+    generatedProjects: [],
+    documentation: '',
+    aiRecommendations: [],
+    securityWarnings: [],
+    architectureImpact: '',
+    performanceImpact: '',
+    maintainabilityImpact: '',
+    bestPractices: [],
+    impactScores: { ...emptyImpactScores },
+  };
 }
 
 export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
@@ -38,8 +90,98 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
   const [selectedFeatureId, setSelectedFeatureId] = useState<string>('feat-docker');
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  const features = FeatureService.getAllFeatures();
+  const features = useFeatureManifests();
   const categories: string[] = ['All', 'DevOps', 'Security', 'Infrastructure', 'Database', 'Observability', 'API', 'Architecture', 'Messaging'];
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingFeatureId, setEditingFeatureId] = useState<string | null>(null);
+  const [form, setForm] = useState<FeatureManifest>(blankFeatureForm());
+
+  const otherFeatures = features.filter((f) => f.id !== editingFeatureId);
+
+  const resetForm = () => {
+    setEditingFeatureId(null);
+    setForm(blankFeatureForm());
+  };
+
+  const handleOpenAdd = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditFeature = (feat: FeatureManifest) => {
+    setEditingFeatureId(feat.id);
+    setForm({ ...feat, tags: [...feat.tags] });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteFeature = (feat: FeatureManifest) => {
+    if (!confirm(`Delete feature manifest "${feat.name}"? This cannot be undone.`)) return;
+    const updated = features.filter((f) => f.id !== feat.id);
+    featureManifestRepository.saveFeatureManifests(updated);
+    if (selectedFeatureId === feat.id) {
+      setSelectedFeatureId(updated[0]?.id || '');
+    }
+  };
+
+  const toggleListValue = (key: keyof FeatureManifest, value: string) => {
+    setForm((prev) => {
+      const list = (prev[key] as string[]) || [];
+      const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+      return { ...prev, [key]: next };
+    });
+  };
+
+  const handleAddQuestion = () => {
+    const q: FeatureQuestion = {
+      id: `q-${Date.now()}`,
+      question: '',
+      type: 'boolean',
+      defaultValue: false,
+      impactDescription: '',
+    };
+    setForm((prev) => ({ ...prev, questions: [...prev.questions, q] }));
+  };
+
+  const handleUpdateQuestion = (idx: number, patch: Partial<FeatureQuestion>) => {
+    setForm((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => (i === idx ? { ...q, ...patch } : q)),
+    }));
+  };
+
+  const handleRemoveQuestion = (idx: number) => {
+    setForm((prev) => ({ ...prev, questions: prev.questions.filter((_, i) => i !== idx) }));
+  };
+
+  const handleAddGeneratedFile = () => {
+    const gf: GeneratedFile = { path: '', language: 'plaintext', templateSnippet: '', description: '' };
+    setForm((prev) => ({ ...prev, generatedFiles: [...prev.generatedFiles, gf] }));
+  };
+
+  const handleUpdateGeneratedFile = (idx: number, patch: Partial<GeneratedFile>) => {
+    setForm((prev) => ({
+      ...prev,
+      generatedFiles: prev.generatedFiles.map((gf, i) => (i === idx ? { ...gf, ...patch } : gf)),
+    }));
+  };
+
+  const handleRemoveGeneratedFile = (idx: number) => {
+    setForm((prev) => ({ ...prev, generatedFiles: prev.generatedFiles.filter((_, i) => i !== idx) }));
+  };
+
+  const handleSaveFeature = () => {
+    if (!form.name.trim()) {
+      alert('Please provide a feature name.');
+      return;
+    }
+    const id = editingFeatureId || `feat-custom-${Date.now()}`;
+    const saved: FeatureManifest = { ...form, id };
+    FeatureService.saveFeature(saved);
+    setSelectedFeatureId(id);
+    setIsModalOpen(false);
+    resetForm();
+  };
 
   const { activeFeatureIds, autoActivatedFeatures, disabledRecommendedFeatures } = FeatureService.resolveBlueprintFeatures(blueprint);
 
@@ -78,6 +220,12 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
             className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-blue-400 border border-blue-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <Sparkles className="w-3.5 h-3.5" /> AI Feature Advisor
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Feature Manifest
           </button>
         </div>
       </div>
@@ -230,16 +378,32 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                   <p className="text-xs text-gray-400 leading-relaxed">{selectedFeature.description}</p>
                 </div>
 
-                <button
-                  onClick={() => handleToggleFeature(selectedFeature.id)}
-                  className={`px-4 py-2 rounded-lg font-semibold text-xs transition-colors cursor-pointer shrink-0 ${
-                    activeFeatureIds.includes(selectedFeature.id)
-                      ? 'bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30'
-                      : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30'
-                  }`}
-                >
-                  {activeFeatureIds.includes(selectedFeature.id) ? 'Disable Feature' : 'Activate Feature'}
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleOpenEditFeature(selectedFeature)}
+                    aria-label={`Edit feature manifest ${selectedFeature.name}`}
+                    className="p-2 bg-[#222734] hover:bg-[#2b3142] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteFeature(selectedFeature)}
+                    aria-label={`Delete feature manifest ${selectedFeature.name}`}
+                    className="p-2 bg-[#222734] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => handleToggleFeature(selectedFeature.id)}
+                    className={`px-4 py-2 rounded-lg font-semibold text-xs transition-colors cursor-pointer ${
+                      activeFeatureIds.includes(selectedFeature.id)
+                        ? 'bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30'
+                    }`}
+                  >
+                    {activeFeatureIds.includes(selectedFeature.id) ? 'Disable Feature' : 'Activate Feature'}
+                  </button>
+                </div>
               </div>
 
               {/* Dependencies & Conflicts */}
@@ -365,12 +529,326 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                   ))}
                 </div>
               </div>
+
+              {selectedFeature.securityWarnings?.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-[#2b303d]">
+                  <div className="font-semibold text-amber-400 text-xs flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-amber-400" />
+                    <span>Security Warnings</span>
+                  </div>
+                  <div className="space-y-1 text-amber-200 leading-relaxed text-[11px]">
+                    {selectedFeature.securityWarnings.map((warn, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-amber-400 font-bold">•</span>
+                        <span>{warn}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
-            <div className="text-gray-500 text-center py-10">Select a feature manifest to inspect its details.</div>
+            <div className="text-center py-16 space-y-2 text-gray-500">
+              <Box className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
+              <p className="text-xs">No feature manifests yet.</p>
+              <button
+                onClick={handleOpenAdd}
+                className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+              >
+                Create your first feature manifest
+              </button>
+            </div>
           )}
         </div>
       </div>
+
+      {/* CREATE / EDIT FEATURE MANIFEST MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-3xl w-full p-5 space-y-4 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
+              <span className="font-bold text-sm text-white flex items-center gap-2">
+                <Box className="w-4 h-4 text-purple-400" aria-hidden="true" />
+                {editingFeatureId ? 'Edit Feature Manifest' : 'Create Feature Manifest'}
+              </span>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                aria-label="Close dialog"
+                className="p-1 rounded text-gray-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1">Feature Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Redis Distributed Caching"
+                    value={form.name}
+                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1">Category</label>
+                  <select
+                    value={form.category}
+                    onChange={(e) => setForm((p) => ({ ...p, category: e.target.value as FeatureCategory }))}
+                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                  >
+                    {FEATURE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="What this feature manifest provides..."
+                  value={form.description}
+                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 leading-relaxed"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Tags (comma-separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. cache, redis, performance"
+                  value={form.tags.join(', ')}
+                  onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) }))}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Dependency Relationships */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {([
+                  ['dependencies', 'Required Dependencies'],
+                  ['optionalDependencies', 'Optional Dependencies'],
+                  ['recommendedDependencies', 'Recommended Dependencies (Smart)'],
+                  ['conflictingFeatures', 'Conflicting Features'],
+                ] as Array<[keyof FeatureManifest, string]>).map(([key, label]) => (
+                  <div key={key} className="p-2.5 bg-[#12141a] border border-[#252834] rounded-lg space-y-1.5">
+                    <div className="text-[10px] text-gray-400 font-semibold">{label}</div>
+                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                      {otherFeatures.length === 0 && (
+                        <span className="text-[10px] text-gray-600 italic">No other features yet</span>
+                      )}
+                      {otherFeatures.map((f) => {
+                        const checked = ((form[key] as string[]) || []).includes(f.id);
+                        return (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => toggleListValue(key, f.id)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer border transition-colors ${
+                              checked
+                                ? 'bg-blue-600/30 text-blue-300 border-blue-500/50'
+                                : 'bg-[#1d212c] text-gray-400 border-[#2e3446] hover:text-gray-200'
+                            }`}
+                          >
+                            {f.id}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Impact Scores */}
+              <div className="p-3 bg-[#12141a] border border-[#252834] rounded-lg space-y-2">
+                <div className="text-[10px] text-gray-400 font-semibold">Architectural Impact Scores</div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {(Object.keys(form.impactScores) as Array<keyof typeof form.impactScores>).map((key) => (
+                    <div key={key}>
+                      <label className="text-[9px] text-gray-500 block mb-0.5 capitalize">{key}</label>
+                      <input
+                        type="number"
+                        value={form.impactScores[key]}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            impactScores: { ...p.impactScores, [key]: Number(e.target.value) || 0 },
+                          }))
+                        }
+                        className="w-full bg-[#1d212c] border border-[#2e3446] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Questions */}
+              <div className="p-3 bg-[#12141a] border border-[#252834] rounded-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] text-gray-400 font-semibold">Configuration Questions</div>
+                  <button
+                    type="button"
+                    onClick={handleAddQuestion}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" aria-hidden="true" /> Add Question
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {form.questions.map((q, idx) => (
+                    <div key={q.id} className="p-2 bg-[#1a1e2b] border border-[#2b3142] rounded space-y-1.5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Question text"
+                          value={q.question}
+                          onChange={(e) => handleUpdateQuestion(idx, { question: e.target.value })}
+                          className="md:col-span-2 bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        />
+                        <select
+                          value={q.type}
+                          onChange={(e) => handleUpdateQuestion(idx, { type: e.target.value as FeatureQuestion['type'] })}
+                          className="bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        >
+                          <option value="boolean">Boolean</option>
+                          <option value="select">Select</option>
+                          <option value="text">Text</option>
+                        </select>
+                      </div>
+                      {q.type === 'select' && (
+                        <input
+                          type="text"
+                          placeholder="Options (comma-separated)"
+                          value={(q.options || []).join(', ')}
+                          onChange={(e) => handleUpdateQuestion(idx, { options: e.target.value.split(',').map((o) => o.trim()).filter(Boolean) })}
+                          className="w-full bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        />
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Impact description"
+                          value={q.impactDescription}
+                          onChange={(e) => handleUpdateQuestion(idx, { impactDescription: e.target.value })}
+                          className="flex-1 bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveQuestion(idx)}
+                          aria-label="Remove question"
+                          className="p-1.5 text-red-400 hover:bg-red-900/30 rounded cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {form.questions.length === 0 && (
+                    <div className="text-[10px] text-gray-600 italic">No configuration questions yet.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Generated Files */}
+              <div className="p-3 bg-[#12141a] border border-[#252834] rounded-lg space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] text-gray-400 font-semibold">Generated Files Preview</div>
+                  <button
+                    type="button"
+                    onClick={handleAddGeneratedFile}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" aria-hidden="true" /> Add File
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {form.generatedFiles.map((gf, idx) => (
+                    <div key={idx} className="p-2 bg-[#1a1e2b] border border-[#2b3142] rounded space-y-1.5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="File path"
+                          value={gf.path}
+                          onChange={(e) => handleUpdateGeneratedFile(idx, { path: e.target.value })}
+                          className="bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Language"
+                          value={gf.language}
+                          onChange={(e) => handleUpdateGeneratedFile(idx, { language: e.target.value })}
+                          className="bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Description"
+                          value={gf.description}
+                          onChange={(e) => handleUpdateGeneratedFile(idx, { description: e.target.value })}
+                          className="bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] text-gray-200 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <textarea
+                        rows={2}
+                        placeholder="Template snippet"
+                        value={gf.templateSnippet}
+                        onChange={(e) => handleUpdateGeneratedFile(idx, { templateSnippet: e.target.value })}
+                        className="w-full bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-[11px] font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGeneratedFile(idx)}
+                          aria-label="Remove generated file"
+                          className="p-1.5 text-red-400 hover:bg-red-900/30 rounded cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {form.generatedFiles.length === 0 && (
+                    <div className="text-[10px] text-gray-600 italic">No generated files yet.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Security Warnings */}
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Security Warnings (one per line)</label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Ensure secrets are not baked into the image layer history."
+                  value={form.securityWarnings.join('\n')}
+                  onChange={(e) => setForm((p) => ({ ...p, securityWarnings: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) }))}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-amber-200 focus:outline-none focus:border-blue-500 leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveFeature}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
+              >
+                Save Feature Manifest
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FeatureService } from './featureService';
-import type { Blueprint } from '../types/factory';
+import { featureManifestRepository } from './repositories';
+import type { Blueprint, FeatureManifest } from '../types/factory';
 
 const baseBlueprint: Blueprint = {
   id: 'bp-test',
@@ -45,5 +46,62 @@ describe('FeatureService.resolveBlueprintFeatures (Smart Dependencies)', () => {
 
     expect(activeFeatureIds).not.toContain('feat-env-vars');
     expect(disabledRecommendedFeatures.some((f) => f.id === 'feat-env-vars')).toBe(true);
+  });
+});
+
+describe('FeatureService.saveFeature (Phase 2b — Feature Manifest create/edit builder)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  const customFeature: FeatureManifest = {
+    id: 'feat-custom-test',
+    name: 'Custom Test Feature',
+    description: 'A feature manifest created for test coverage.',
+    category: 'Testing',
+    tags: ['custom'],
+    dependencies: [],
+    optionalDependencies: [],
+    recommendedDependencies: [],
+    conflictingFeatures: [],
+    questions: [],
+    configuration: {},
+    generatedFiles: [],
+    generatedPackages: [],
+    generatedProjects: [],
+    documentation: '',
+    aiRecommendations: [],
+    securityWarnings: [],
+    architectureImpact: '',
+    performanceImpact: '',
+    maintainabilityImpact: '',
+    bestPractices: [],
+    impactScores: { security: 0, architecture: 0, performance: 0, scalability: 0, maintainability: 0, complexity: 0 },
+  };
+
+  it('appends a brand-new feature manifest to the catalog', () => {
+    const before = FeatureService.getAllFeatures().length;
+    FeatureService.saveFeature(customFeature);
+    const after = FeatureService.getAllFeatures();
+    expect(after.length).toBe(before + 1);
+    expect(FeatureService.getFeatureById('feat-custom-test')).toEqual(customFeature);
+  });
+
+  it('updates an existing feature manifest in place rather than duplicating it', () => {
+    FeatureService.saveFeature(customFeature);
+    const updated = { ...customFeature, name: 'Renamed Feature' };
+    FeatureService.saveFeature(updated);
+
+    const all = FeatureService.getAllFeatures();
+    expect(all.filter((f) => f.id === 'feat-custom-test')).toHaveLength(1);
+    expect(FeatureService.getFeatureById('feat-custom-test')?.name).toBe('Renamed Feature');
+  });
+
+  it('supports deleting a feature manifest by filtering and re-saving', () => {
+    FeatureService.saveFeature(customFeature);
+    featureManifestRepository.saveFeatureManifests(
+      FeatureService.getAllFeatures().filter((f) => f.id !== 'feat-custom-test')
+    );
+    expect(FeatureService.getFeatureById('feat-custom-test')).toBeUndefined();
   });
 });
