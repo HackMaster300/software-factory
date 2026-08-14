@@ -185,18 +185,21 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-gray-500 italic">No workspace yet</span>
             )}
           </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOrgModalOpen(true)}
-            title="Manage Organizations & Workspaces"
-            aria-label="Manage Organizations & Workspaces"
-            className="hover:text-blue-400"
-          >
-            <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
-          </Button>
         </div>
+
+        {/* Manage Organizations & Workspaces: kept reachable below md even
+            though the picker itself is hidden there, since it's the only
+            way to reach the create/edit/delete modal for either entity. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsOrgModalOpen(true)}
+          title="Manage Organizations & Workspaces"
+          aria-label="Manage Organizations & Workspaces"
+          className="hover:text-blue-400 min-w-11 min-h-11 md:min-w-0 md:min-h-0"
+        >
+          <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
+        </Button>
 
         {/* Active View Title */}
         <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 ml-2">
