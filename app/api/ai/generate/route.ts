@@ -1,0 +1,213 @@
+import { GoogleGenAI } from '@google/genai';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  AIProviderName,
+  buildProviderRequest,
+  extractProviderErrorMessage,
+  extractResponseText,
+} from '../../../../services/aiProviderRouting';
+
+const ALLOWED_PROVIDERS: AIProviderName[] = [
+  'Google Gemini',
+  'OpenAI',
+  'Anthropic',
+  'DeepSeek',
+  'Azure OpenAI',
+  'Ollama',
+];
+
+const GEMINI_PRIMARY_MODEL = 'gemini-3.6-flash';
+const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash';
+
+function defaultSystemInstruction(role: string): string {
+  return `You are an expert ${role} in an enterprise Software Factory platform. Provide direct, highly technical, actionable analysis covering Pros, Cons, Risks, Alternatives, and Recommendations.`;
+}
+
+function simulatedResponse(role: string): string {
+  return `### ${role} Architectural Analysis
+
+**Overview:**
+Evaluating the requested architectural configuration against software factory standards.
+
+**Pros:**
+- Strict layer separation enforces the Dependency Inversion Principle.
+- High maintainability and clear team boundaries across domain, application, and infrastructure projects.
+- Containerization ensures environment parity across dev, staging, and production.
+
+**Cons & Tradeoffs:**
+- Additional boilerplate files and mapping layers between Domain Entities and API DTOs.
+- Slight initial setup overhead for small-scale CRUD applications.
+
+**Security & Operational Risks:**
+- Ensure all connection strings and JWT signing keys are loaded strictly from environment secrets/Vault.
+- Health check probes must be configured to prevent Kubernetes/Cloud Run from sending traffic to uninitialized instances.
+
+**Recommendations:**
+1. Enable Redis distributed caching for user sessions and idempotency checks.
+2. Implement MediatR validation pipeline behaviors for automatic request validation.
+3. Keep Domain project completely free of external ORM or framework dependencies.`;
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string | undefined,
+  prompt: string,
+  systemInstruction: string
+): Promise<{ text: string; isSimulated: boolean }> {
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+
+  const primaryModel = model || GEMINI_PRIMARY_MODEL;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: primaryModel,
+      contents: prompt,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
+    return { text: response.text || '', isSimulated: false };
+  } catch (primaryErr) {
+    console.warn(`Gemini model "${primaryModel}" unavailable, trying fallback ${GEMINI_FALLBACK_MODEL}...`, primaryErr);
+    try {
+      const fallbackResponse = await ai.models.generateContent({
+        model: GEMINI_FALLBACK_MODEL,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+      return { text: fallbackResponse.text || '', isSimulated: false };
+    } catch (fallbackErr) {
+      console.error('All Gemini model calls failed:', fallbackErr);
+      throw fallbackErr;
+    }
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => null);
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Request body must be a JSON object.' }, { status: 400 });
+    }
+
+    const {
+      prompt,
+      systemInstruction,
+      role = 'Software Architect',
+      provider = 'Google Gemini',
+      apiKey,
+      baseUrl,
+      model,
+    } = body as {
+      prompt?: unknown;
+      systemInstruction?: unknown;
+      role?: unknown;
+      provider?: unknown;
+      apiKey?: unknown;
+      baseUrl?: unknown;
+      model?: unknown;
+    };
+
+    if (typeof prompt !== 'string' || prompt.trim().length === 0) {
+      return NextResponse.json({ error: '"prompt" is required and must be a non-empty string.' }, { status: 400 });
+    }
+    if (systemInstruction !== undefined && typeof systemInstruction !== 'string') {
+      return NextResponse.json({ error: '"systemInstruction" must be a string when provided.' }, { status: 400 });
+    }
+    if (typeof role !== 'string' || role.trim().length === 0) {
+      return NextResponse.json({ error: '"role" must be a non-empty string when provided.' }, { status: 400 });
+    }
+    if (typeof provider !== 'string' || !ALLOWED_PROVIDERS.includes(provider as AIProviderName)) {
+      return NextResponse.json(
+        { error: `"provider" must be one of: ${ALLOWED_PROVIDERS.join(', ')}.` },
+        { status: 400 }
+      );
+    }
+    if (apiKey !== undefined && typeof apiKey !== 'string') {
+      return NextResponse.json({ error: '"apiKey" must be a string when provided.' }, { status: 400 });
+    }
+    if (baseUrl !== undefined && typeof baseUrl !== 'string') {
+      return NextResponse.json({ error: '"baseUrl" must be a string when provided.' }, { status: 400 });
+    }
+    if (model !== undefined && typeof model !== 'string') {
+      return NextResponse.json({ error: '"model" must be a string when provided.' }, { status: 400 });
+    }
+
+    const resolvedSystemInstruction = systemInstruction || defaultSystemInstruction(role);
+    const typedProvider = provider as AIProviderName;
+
+    if (typedProvider === 'Google Gemini') {
+      const resolvedKey = (apiKey as string | undefined) || process.env.GEMINI_API_KEY;
+
+      if (!resolvedKey || resolvedKey === 'MY_GEMINI_API_KEY') {
+        // No real key configured anywhere (request body or server env) — same honest
+        // simulated-response fallback the app has always had for Gemini, preserved here so
+        // the AI Assistant drawer keeps working with zero setup.
+        return NextResponse.json({ text: simulatedResponse(role), isSimulated: true });
+      }
+
+      try {
+        const result = await callGemini(resolvedKey, model as string | undefined, prompt, resolvedSystemInstruction);
+        return NextResponse.json(result);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ error: `Gemini request failed: ${message}` }, { status: 502 });
+      }
+    }
+
+    // All other providers: plain fetch against each provider's REST API, no new npm dependency.
+    const built = buildProviderRequest({
+      provider: typedProvider,
+      apiKey: apiKey as string | undefined,
+      baseUrl: baseUrl as string | undefined,
+      model: (model as string | undefined) || '',
+      prompt,
+      systemInstruction: resolvedSystemInstruction,
+    });
+
+    if ('error' in built) {
+      return NextResponse.json({ error: built.error }, { status: 400 });
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(built.url, {
+        method: 'POST',
+        headers: built.headers,
+        body: JSON.stringify(built.body),
+      });
+    } catch (networkErr) {
+      const message = networkErr instanceof Error ? networkErr.message : String(networkErr);
+      return NextResponse.json(
+        { error: `Request to ${typedProvider} failed: ${message}` },
+        { status: 502 }
+      );
+    }
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const message = extractProviderErrorMessage(json, res.status, res.statusText);
+      return NextResponse.json({ error: `${typedProvider} rejected the request: ${message}` }, { status: res.status });
+    }
+
+    const text = extractResponseText(typedProvider, json);
+    return NextResponse.json({ text: text || 'No response generated from model.', isSimulated: false });
+  } catch (err) {
+    console.error('Error in /api/ai/generate:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Unexpected server error: ${message}` }, { status: 500 });
+  }
+}

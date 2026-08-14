@@ -261,6 +261,23 @@ export interface AIProviderConfig {
   status: 'active' | 'configured' | 'offline';
   costPer1k: string;
   latency: string;
+  /**
+   * Bring-your-own-key credential for this provider. Stored in localStorage only — see the
+   * visible security note in AIPromptsView. Not used for Ollama (local, unauthenticated).
+   */
+  apiKey?: string;
+  /**
+   * Override base URL. Required for Azure OpenAI (deployment-specific endpoint) and Ollama
+   * (defaults to http://localhost:11434 when unset); optional override for OpenAI/DeepSeek.
+   */
+  baseUrl?: string;
+  /**
+   * Marks this provider as the one AIService routes requests to by default. Deliberately a
+   * separate concept from `status` (which describes the provider's connection/health state,
+   * e.g. an "active" provider can still fail a Test Connection and read as unhealthy) — at
+   * most one provider should have this set to true at a time.
+   */
+  isActiveDefault?: boolean;
 }
 
 export interface PromptTemplate {
