@@ -670,7 +670,7 @@ export const AIPromptsView: React.FC = () => {
 
                 {/* Performance Metrics Header Bar */}
                 {execMetrics && (
-                  <Card flat className="grid grid-cols-4 gap-2 border border-[#2b303d] mb-3 font-mono text-[10px]">
+                  <Card flat className="grid grid-cols-2 sm:grid-cols-4 gap-2 border border-[#2b303d] mb-3 font-mono text-[10px]">
                     <div className="space-y-0.5">
                       <div className="text-gray-400 flex items-center gap-1"><Clock className="w-2.5 h-2.5" aria-hidden="true" /> Latency</div>
                       <div className="text-gray-100 font-bold">{execMetrics.latencyMs} ms</div>
@@ -1059,7 +1059,7 @@ export const AIPromptsView: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Role</label>
                   <Select value={promptRole} onChange={(e) => setPromptRole(e.target.value as any)}>
@@ -1140,7 +1140,7 @@ export const AIPromptsView: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Vendor Family</label>
                   <Select value={providerVendor} onChange={(e) => setProviderVendor(e.target.value as any)}>
@@ -1165,7 +1165,7 @@ export const AIPromptsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Cost Per 1k Tokens</label>
                   <Input

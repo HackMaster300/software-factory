@@ -639,7 +639,7 @@ export const TechStacksView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Stack Name</label>
                 <Input type="text" placeholder="e.g. Bun + Elysia Edge API" value={stackForm.name} onChange={(e) => setStackForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Language</label>
                   <Select value={stackForm.language} onChange={(e) => setStackForm((p) => ({ ...p, language: e.target.value as TechStack['language'] }))}>
@@ -651,7 +651,7 @@ export const TechStacksView: React.FC = () => {
                   <Input type="text" placeholder="e.g. Elysia" value={stackForm.framework} onChange={(e) => setStackForm((p) => ({ ...p, framework: e.target.value }))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Package Manager</label>
                   <Input type="text" placeholder="e.g. bun" value={stackForm.packageManager} onChange={(e) => setStackForm((p) => ({ ...p, packageManager: e.target.value }))} />
@@ -696,7 +696,7 @@ export const TechStacksView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
                 <Input type="text" placeholder="e.g. Redis Sentinel HA Cache" value={cacheForm.name} onChange={(e) => setCacheForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Provider</label>
                   <Select value={cacheForm.provider} onChange={(e) => setCacheForm((p) => ({ ...p, provider: e.target.value as ProfileCache['provider'] }))}>
@@ -739,7 +739,7 @@ export const TechStacksView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
                 <Input type="text" placeholder="e.g. Winston + Console + Loki" value={loggingForm.name} onChange={(e) => setLoggingForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Provider</label>
                   <Select value={loggingForm.provider} onChange={(e) => setLoggingForm((p) => ({ ...p, provider: e.target.value as ProfileLogging['provider'] }))}>
@@ -794,7 +794,7 @@ export const TechStacksView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
                 <Input type="text" placeholder="e.g. Enterprise At-Rest AES-256" value={encryptionForm.name} onChange={(e) => setEncryptionForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Algorithm</label>
                   <Select value={encryptionForm.algorithm} onChange={(e) => setEncryptionForm((p) => ({ ...p, algorithm: e.target.value as ProfileEncryption['algorithm'] }))}>
@@ -843,7 +843,7 @@ export const TechStacksView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
                 <Input type="text" placeholder="e.g. Production Kubernetes Cluster" value={deploymentForm.name} onChange={(e) => setDeploymentForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Target Platform</label>
                   <Select value={deploymentForm.targetPlatform} onChange={(e) => setDeploymentForm((p) => ({ ...p, targetPlatform: e.target.value as ProfileDeployment['targetPlatform'] }))}>
@@ -892,7 +892,7 @@ export const TechStacksView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
                 <Input type="text" placeholder="e.g. Enterprise SSO SAML" value={authForm.name} onChange={(e) => setAuthForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Provider</label>
                   <Select value={authForm.provider} onChange={(e) => setAuthForm((p) => ({ ...p, provider: e.target.value as ProfileAuthentication['provider'] }))}>

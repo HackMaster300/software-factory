@@ -658,7 +658,7 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Category</label>
                   <Select
