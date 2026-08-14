@@ -290,12 +290,35 @@ workspace end-to-end. Zero console errors across all checks.
 
 ## Phase 5 — Structure & responsiveness
 
-- [ ] Audit every view at mobile/tablet/desktop breakpoints; collapse Sidebar to a drawer, stack
-      multi-column grids to one column, make the Advisor panel a bottom sheet or hidden-by-default
-      below desktop width.
-- [ ] Confirm Command Palette / AI Drawer / modals have no horizontal overflow and tap targets
-      ≥44px on small viewports.
-- [ ] Playwright verification at 3 breakpoints, not just desktop.
+- [x] **Complete.** Audited every view at mobile/tablet/desktop breakpoints via Playwright *before*
+      writing any code, confirming the predicted failure (Sidebar 224px + Advisor panel 320px both
+      always rendered alongside main content = 544px of fixed chrome on a 375px viewport). Sidebar
+      now collapses to an off-canvas drawer below `lg` (closed by default, hamburger toggle in
+      Header, backdrop/close-button/nav-pick to close) — `36e2090`. Advisor panel now defaults
+      hidden below `lg` (via a `useSyncExternalStore`-backed `matchMedia` check, avoiding a
+      setState-in-effect) and renders as a full-width bottom sheet when opened there, unchanged
+      320px static panel open-by-default at `lg`+ — `0997b67`. Remaining fixed multi-column grids
+      (mostly modal form field-pairs; most grids already had responsive prefixes from Phase 4)
+      stacked to one column on mobile — `54ae997`.
+- [x] Confirmed Command Palette / AI Drawer / modals have no horizontal overflow (checked
+      `document.documentElement.scrollWidth === clientWidth` at all 3 breakpoints throughout) and
+      bumped every dialog's close button (plus the AI Drawer's Send button) — previously as small
+      as ~18px — to a 44px touch target (`min-w-11 min-h-11`), no icon/color/handler changes —
+      `b69c913`. While auditing Header, found and fixed a real reachability gap: the
+      "Manage Organizations & Workspaces" gear button (the only way to open
+      `OrganizationWorkspaceModal`) was nested inside the same `hidden md:flex` wrapper as the
+      org/workspace pickers, making it unreachable below 768px; pulled it out so it's always
+      visible — `3da0ad9`. Known remaining gap (explicitly flagged, not silently left): the
+      org/workspace `<select>` pickers themselves are still `hidden md:flex` from Phase 2a, so
+      switching the active org/workspace (as opposed to creating/editing/deleting one) still
+      requires `md`+ width — fixing that means an information-architecture change, out of scope
+      for a layout-only Tailwind-classes pass.
+- [x] Playwright verification at all 3 breakpoints (375x812, 768x1024, 1440x900) after every one of
+      the 5 commits above, plus a final sweep loading all 10 views individually at 375x812 and the
+      largest/most complex view (`ProjectScaffolderView`) at 768x1024 — zero horizontal overflow,
+      zero new console errors throughout. `npm run lint` clean, `npm run build` clean, `npm run
+      test` 57/57 passing after every commit (pure layout pass, no behavior changed, no new tests
+      needed).
 
 ## Phase 6 — Verification & regression safety
 
@@ -310,6 +333,21 @@ workspace end-to-end. Zero console errors across all checks.
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-14 — **Phase 5 complete**: structure & responsiveness. Playwright-audited every view at
+  375x812/768x1024/1440x900 *before* coding, confirming Sidebar (224px) + Advisor panel (320px)
+  were both always rendered alongside main content — 544px of fixed chrome on a 375px viewport.
+  Sidebar collapsed to an off-canvas drawer below `lg`, hamburger toggle added to Header
+  (`36e2090`). Advisor panel now defaults hidden below `lg` (useSyncExternalStore + matchMedia,
+  avoiding a setState-in-effect lint error) and opens as a full-width bottom sheet there, unchanged
+  at `lg`+ (`0997b67`). Remaining non-responsive fixed-column grids (modal form field-pairs)
+  stacked to one column on mobile (`54ae997`). Every dialog's close button (and the AI Drawer's
+  Send button) bumped from as small as ~18px to a 44px touch target (`b69c913`); found and fixed a
+  real reachability gap where the org/workspace management gear button was unreachable below 768px
+  (`3da0ad9`). Lint clean, build clean, Vitest 57/57 throughout (pure layout pass). Playwright
+  verified at all 3 breakpoints after every commit, plus a final sweep of all 10 views at mobile —
+  zero horizontal overflow, zero console errors. One known gap flagged in PLAN.md's Phase 5 section
+  (org/workspace picker switching still needs `md`+ width — an IA change, out of scope here). Next:
+  Phase 6 (verification & regression safety).
 - 2026-08-14 — **Phase 4 complete**: finished the two remaining required views and all four
   stretch-goal components, closing out visual design cleanup. `ProjectScaffolderView.tsx` (2072
   lines, the largest view — 4-step wizard) converted to Card/Badge/Button/Input/Textarea/Select

@@ -2,6 +2,72 @@
 
 Autonomous work log. Newest session on top.
 
+## Phase 5 complete — structure & responsiveness (2026-08-14)
+
+Started Phase 5 from scratch (no prior responsiveness work existed). Loaded the app in Playwright
+at 375x812 before writing any code and confirmed the predicted failure: Sidebar (`w-56`, 224px) and
+`ProjectAdvisorPanel` (`w-80`, 320px) were both always rendered in the same flex row as the main
+content with no responsive behavior at all — 544px of fixed-width chrome alone on a 375px viewport.
+Fixed in four independently verified, independently committed concerns, in the priority order given:
+
+1. **Sidebar → off-canvas drawer below `lg`** (`36e2090`). `components/Sidebar.tsx` is now
+   `fixed` with a `-translate-x-full`/`translate-x-0` transform below `lg`, closed by default,
+   toggled via a new hamburger button in `components/Header.tsx` (`lg:hidden`), and closed by a
+   backdrop click, its own close button, or picking a nav item. At `lg`+ it reverts to `static`,
+   pixel-identical to before. Also had to trim Header's right-hand validation pill and center
+   search bar down to icon-only below `sm` (text reappears at `sm`+), since the header itself
+   would otherwise overflow horizontally once a hamburger button was competing for the same row.
+2. **Advisor panel → hidden by default below `lg`, bottom sheet when opened** (`0997b67`).
+   Replaced the plain `useState(true)` for `isAdvisorOpen` with a `useSyncExternalStore`-backed
+   `matchMedia('(min-width: 1024px)')` check (same SSR-safe pattern the file already used for
+   `activeView`) combined with an optional manual override — avoided a
+   `react-hooks/set-state-in-effect` lint error from the first attempt (a plain `useEffect` +
+   `setState` on mount). Below `lg`, opening the panel now renders a full-width bottom sheet
+   (`fixed`, `max-h-[75vh]`, rounded top corners, backdrop-to-close) instead of squeezing a fixed
+   320px column into the flex row; at `lg`+, unchanged 320px static side panel, open by default.
+3. **Remaining fixed multi-column grids stacked for mobile** (`54ae997`). Most grids already had
+   responsive prefixes from Phase 4's primitives pass; closed the few that didn't — all inside
+   modal/inline edit forms (`AIPromptsView`'s metrics bar and provider-form rows, `TechStacksView`'s
+   7 profile-form field-pair rows across 6 profile-type modals, `RuleEngineView`'s rule-form
+   Category/Severity row) — `grid-cols-N` → `grid-cols-1 sm:grid-cols-N`. Deliberately left plain
+   `grid-cols-2` short label/value pairs alone (Dashboard's Architectural Tools shortcuts, Decision
+   Log metadata, Tech Stack summary) since those stay legible at 2 columns even at 375px.
+4. **Overlay tap targets + one reachability gap** (`b69c913`, `3da0ad9`). Every dialog's close
+   button (`CommandPalette`, `AIAssistantDrawer`, `OrganizationWorkspaceModal`, and 8 more per-view
+   create/edit modals) was sized to its icon plus ~1px padding — as small as ~18px, well under a
+   comfortable touch target. Bumped all of them (plus `AIAssistantDrawer`'s Send button) to
+   `min-w-11 min-h-11` (44px) without touching their icons, colors, or `onClick` handlers. While
+   auditing Header for this, found the "Manage Organizations & Workspaces" gear button — the only
+   way to open `OrganizationWorkspaceModal` — was nested inside the same `hidden md:flex` wrapper as
+   the org/workspace `<select>` pickers, making org/workspace management completely unreachable
+   below 768px (a Phase 2a placement issue, not something this pass intentionally hid). Pulled the
+   button out of that wrapper so it's always visible; only the pickers themselves stay `md`+-only.
+
+**Verification**: every commit independently passed `npm run lint` (clean), `npm run build` (clean,
+after `rm -rf .next`), `npm run test` (57/57, no regressions — this was a layout-only pass, no new
+tests needed), and a from-fresh Playwright pass at all three required breakpoints (375x812, 768x1024,
+1440x900) checking `document.documentElement.scrollWidth === clientWidth` (zero horizontal overflow
+at every breakpoint, every commit) and zero new console errors. Beyond the per-concern checks, did a
+final sweep loading all 10 views individually at 375x812 (via `localStorage`-seeded `activeView` +
+fresh navigation, since the app is a client-routed SPA) — all 10 came back with zero overflow and
+zero console errors — plus a tablet-width (768x1024) check of the largest/most complex view
+(`ProjectScaffolderView`, 2072 lines, 4-step wizard) with the same clean result.
+
+**Known gap, explicitly flagged rather than silently left**: the org/workspace `<select>` pickers
+themselves are still `hidden md:flex` (pre-existing from Phase 2a) — below 768px you can now *open*
+the management modal via the always-visible gear button and create/edit/delete organizations and
+workspaces there, but you can't *switch* the currently-selected org/workspace from the header without
+widening the viewport. Fixing that fully would mean redesigning where that picker lives in the
+information architecture (e.g. moving it into the command palette or a header dropdown sheet), which
+is a behavior/IA change beyond this "layout only, Tailwind responsive classes" pass's scope — noted
+here as a candidate for a future phase rather than fixed opportunistically.
+
+**Result**: Phase 5 is complete — all three checklist items done (audited every view at all three
+breakpoints and fixed Sidebar/Advisor/grids; confirmed Command Palette/AI Drawer/modals have no
+horizontal overflow and ≥44px tap targets; Playwright-verified at all three breakpoints throughout,
+not just desktop). `PLAN.md` updated accordingly. Next: Phase 6 (verification & regression safety —
+mostly already satisfied by the Vitest suite built up across Phases 0–3, so likely a short phase).
+
 ## Phase 4 complete — final 2 views + all 4 stretch goals converted, verified, committed (2026-08-14)
 
 Continued Phase 4 (visual design cleanup) from where the prior session left off (primitives, plus
