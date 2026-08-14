@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Bot,
   Sparkles,
@@ -33,6 +33,10 @@ import { AIProviderConfig, PromptTemplate, AIAgent } from '../../types/factory';
 import { StorageService, useAIAgents, useAIProviders } from '../../services/storageService';
 import { aiAgentRepository, aiProviderRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Input, Textarea, Select } from '../ui/Input';
 
 export const AIPromptsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'playground' | 'prompts' | 'providers' | 'agents'>('playground');
@@ -407,12 +411,10 @@ export const AIPromptsView: React.FC = () => {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[10px] font-semibold">
-              AI Platform Capability
-            </span>
+            <Badge tone="brand">AI Platform Capability</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">{providers.length} AI Providers Configured</span>
             <span className="text-gray-500">•</span>
@@ -423,89 +425,68 @@ export const AIPromptsView: React.FC = () => {
 
         <div className="flex items-center gap-2 flex-wrap">
           {activeTab === 'prompts' && (
-            <button
-              onClick={handleOpenAddPrompt}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" /> Create Prompt Template
-            </button>
+            <Button variant="primary" onClick={handleOpenAddPrompt}>
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Prompt Template
+            </Button>
           )}
 
           {activeTab === 'providers' && (
-            <button
-              onClick={handleOpenAddProvider}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" /> Register AI Provider
-            </button>
+            <Button variant="primary" onClick={handleOpenAddProvider}>
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Register AI Provider
+            </Button>
           )}
 
           {activeTab === 'agents' && (
-            <button
-              onClick={handleOpenAddAgent}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" /> Create Custom Agent
-            </button>
+            <Button variant="primary" onClick={handleOpenAddAgent}>
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Custom Agent
+            </Button>
           )}
 
-          <button
-            onClick={handleExportPromptConfig}
-            title="Export Prompts & Providers JSON"
-            className="p-2 bg-[#202430] hover:bg-[#282d3d] text-gray-300 border border-[#303748] rounded-lg cursor-pointer flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" /> Export Config
-          </button>
+          <Button variant="secondary" onClick={handleExportPromptConfig} title="Export Prompts & Providers JSON">
+            <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export Config
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#2b303d] pb-2">
+      <div className="flex items-center gap-2 border-b border-[#2b303d] pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('playground')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors ${
-            activeTab === 'playground'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-              : 'bg-[#181a20] text-gray-400 hover:text-gray-200 border border-[#2b303d]'
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            activeTab === 'playground' ? 'bg-blue-600 text-white' : 'bg-[#181a20] text-gray-400 hover:text-gray-200'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Interactive Playground</span>
         </button>
 
         <button
           onClick={() => setActiveTab('prompts')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors ${
-            activeTab === 'prompts'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-              : 'bg-[#181a20] text-gray-400 hover:text-gray-200 border border-[#2b303d]'
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            activeTab === 'prompts' ? 'bg-blue-600 text-white' : 'bg-[#181a20] text-gray-400 hover:text-gray-200'
           }`}
         >
-          <Code className="w-3.5 h-3.5 text-blue-400" />
+          <Code className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Prompt Library ({promptTemplates.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('providers')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors ${
-            activeTab === 'providers'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-              : 'bg-[#181a20] text-gray-400 hover:text-gray-200 border border-[#2b303d]'
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            activeTab === 'providers' ? 'bg-blue-600 text-white' : 'bg-[#181a20] text-gray-400 hover:text-gray-200'
           }`}
         >
-          <Bot className="w-3.5 h-3.5 text-purple-400" />
+          <Bot className="w-3.5 h-3.5" aria-hidden="true" />
           <span>AI Providers ({providers.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('agents')}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors ${
-            activeTab === 'agents'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-              : 'bg-[#181a20] text-gray-400 hover:text-gray-200 border border-[#2b303d]'
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-medium cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+            activeTab === 'agents' ? 'bg-blue-600 text-white' : 'bg-[#181a20] text-gray-400 hover:text-gray-200'
           }`}
         >
-          <UserCog className="w-3.5 h-3.5 text-emerald-400" />
+          <UserCog className="w-3.5 h-3.5" aria-hidden="true" />
           <span>Custom AI Agents ({customAgents.length})</span>
         </button>
       </div>
@@ -514,23 +495,19 @@ export const AIPromptsView: React.FC = () => {
       {activeTab === 'playground' && (
         <div className="space-y-6">
           {/* Model Selector & Hyperparameters Bar */}
-          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <Card className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
             {/* Model Select */}
             <div className="space-y-1">
               <label className="text-[10px] font-mono text-gray-400 flex items-center gap-1">
-                <Cpu className="w-3 h-3 text-purple-400" /> Target AI Model Provider
+                <Cpu className="w-3 h-3 text-blue-400" aria-hidden="true" /> Target AI Model Provider
               </label>
-              <select
-                value={selectedProviderId}
-                onChange={(e) => setSelectedProviderId(e.target.value)}
-                className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono"
-              >
+              <Select value={selectedProviderId} onChange={(e) => setSelectedProviderId(e.target.value)} className="font-mono">
                 {providers.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} ({p.model}) - {p.latency}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {/* Temperature */}
@@ -583,33 +560,33 @@ export const AIPromptsView: React.FC = () => {
                 className="w-full accent-blue-500 cursor-pointer"
               />
             </div>
-          </div>
+          </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left Column: System & User Prompts + Variables */}
             <div className="lg:col-span-7 space-y-4">
               {/* System Instruction Editor */}
-              <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+              <Card className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-blue-400" /> System Persona & Role Prompt
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> System Persona & Role Prompt
                   </span>
                   <span className="text-[10px] font-mono text-gray-400">Role: System</span>
                 </div>
-                <textarea
+                <Textarea
                   value={systemInstruction}
                   onChange={(e) => setSystemInstruction(e.target.value)}
                   rows={3}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded-lg p-2.5 text-xs text-gray-200 font-mono leading-relaxed focus:outline-none focus:border-blue-500"
+                  className="font-mono leading-relaxed"
                   placeholder="Define AI persona, context, and structural constraints..."
                 />
-              </div>
+              </Card>
 
               {/* User Prompt Editor */}
-              <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+              <Card className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs text-white flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-amber-400" /> User Prompt Template
+                    <Sliders className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> User Prompt Template
                   </span>
                   <div className="flex items-center gap-1 text-[10px] text-gray-400 font-mono">
                     <span>Quick Insert:</span>
@@ -617,7 +594,7 @@ export const AIPromptsView: React.FC = () => {
                       <button
                         key={vName}
                         onClick={() => handleInsertVariable(vName)}
-                        className="px-1.5 py-0.5 bg-[#222734] hover:bg-blue-600/30 text-blue-300 rounded cursor-pointer border border-[#303748]"
+                        className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-blue-300 rounded cursor-pointer border border-[#2e3340]"
                       >
                         + {`{{${vName}}}`}
                       </button>
@@ -625,114 +602,106 @@ export const AIPromptsView: React.FC = () => {
                   </div>
                 </div>
 
-                <textarea
+                <Textarea
                   value={userPromptText}
                   onChange={(e) => setUserPromptText(e.target.value)}
                   rows={6}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded-lg p-3 text-xs text-gray-100 font-mono leading-relaxed focus:outline-none focus:border-blue-500"
+                  className="font-mono leading-relaxed"
                   placeholder="Enter user prompt with template interpolation variables like {{projectName}}..."
                 />
-              </div>
+              </Card>
 
               {/* Dynamic Variables Binding Panel */}
               {recognizedVariables.length > 0 && (
-                <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
-                  <div className="font-bold text-xs text-white flex items-center justify-between border-b border-[#262a36] pb-2">
+                <Card className="space-y-3">
+                  <div className="font-bold text-xs text-white flex items-center justify-between border-b border-[#232838] pb-2">
                     <span>Interpolation Variables ({recognizedVariables.length})</span>
-                    <span className="text-[10px] text-emerald-400 font-mono">Live Value Binding</span>
+                    <span className="text-[10px] text-gray-400 font-mono">Live Value Binding</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {recognizedVariables.map((varKey) => (
                       <div key={varKey} className="space-y-1">
                         <label className="text-[10px] font-mono text-gray-400 flex items-center gap-1">
-                          <span className="text-amber-400 font-bold">{`{{${varKey}}}`}</span>
+                          <span className="text-gray-200 font-bold">{`{{${varKey}}}`}</span>
                         </label>
-                        <input
+                        <Input
                           type="text"
                           value={variableValues[varKey] || ''}
-                          onChange={(e) =>
-                            setVariableValues({ ...variableValues, [varKey]: e.target.value })
-                          }
-                          className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                          onChange={(e) => setVariableValues({ ...variableValues, [varKey]: e.target.value })}
+                          className="font-mono"
                         />
                       </div>
                     ))}
                   </div>
-                </div>
+                </Card>
               )}
 
               {/* Action Button */}
-              <button
+              <Button
+                variant="primary"
                 onClick={handleRunPlayground}
                 disabled={isExecuting || !userPromptText.trim()}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-600/30 transition-all cursor-pointer text-xs disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full justify-center py-3"
               >
-                {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Play className="w-4 h-4 fill-current" aria-hidden="true" />}
                 <span>{isExecuting ? 'Executing AI Model Evaluation...' : 'Execute Prompt Evaluation'}</span>
-              </button>
+              </Button>
             </div>
 
             {/* Right Column: Execution Output & Real-time Metrics */}
             <div className="lg:col-span-5 space-y-4">
-              <div className="bg-[#141720] border border-[#2b3142] rounded-xl p-4 flex flex-col h-[600px]">
-                <div className="flex items-center justify-between border-b border-[#252b3b] pb-2.5 mb-3">
+              <Card className="flex flex-col h-[600px]">
+                <div className="flex items-center justify-between border-b border-[#232838] pb-2.5 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-xs text-white">AI Model Evaluation Output</span>
-                    {execMetrics && (
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono">
-                        Score: {execMetrics.qualityScore}/100
-                      </span>
-                    )}
+                    {execMetrics && <Badge tone="success">Score: {execMetrics.qualityScore}/100</Badge>}
                   </div>
 
                   <div className="flex items-center gap-2">
                     {executionOutput && (
-                      <button
-                        onClick={handleCopyOutput}
-                        className="px-2 py-1 bg-[#202534] hover:bg-[#282e42] text-gray-300 rounded text-[10px] font-mono border border-[#2f374e] cursor-pointer flex items-center gap-1"
-                      >
-                        {copiedOutput ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <Button size="sm" onClick={handleCopyOutput}>
+                        {copiedOutput ? <Check className="w-3 h-3" aria-hidden="true" /> : <Copy className="w-3 h-3" aria-hidden="true" />}
                         <span>{copiedOutput ? 'Copied' : 'Copy'}</span>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
 
                 {/* Performance Metrics Header Bar */}
                 {execMetrics && (
-                  <div className="grid grid-cols-4 gap-2 p-2 bg-[#1b1f2b] border border-[#2b3142] rounded-lg mb-3 font-mono text-[10px]">
+                  <Card flat className="grid grid-cols-4 gap-2 border border-[#2b303d] mb-3 font-mono text-[10px]">
                     <div className="space-y-0.5">
-                      <div className="text-gray-400 flex items-center gap-1"><Clock className="w-2.5 h-2.5 text-blue-400" /> Latency</div>
-                      <div className="text-blue-300 font-bold">{execMetrics.latencyMs} ms</div>
+                      <div className="text-gray-400 flex items-center gap-1"><Clock className="w-2.5 h-2.5" aria-hidden="true" /> Latency</div>
+                      <div className="text-gray-100 font-bold">{execMetrics.latencyMs} ms</div>
                     </div>
                     <div className="space-y-0.5">
-                      <div className="text-gray-400 flex items-center gap-1"><Layers className="w-2.5 h-2.5 text-purple-400" /> Input Tkn</div>
-                      <div className="text-purple-300 font-bold">{execMetrics.inputTokens}</div>
+                      <div className="text-gray-400 flex items-center gap-1"><Layers className="w-2.5 h-2.5" aria-hidden="true" /> Input Tkn</div>
+                      <div className="text-gray-100 font-bold">{execMetrics.inputTokens}</div>
                     </div>
                     <div className="space-y-0.5">
-                      <div className="text-gray-400 flex items-center gap-1"><Layers className="w-2.5 h-2.5 text-emerald-400" /> Output Tkn</div>
-                      <div className="text-emerald-300 font-bold">{execMetrics.outputTokens}</div>
+                      <div className="text-gray-400 flex items-center gap-1"><Layers className="w-2.5 h-2.5" aria-hidden="true" /> Output Tkn</div>
+                      <div className="text-gray-100 font-bold">{execMetrics.outputTokens}</div>
                     </div>
                     <div className="space-y-0.5">
-                      <div className="text-gray-400 flex items-center gap-1"><DollarSign className="w-2.5 h-2.5 text-amber-400" /> Cost</div>
-                      <div className="text-amber-300 font-bold">{execMetrics.estimatedCost}</div>
+                      <div className="text-gray-400 flex items-center gap-1"><DollarSign className="w-2.5 h-2.5" aria-hidden="true" /> Cost</div>
+                      <div className="text-gray-100 font-bold">{execMetrics.estimatedCost}</div>
                     </div>
-                  </div>
+                  </Card>
                 )}
 
                 {/* Formatted Output Canvas */}
-                <div className="flex-1 overflow-y-auto font-mono text-xs text-gray-200 leading-relaxed whitespace-pre-wrap p-3 bg-[#0d0f13] rounded-lg border border-[#1e222d]">
+                <div className="flex-1 overflow-y-auto font-mono text-xs text-gray-200 leading-relaxed whitespace-pre-wrap p-3 bg-[#13151b] rounded-lg border border-[#2b303d]">
                   {executionOutput ? (
                     executionOutput
                   ) : (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-2 py-12">
-                      <Zap className="w-8 h-8 text-gray-600 animate-pulse" />
+                      <Zap className="w-8 h-8 text-gray-600" aria-hidden="true" />
                       <p className="text-xs">Click &quot;Execute Prompt Evaluation&quot; to stream output.</p>
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
             </div>
           </div>
         </div>
@@ -742,7 +711,7 @@ export const AIPromptsView: React.FC = () => {
       {activeTab === 'prompts' && (
         <div className="space-y-4">
           {/* Search & Category filter */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#181a20] border border-[#2b303d] rounded-xl p-3">
+          <Card className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
               {['all', 'Architecture', 'Security', 'Code Refactoring', 'Rule Enforcement', 'Scaffolding'].map(
                 (cat) => (
@@ -750,9 +719,7 @@ export const AIPromptsView: React.FC = () => {
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                      selectedCategory === cat
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-[#222734] text-gray-400 hover:text-gray-200'
+                      selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-[#1c2029] text-gray-400 hover:text-gray-200'
                     }`}
                   >
                     {cat}
@@ -762,21 +729,21 @@ export const AIPromptsView: React.FC = () => {
             </div>
 
             <div className="relative w-full sm:w-64 shrink-0">
-              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
-              <input
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" aria-hidden="true" />
+              <Input
                 type="text"
                 placeholder="Search templates..."
                 value={promptSearchQuery}
                 onChange={(e) => setPromptSearchQuery(e.target.value)}
-                className="w-full bg-[#12141a] border border-[#2b303d] rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                className="pl-8"
               />
             </div>
-          </div>
+          </Card>
 
           {/* List of prompt templates */}
           <div className="space-y-3">
             {filteredTemplates.length === 0 && (
-              <div className="text-center py-10 space-y-1 text-gray-500">
+              <Card className="text-center py-10 space-y-1 text-gray-500">
                 <p className="text-xs">
                   No prompt templates match{promptSearchQuery ? ` "${promptSearchQuery}"` : ''}
                   {selectedCategory !== 'all' ? ` in this category` : ''}.
@@ -792,81 +759,59 @@ export const AIPromptsView: React.FC = () => {
                     Clear filters
                   </button>
                 )}
-              </div>
+              </Card>
             )}
 
             {filteredTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3 hover:border-blue-500/40 transition-all"
-              >
+              <Card key={template.id} interactive className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm text-white">{template.name}</span>
-                      <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[10px]">
-                        v{template.version}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono text-[10px]">
-                        {template.role} Prompt
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-[#222734] text-gray-300 font-mono text-[10px]">
-                        {template.category}
-                      </span>
+                      <Badge tone="brand" className="normal-case">v{template.version}</Badge>
+                      <Badge tone="neutral" className="normal-case">{template.role} Prompt</Badge>
+                      <Badge tone="neutral" className="normal-case">{template.category}</Badge>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={() => handleLoadTemplateToPlayground(template)}
-                      className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium cursor-pointer flex items-center gap-1"
-                    >
-                      <ArrowUpRight className="w-3.5 h-3.5" /> Load in Playground
-                    </button>
-                    <button
+                    <Button size="sm" variant="primary" onClick={() => handleLoadTemplateToPlayground(template)}>
+                      <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" /> Load in Playground
+                    </Button>
+                    <Button
+                      size="icon"
                       onClick={() => handleOpenEditPrompt(template)}
                       title="Edit Template"
                       aria-label={`Edit template ${template.name}`}
-                      className="p-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="icon"
                       onClick={() => handleDeletePromptTemplate(template.id)}
                       title="Delete Template"
                       aria-label={`Delete template ${template.name}`}
-                      className="p-1.5 bg-[#222734] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
+                      className="hover:text-red-400"
                     >
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
-                <pre className="p-3 bg-[#12141a] border border-[#272b38] rounded-lg text-blue-300 font-mono text-[11px] overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                <pre className="p-3 bg-[#13151b] border border-[#2b303d] rounded-lg text-gray-200 font-mono text-[11px] overflow-x-auto leading-relaxed whitespace-pre-wrap">
                   {template.prompt}
                 </pre>
 
                 {template.variables.length > 0 && (
-                  <div className="flex items-center gap-2 text-[10px] font-mono text-gray-400">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-gray-400 flex-wrap">
                     <span>Parsed Variables:</span>
                     {template.variables.map((v) => (
-                      <span
-                        key={v}
-                        className="px-2 py-0.5 rounded bg-[#202534] border border-[#2e3549] text-amber-300 font-semibold"
-                      >
-                        {`{{${v}}}`}
-                      </span>
+                      <Badge key={v} tone="neutral" className="normal-case">{`{{${v}}}`}</Badge>
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
-
-            {filteredTemplates.length === 0 && (
-              <div className="text-center py-12 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-400">
-                No prompt templates found matching your criteria.
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -874,8 +819,8 @@ export const AIPromptsView: React.FC = () => {
       {/* TAB 3: AI PROVIDERS MANAGEMENT */}
       {activeTab === 'providers' && (
         <div className="space-y-4">
-          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-amber-200">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-amber-200">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
             <p className="text-xs leading-relaxed">
               <span className="font-bold">API keys are stored only in this browser&apos;s localStorage</span> and are
               sent only to this app&apos;s own <span className="font-mono">/api/ai/generate</span> route, which
@@ -889,52 +834,47 @@ export const AIPromptsView: React.FC = () => {
             {providers.map((provider) => {
               const test = connectionTests[provider.id];
               return (
-                <div
+                <Card
                   key={provider.id}
-                  className={`bg-[#181a20] border rounded-xl p-4 space-y-3 flex flex-col justify-between transition-all ${
-                    provider.isActiveDefault ? 'border-emerald-500/50' : 'border-[#2b303d] hover:border-blue-500/40'
-                  }`}
+                  className={`space-y-3 flex flex-col justify-between ${provider.isActiveDefault ? 'border-emerald-500/40' : ''}`}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-sm text-white flex items-center gap-1.5">
                         {provider.name}
                         {provider.isActiveDefault && (
-                          <span
-                            title="Default provider"
-                            className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono flex items-center gap-1"
-                          >
-                            <Star className="w-2.5 h-2.5 fill-current" /> DEFAULT
-                          </span>
+                          <Badge tone="success" title="Default provider">
+                            <Star className="w-2.5 h-2.5 fill-current" aria-hidden="true" /> DEFAULT
+                          </Badge>
                         )}
                       </span>
                       <button
                         onClick={() => handleToggleProviderStatus(provider.id)}
                         className={`px-2 py-0.5 rounded font-mono text-[10px] cursor-pointer transition-colors border shrink-0 ${
                           provider.status === 'active'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-gray-800 text-gray-400 border-gray-700'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-[#1c2029] text-gray-400 border-[#2e3340]'
                         }`}
                       >
                         {provider.status.toUpperCase()}
                       </button>
                     </div>
 
-                    <div className="text-xs text-gray-400 font-mono space-y-1 bg-[#12141a] p-2.5 rounded border border-[#232734]">
+                    <div className="text-xs text-gray-400 font-mono space-y-1 bg-[#13151b] p-2.5 rounded border border-[#2b303d]">
                       <div>
                         Vendor: <span className="text-gray-200">{provider.provider}</span>
                       </div>
                       <div>
-                        Model: <span className="text-purple-400 font-bold">{provider.model}</span>
+                        Model: <span className="text-gray-200 font-bold">{provider.model}</span>
                       </div>
                       <div>
-                        Cost / 1k Tokens: <span className="text-amber-300">{provider.costPer1k}</span>
+                        Cost / 1k Tokens: <span className="text-gray-200">{provider.costPer1k}</span>
                       </div>
                       <div>
-                        Latency SLA: <span className="text-blue-300">{provider.latency}</span>
+                        Latency SLA: <span className="text-gray-200">{provider.latency}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <KeyRound className="w-2.5 h-2.5" />
+                        <KeyRound className="w-2.5 h-2.5" aria-hidden="true" />
                         {provider.provider === 'Ollama' ? (
                           <span>Base URL: <span className="text-gray-200">{provider.baseUrl || 'http://localhost:11434 (default)'}</span></span>
                         ) : (
@@ -948,15 +888,15 @@ export const AIPromptsView: React.FC = () => {
                         role="status"
                         className={`text-[11px] font-mono px-2.5 py-1.5 rounded border flex items-center gap-1.5 ${
                           test.status === 'success'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : test.status === 'error'
-                            ? 'bg-red-500/10 text-red-400 border-red-500/30'
-                            : 'bg-gray-800 text-gray-400 border-gray-700'
+                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                            : 'bg-[#1c2029] text-gray-400 border-[#2e3340]'
                         }`}
                       >
-                        {test.status === 'testing' && <Loader2 className="w-3 h-3 animate-spin shrink-0" />}
-                        {test.status === 'success' && <Check className="w-3 h-3 shrink-0" />}
-                        {test.status === 'error' && <X className="w-3 h-3 shrink-0" />}
+                        {test.status === 'testing' && <Loader2 className="w-3 h-3 animate-spin shrink-0" aria-hidden="true" />}
+                        {test.status === 'success' && <Check className="w-3 h-3 shrink-0" aria-hidden="true" />}
+                        {test.status === 'error' && <X className="w-3 h-3 shrink-0" aria-hidden="true" />}
                         <span className="break-words">
                           {test.status === 'success' ? `✓ ${test.message}` : test.message}
                         </span>
@@ -964,30 +904,20 @@ export const AIPromptsView: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#232838]">
                     {!provider.isActiveDefault && (
-                      <button
-                        onClick={() => handleSetDefaultProvider(provider.id)}
-                        className="px-2.5 py-1 bg-[#222734] hover:bg-emerald-900/40 text-emerald-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-emerald-800/50"
-                      >
-                        <Star className="w-3.5 h-3.5" /> Set as Default
-                      </button>
+                      <Button size="sm" onClick={() => handleSetDefaultProvider(provider.id)}>
+                        <Star className="w-3.5 h-3.5" aria-hidden="true" /> Set as Default
+                      </Button>
                     )}
-                    <button
-                      onClick={() => handleTestConnection(provider)}
-                      disabled={test?.status === 'testing'}
-                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] disabled:opacity-50"
-                    >
-                      <Wifi className="w-3.5 h-3.5" /> Test Connection
-                    </button>
-                    <button
-                      onClick={() => handleOpenEditProvider(provider)}
-                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" /> Configure
-                    </button>
+                    <Button size="sm" onClick={() => handleTestConnection(provider)} disabled={test?.status === 'testing'}>
+                      <Wifi className="w-3.5 h-3.5" aria-hidden="true" /> Test Connection
+                    </Button>
+                    <Button size="sm" onClick={() => handleOpenEditProvider(provider)}>
+                      <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Configure
+                    </Button>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -998,7 +928,7 @@ export const AIPromptsView: React.FC = () => {
       {activeTab === 'agents' && (
         <div className="space-y-4">
           {customAgents.length === 0 ? (
-            <div className="text-center py-12 bg-[#181a20] border border-[#2b303d] rounded-xl space-y-2">
+            <Card className="text-center py-12 space-y-2">
               <UserCog className="w-6 h-6 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs text-gray-400">
                 No custom AI agents yet. Define a persona beyond the built-in roles (Software
@@ -1010,42 +940,31 @@ export const AIPromptsView: React.FC = () => {
               >
                 Create your first custom agent
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {customAgents.map((agent) => (
-                <div
-                  key={agent.id}
-                  className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition-all"
-                >
+                <Card key={agent.id} interactive className="space-y-3 flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <UserCog className="w-4 h-4 text-emerald-400" />
+                      <UserCog className="w-4 h-4 text-blue-400" aria-hidden="true" />
                       <span className="font-bold text-sm text-white">{agent.name}</span>
                     </div>
                     <p className="text-xs text-gray-400">{agent.description}</p>
-                    <pre className="p-2.5 bg-[#12141a] border border-[#232734] rounded text-[11px] text-gray-300 font-mono whitespace-pre-wrap">
+                    <pre className="p-2.5 bg-[#13151b] border border-[#2b303d] rounded text-[11px] text-gray-300 font-mono whitespace-pre-wrap">
                       {agent.systemPromptStyle}
                     </pre>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button
-                      onClick={() => handleOpenEditAgent(agent)}
-                      aria-label={`Edit agent ${agent.name}`}
-                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]"
-                    >
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#232838]">
+                    <Button size="sm" onClick={() => handleOpenEditAgent(agent)} aria-label={`Edit agent ${agent.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAgent(agent.id)}
-                      aria-label={`Delete agent ${agent.name}`}
-                      className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50"
-                    >
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteAgent(agent.id)} aria-label={`Delete agent ${agent.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -1058,7 +977,7 @@ export const AIPromptsView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <UserCog className="w-4 h-4 text-emerald-400" />
+                <UserCog className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingAgent ? 'Edit Custom AI Agent' : 'Create Custom AI Agent'}
               </span>
               <button
@@ -1073,53 +992,39 @@ export const AIPromptsView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Agent Name</label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g. Compliance Reviewer"
                   value={agentName}
                   onChange={(e) => setAgentName(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Short Description</label>
-                <input
+                <Input
                   type="text"
                   placeholder="What this persona focuses on"
                   value={agentDescription}
                   onChange={(e) => setAgentDescription(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">System Prompt Style</label>
-                <textarea
+                <Textarea
                   rows={4}
                   placeholder="You are a meticulous Compliance Reviewer who flags regulatory risk..."
                   value={agentSystemPromptStyle}
                   onChange={(e) => setAgentSystemPromptStyle(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2.5 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500 leading-relaxed"
+                  className="font-mono leading-relaxed"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button
-                type="button"
-                onClick={() => setIsAgentModalOpen(false)}
-                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveAgent}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
-              >
-                Save Agent
-              </button>
+              <Button variant="secondary" onClick={() => setIsAgentModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveAgent}>Save Agent</Button>
             </div>
           </div>
         </div>
@@ -1131,60 +1036,55 @@ export const AIPromptsView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Code className="w-4 h-4 text-blue-400" />
+                <Code className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingPrompt ? 'Edit Prompt Template' : 'Create New Prompt Template'}
               </span>
               <button
                 onClick={() => setIsPromptModalOpen(false)}
+                aria-label="Close dialog"
                 className="p-1 rounded text-gray-400 hover:text-white cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Template Name</label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g. Architecture Security Reviewer"
                   value={promptName}
                   onChange={(e) => setPromptName(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Role</label>
-                  <select
-                    value={promptRole}
-                    onChange={(e) => setPromptRole(e.target.value as any)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono"
-                  >
+                  <Select value={promptRole} onChange={(e) => setPromptRole(e.target.value as any)}>
                     <option value="System">System</option>
                     <option value="Developer">Developer</option>
                     <option value="User">User</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Category</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="Architecture"
                     value={promptCategory}
                     onChange={(e) => setPromptCategory(e.target.value)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Version</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="1.0.0"
                     value={promptVersion}
                     onChange={(e) => setPromptVersion(e.target.value)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono"
+                    className="font-mono"
                   />
                 </div>
               </div>
@@ -1192,32 +1092,20 @@ export const AIPromptsView: React.FC = () => {
 
             <div>
               <label className="text-[10px] text-gray-400 block mb-1">
-                Prompt Body Text (Supports <span className="text-amber-400 font-mono">{`{{variable}}`}</span> tokens)
+                Prompt Body Text (Supports <span className="text-gray-300 font-mono">{`{{variable}}`}</span> tokens)
               </label>
-              <textarea
+              <Textarea
                 rows={6}
                 placeholder="Enter prompt text..."
                 value={promptBody}
                 onChange={(e) => setPromptBody(e.target.value)}
-                className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2.5 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500 leading-relaxed"
+                className="font-mono leading-relaxed"
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button
-                type="button"
-                onClick={() => setIsPromptModalOpen(false)}
-                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSavePromptTemplate}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
-              >
-                Save Prompt Template
-              </button>
+              <Button variant="secondary" onClick={() => setIsPromptModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSavePromptTemplate}>Save Prompt Template</Button>
             </div>
           </div>
         </div>
@@ -1229,54 +1117,50 @@ export const AIPromptsView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Bot className="w-4 h-4 text-purple-400" />
+                <Bot className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingProvider ? 'Configure AI Provider' : 'Register New AI Provider'}
               </span>
               <button
                 onClick={() => setIsProviderModalOpen(false)}
+                aria-label="Close dialog"
                 className="p-1 rounded text-gray-400 hover:text-white cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Provider Display Name</label>
-                <input
+                <Input
                   type="text"
                   placeholder="Google Gemini 3.6 Flash"
                   value={providerName}
                   onChange={(e) => setProviderName(e.target.value)}
-                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Vendor Family</label>
-                  <select
-                    value={providerVendor}
-                    onChange={(e) => setProviderVendor(e.target.value as any)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono"
-                  >
+                  <Select value={providerVendor} onChange={(e) => setProviderVendor(e.target.value as any)}>
                     <option value="Google Gemini">Google Gemini</option>
                     <option value="OpenAI">OpenAI</option>
                     <option value="Anthropic">Anthropic</option>
                     <option value="DeepSeek">DeepSeek</option>
                     <option value="Azure OpenAI">Azure OpenAI</option>
                     <option value="Ollama">Ollama</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Model ID</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="gemini-3.6-flash"
                     value={providerModel}
                     onChange={(e) => setProviderModel(e.target.value)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-purple-300 focus:outline-none focus:border-blue-500"
+                    className="font-mono"
                   />
                 </div>
               </div>
@@ -1284,23 +1168,23 @@ export const AIPromptsView: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Cost Per 1k Tokens</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="$0.00015"
                     value={providerCost}
                     onChange={(e) => setProviderCost(e.target.value)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-amber-300 focus:outline-none focus:border-blue-500"
+                    className="font-mono"
                   />
                 </div>
 
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Expected Latency SLA</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="180ms"
                     value={providerLatency}
                     onChange={(e) => setProviderLatency(e.target.value)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-blue-300 focus:outline-none focus:border-blue-500"
+                    className="font-mono"
                   />
                 </div>
               </div>
@@ -1308,12 +1192,12 @@ export const AIPromptsView: React.FC = () => {
               {providerVendor === 'Ollama' ? (
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Base URL (local Ollama server)</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="http://localhost:11434"
                     value={providerBaseUrl}
                     onChange={(e) => setProviderBaseUrl(e.target.value)}
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                    className="font-mono"
                   />
                   <p className="text-[10px] text-gray-500 mt-1">
                     Ollama runs locally and needs no API key. Defaults to http://localhost:11434 if left blank.
@@ -1322,33 +1206,33 @@ export const AIPromptsView: React.FC = () => {
               ) : (
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">API Key</label>
-                  <input
+                  <Input
                     type="password"
                     placeholder={providerVendor === 'Azure OpenAI' ? 'Azure OpenAI API key' : 'sk-...'}
                     value={providerApiKey}
                     onChange={(e) => setProviderApiKey(e.target.value)}
                     autoComplete="off"
-                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                    className="font-mono"
                   />
                   {providerVendor === 'Azure OpenAI' && (
                     <div className="mt-2">
                       <label className="text-[10px] text-gray-400 block mb-1">
                         Base URL (deployment endpoint, required)
                       </label>
-                      <input
+                      <Input
                         type="text"
                         placeholder="https://{resource}.openai.azure.com/openai/deployments/{deployment}"
                         value={providerBaseUrl}
                         onChange={(e) => setProviderBaseUrl(e.target.value)}
-                        className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                        className="font-mono"
                       />
                     </div>
                   )}
                 </div>
               )}
 
-              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 text-amber-200">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 text-amber-200">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-[10.5px] leading-relaxed">
                   Stored in <span className="font-bold">this browser&apos;s localStorage only</span> and sent only to
                   this app&apos;s own <span className="font-mono">/api/ai/generate</span> route. Not a secure secret
@@ -1358,20 +1242,8 @@ export const AIPromptsView: React.FC = () => {
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button
-                type="button"
-                onClick={() => setIsProviderModalOpen(false)}
-                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveProvider}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
-              >
-                Save Provider
-              </button>
+              <Button variant="secondary" onClick={() => setIsProviderModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveProvider}>Save Provider</Button>
             </div>
           </div>
         </div>
@@ -1379,4 +1251,3 @@ export const AIPromptsView: React.FC = () => {
     </div>
   );
 };
-
