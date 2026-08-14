@@ -252,32 +252,48 @@ the Scaffolder, which already works well and wasn't something the user asked to 
 
 ## Phase 4 — Visual design cleanup
 
-**In progress — partial, verified work landed; not yet complete.** Two agent attempts hit an
-account-level API session limit mid-work (not a code problem). The first left nothing to recover
-(failed before any file changes). The second got further: it committed
+**In progress — substantial verified progress landed this session; not yet complete.** Two prior
+agent attempts hit an account-level API session limit mid-work (not a code problem). The first left
+nothing to recover (failed before any file changes). The second got further: it committed
 `components/ui/{Button,Badge,Card,Input}.tsx` plus Header/Sidebar/DashboardView conversions
-(`2de830b`) before hitting the limit while `FeatureManifestsView.tsx` was mid-conversion. I
-verified that partial file myself (lint/build/test clean, full Playwright create→activate→delete
-cycle on Feature Manifests with zero console errors) and committed it (`402ecd4`) rather than
-discard verified, working progress.
+(`2de830b`) and a verified `FeatureManifestsView.tsx` conversion (`402ecd4`). This (third) session
+continued from there and converted six more views, one commit per view, each independently
+lint/build/test/Playwright-verified before committing: `BlueprintsView` + `ImpactAnalyzerView`
+(`e6428a7`), `RuleEngineView` (`e8c7c37`), `TechStacksView` (`8750e78`), `PluginsView` +
+`DecisionLogsView` (`f67076d`).
 
 - [x] Shared primitives created: `components/ui/Button.tsx`, `Badge.tsx`, `Card.tsx`, `Input.tsx`
       (plain React + `clsx`/`tailwind-merge`, no new dependency). (`2de830b`)
-- [~] Applied to: Header, Sidebar, DashboardView (`2de830b`), FeatureManifestsView (`402ecd4`).
-      **Not yet applied to**: BlueprintsView, ProjectScaffolderView, RuleEngineView,
-      TechStacksView, AIPromptsView, PluginsView, DecisionLogsView, ImpactAnalyzerView,
-      OrganizationWorkspaceModal, CommandPalette, AIAssistantDrawer, ProjectAdvisorPanel — these
-      still use one-off Tailwind class strings and are the next work for this phase.
-- [x] Accent-color tightening done on DashboardView (metrics row: blue as single brand accent,
-      emerald/red reserved for real validation status, per `2de830b`'s commit message). **Not yet
-      audited on the remaining views listed above.**
-- [ ] Badge/border/box density reduction and spacing-scale consistency: only touched so far on
-      the views converted to primitives above; the bulk of the app (everything in the "not yet
-      applied to" list) still has the original density this phase exists to fix.
+- [~] Applied to: Header, Sidebar, DashboardView (`2de830b`), FeatureManifestsView (`402ecd4`),
+      BlueprintsView, ImpactAnalyzerView (`e6428a7`), RuleEngineView (`e8c7c37`), TechStacksView
+      (`8750e78`), PluginsView, DecisionLogsView (`f67076d`).
+      **Not yet applied to**: `ProjectScaffolderView.tsx` (2072 lines — largest view in the app,
+      multi-step wizard with many form sections) and `AIPromptsView.tsx` (1382 lines — provider
+      config forms + custom AI agent tabs), plus the stretch-goal items
+      `OrganizationWorkspaceModal`, `CommandPalette`, `AIAssistantDrawer`, `ProjectAdvisorPanel` —
+      these still use one-off Tailwind class strings. Deliberately left unconverted rather than
+      rushed: both remaining required files are large enough that a rushed conversion without full
+      per-file lint/build/test/Playwright verification risked exactly the kind of half-broken state
+      this phase's process explicitly guards against.
+- [x] Accent-color tightening done on DashboardView (`2de830b`) and on every view converted this
+      session — rainbow per-category/per-type badge colors (purple/cyan/amber/rose used
+      decoratively) collapsed to neutral/brand Badge tones, with emerald/red reserved strictly for
+      real success/error/warning status (validation results, active/inactive state, score deltas).
+      **Not yet audited on** `ProjectScaffolderView` and `AIPromptsView`.
+- [~] Badge/border/box density reduction and spacing-scale consistency: done on every view listed
+      as converted above (Card's single `bg-[#181a20] border-[#2b303d] rounded-lg p-4` replaces the
+      previously-duplicated ad-hoc box styles; nested inner boxes normalized to
+      `bg-[#13151b] border-[#2b303d]`). Still outstanding on `ProjectScaffolderView` and
+      `AIPromptsView`.
 
-Next step if continuing this phase: re-dispatch with the same scope, explicitly told to continue
-from where this left off (primitives exist and work — extend their use to the remaining views
-listed above) rather than re-doing Header/Sidebar/Dashboard/FeatureManifests.
+Next step if continuing this phase: convert `ProjectScaffolderView.tsx` and `AIPromptsView.tsx`
+next (in that order, matching the original plan), one commit per file, following the exact same
+pattern as the six views converted this session — read the file fully first, wrap panel/card
+sections in `Card`, replace colored pills with `Badge` (brand/success/warning/danger by real
+semantics only), buttons with `Button`, and raw inputs/selects/textareas with the shared
+`Input`/`Select`/`Textarea`, then lint + build + test + Playwright before each commit. If time
+allows after those two, pick up the stretch-goal items (`OrganizationWorkspaceModal`,
+`CommandPalette`, `AIAssistantDrawer`, `ProjectAdvisorPanel`).
 
 ## Phase 5 — Structure & responsiveness
 
