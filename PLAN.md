@@ -252,12 +252,32 @@ the Scaffolder, which already works well and wasn't something the user asked to 
 
 ## Phase 4 — Visual design cleanup
 
-- [ ] Reduce badge/border/box density; establish a clearer spacing/type scale (use the
-      `frontend-design` skill for this pass).
-- [ ] Extract shared primitives (Button, Badge, Card, Input) to replace repeated one-off Tailwind
-      class strings — fixes visual inconsistency and code duplication together.
-- [ ] Limit simultaneous accent colors per screen; reserve color for status/severity meaning, not
-      decoration.
+**In progress — partial, verified work landed; not yet complete.** Two agent attempts hit an
+account-level API session limit mid-work (not a code problem). The first left nothing to recover
+(failed before any file changes). The second got further: it committed
+`components/ui/{Button,Badge,Card,Input}.tsx` plus Header/Sidebar/DashboardView conversions
+(`2de830b`) before hitting the limit while `FeatureManifestsView.tsx` was mid-conversion. I
+verified that partial file myself (lint/build/test clean, full Playwright create→activate→delete
+cycle on Feature Manifests with zero console errors) and committed it (`402ecd4`) rather than
+discard verified, working progress.
+
+- [x] Shared primitives created: `components/ui/Button.tsx`, `Badge.tsx`, `Card.tsx`, `Input.tsx`
+      (plain React + `clsx`/`tailwind-merge`, no new dependency). (`2de830b`)
+- [~] Applied to: Header, Sidebar, DashboardView (`2de830b`), FeatureManifestsView (`402ecd4`).
+      **Not yet applied to**: BlueprintsView, ProjectScaffolderView, RuleEngineView,
+      TechStacksView, AIPromptsView, PluginsView, DecisionLogsView, ImpactAnalyzerView,
+      OrganizationWorkspaceModal, CommandPalette, AIAssistantDrawer, ProjectAdvisorPanel — these
+      still use one-off Tailwind class strings and are the next work for this phase.
+- [x] Accent-color tightening done on DashboardView (metrics row: blue as single brand accent,
+      emerald/red reserved for real validation status, per `2de830b`'s commit message). **Not yet
+      audited on the remaining views listed above.**
+- [ ] Badge/border/box density reduction and spacing-scale consistency: only touched so far on
+      the views converted to primitives above; the bulk of the app (everything in the "not yet
+      applied to" list) still has the original density this phase exists to fix.
+
+Next step if continuing this phase: re-dispatch with the same scope, explicitly told to continue
+from where this left off (primitives exist and work — extend their use to the remaining views
+listed above) rather than re-doing Header/Sidebar/Dashboard/FeatureManifests.
 
 ## Phase 5 — Structure & responsiveness
 
