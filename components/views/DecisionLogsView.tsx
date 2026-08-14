@@ -5,19 +5,16 @@ import {
   FileSpreadsheet,
   Plus,
   Search,
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
   User,
-  Calendar,
   Sparkles,
   Download,
-  GitCommit,
-  ArrowRight,
-  ShieldAlert,
 } from 'lucide-react';
 import { useDecisionLogs } from '../../services/storageService';
 import { DecisionService } from '../../services/decisionService';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Input, Textarea } from '../ui/Input';
 
 interface DecisionLogsViewProps {
   openAIRefactor: (prompt: string) => void;
@@ -88,12 +85,10 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono text-[10px] font-semibold">
-              Architecture Audit
-            </span>
+            <Badge tone="brand">Architecture Audit</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">{logs.length} Architectural Decisions Recorded</span>
           </div>
@@ -101,21 +96,15 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleExportMarkdown}
-            className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-gray-300 hover:text-white border border-[#2e3446] rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-          >
+          <Button variant="secondary" onClick={handleExportMarkdown}>
             <Download className="w-3.5 h-3.5" /> Export ADRs (.md)
-          </button>
+          </Button>
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-          >
+          <Button variant="primary" onClick={() => setShowAddModal(true)}>
             <Plus className="w-3.5 h-3.5" /> Log Architectural Decision
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -167,9 +156,9 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
                 <div
                   key={log.id}
                   onClick={() => setSelectedLogId(log.id)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 ${
+                  className={`p-3.5 rounded-lg border transition-all cursor-pointer space-y-2 ${
                     isSelected
-                      ? 'bg-purple-600/20 border-purple-500 shadow-md shadow-purple-500/10'
+                      ? 'bg-blue-600/15 border-blue-500'
                       : 'bg-[#181a20] border-[#2b303d] hover:border-gray-600'
                   }`}
                 >
@@ -180,8 +169,8 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
 
                   <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">{log.reason}</p>
 
-                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 pt-1 border-t border-[#252936]">
-                    <div className="flex items-center gap-1 text-purple-400">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 pt-1 border-t border-[#2b303d]">
+                    <div className="flex items-center gap-1 text-gray-400">
                       <User className="w-3 h-3" />
                       <span>{log.author}</span>
                     </div>
@@ -194,38 +183,37 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
         </div>
 
         {/* Right 7 Cols: Detailed ADR Inspector */}
-        <div className="lg:col-span-7 bg-[#181a20] border border-[#2b303d] rounded-xl p-5 space-y-5">
+        <Card className="lg:col-span-7 p-5 space-y-5">
           {selectedLog ? (
             <>
               <div className="flex items-start justify-between pb-3 border-b border-[#2b303d]">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono text-[10px] font-semibold">
-                      ADR Record #{selectedLog.id}
-                    </span>
+                    <Badge tone="brand">ADR Record #{selectedLog.id}</Badge>
                     <span className="text-gray-500">•</span>
                     <span className="text-gray-400 font-mono">{selectedLog.date}</span>
                   </div>
                   <h2 className="text-base font-bold text-white">{selectedLog.decision}</h2>
                 </div>
 
-                <button
+                <Button
+                  variant="secondary"
                   onClick={() =>
                     openAIRefactor(`Review ADR '${selectedLog.decision}'. Analyze architectural trade-offs, potential risks, and future refactoring path.`)
                   }
-                  className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-blue-400 border border-blue-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="shrink-0"
                 >
                   <Sparkles className="w-3.5 h-3.5" /> AI ADR Review
-                </button>
+                </Button>
               </div>
 
               {/* Author & Context metadata */}
               <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div className="p-3 bg-[#13151c] border border-[#262a36] rounded-lg">
+                <div className="p-3 bg-[#13151b] border border-[#2b303d] rounded-lg">
                   <div className="text-gray-500 text-[10px]">Author / Decision Owner</div>
-                  <div className="text-purple-300 font-bold text-xs mt-0.5">{selectedLog.author}</div>
+                  <div className="text-gray-200 font-bold text-xs mt-0.5">{selectedLog.author}</div>
                 </div>
-                <div className="p-3 bg-[#13151c] border border-[#262a36] rounded-lg">
+                <div className="p-3 bg-[#13151b] border border-[#2b303d] rounded-lg">
                   <div className="text-gray-500 text-[10px]">Target Workspace Project</div>
                   <div className="text-blue-300 font-bold text-xs mt-0.5">{selectedLog.projectId}</div>
                 </div>
@@ -234,7 +222,7 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
               {/* Rationale & Reasoning */}
               <div className="space-y-1.5">
                 <div className="font-semibold text-gray-200 text-xs">Architectural Rationale & Context</div>
-                <p className="p-3.5 bg-[#13151c] border border-[#262a36] rounded-lg text-gray-300 text-xs leading-relaxed">
+                <p className="p-3.5 bg-[#13151b] border border-[#2b303d] rounded-lg text-gray-300 text-xs leading-relaxed">
                   {selectedLog.reason}
                 </p>
               </div>
@@ -242,7 +230,7 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
               {/* Impact Analysis */}
               <div className="space-y-1.5">
                 <div className="font-semibold text-gray-200 text-xs">Architectural Impact & Consequence</div>
-                <p className="p-3.5 bg-[#13151c] border border-[#262a36] rounded-lg text-gray-300 text-xs leading-relaxed font-mono">
+                <p className="p-3.5 bg-[#13151b] border border-[#2b303d] rounded-lg text-gray-300 text-xs leading-relaxed font-mono">
                   {selectedLog.impact}
                 </p>
               </div>
@@ -272,7 +260,7 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
                 : 'Select an ADR decision record to view details.'}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Add New Decision Modal */}
@@ -280,7 +268,7 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <form
             onSubmit={handleAddDecision}
-            className="bg-[#181a20] border border-[#323745] w-full max-w-lg rounded-xl p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150"
+            className="bg-[#181a20] border border-[#2b303d] w-full max-w-lg rounded-xl p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150"
           >
             <div className="flex items-center justify-between border-b border-[#2b303d] pb-3">
               <div className="font-bold text-white text-sm">Record Architectural Decision (ADR)</div>
@@ -297,64 +285,54 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
             <div className="space-y-3">
               <div>
                 <label className="text-gray-300 block mb-1 font-medium">Decision Title</label>
-                <input
+                <Input
                   type="text"
                   value={newDecision}
                   onChange={(e) => setNewDecision(e.target.value)}
                   placeholder="e.g. Standardize on gRPC for inter-service communication"
-                  className="w-full bg-[#13151c] border border-[#2e3446] text-white rounded-lg p-2.5 focus:outline-none focus:border-blue-500 text-xs"
                   required
                 />
               </div>
 
               <div>
                 <label className="text-gray-300 block mb-1 font-medium">Architectural Rationale & Context</label>
-                <textarea
+                <Textarea
                   value={newReason}
                   onChange={(e) => setNewReason(e.target.value)}
                   rows={3}
                   placeholder="Why was this architectural decision made? What trade-offs were evaluated?"
-                  className="w-full bg-[#13151c] border border-[#2e3446] text-white rounded-lg p-2.5 focus:outline-none focus:border-blue-500 text-xs leading-relaxed"
                   required
                 />
               </div>
 
               <div>
                 <label className="text-gray-300 block mb-1 font-medium">Architectural Impact & Consequence</label>
-                <textarea
+                <Textarea
                   value={newImpact}
                   onChange={(e) => setNewImpact(e.target.value)}
                   rows={2}
                   placeholder="What is the consequence on security, performance, or team velocity?"
-                  className="w-full bg-[#13151c] border border-[#2e3446] text-white rounded-lg p-2.5 focus:outline-none focus:border-blue-500 text-xs leading-relaxed font-mono"
+                  className="font-mono"
                 />
               </div>
 
               <div>
                 <label className="text-gray-300 block mb-1 font-medium">Author / Architect Name</label>
-                <input
+                <Input
                   type="text"
                   value={newAuthor}
                   onChange={(e) => setNewAuthor(e.target.value)}
-                  className="w-full bg-[#13151c] border border-[#2e3446] text-white rounded-lg p-2.5 focus:outline-none focus:border-blue-500 text-xs"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-[#2b303d]">
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 bg-[#202430] text-gray-300 hover:text-white rounded-lg cursor-pointer"
-              >
+              <Button variant="secondary" onClick={() => setShowAddModal(false)}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold cursor-pointer shadow-md shadow-blue-600/30"
-              >
+              </Button>
+              <Button variant="primary" type="submit">
                 Save Decision
-              </button>
+              </Button>
             </div>
           </form>
         </div>
