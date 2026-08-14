@@ -104,10 +104,17 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
   setSelectedBlueprint,
 }) => {
   const [ruleSets, setRuleSets] = useState<RuleSet[]>(RuleService.getRuleSets());
-  const activeRuleSet = ruleSets[0] || { id: 'ruleset-clean-arch', name: 'Default Ruleset', description: '', rules: [] };
+  const activeRuleSet =
+    (blueprint && ruleSets.find((rs) => rs.id === blueprint.ruleSetId)) ||
+    ruleSets[0] || { id: 'ruleset-clean-arch', name: 'Default Ruleset', description: '', rules: [] };
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Rule Set container management (Phase 2b, see PLAN.md)
+  const [isRuleSetModalOpen, setIsRuleSetModalOpen] = useState<boolean>(false);
+  const [newRuleSetName, setNewRuleSetName] = useState<string>('');
+  const [newRuleSetDescription, setNewRuleSetDescription] = useState<string>('');
 
   // Modal / Form state
   const [isRuleModalOpen, setIsRuleModalOpen] = useState<boolean>(false);
@@ -256,6 +263,49 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
     downloadAnchor.remove();
   };
 
+  const handleSwitchRuleSet = (ruleSetId: string) => {
+    if (blueprint && setSelectedBlueprint) {
+      const updatedBlueprint = { ...blueprint, ruleSetId };
+      setSelectedBlueprint(updatedBlueprint);
+      const rs = ruleSets.find((r) => r.id === ruleSetId);
+      if (rs) {
+        setValidationReport(RuleService.validateBlueprint(updatedBlueprint, rs));
+      }
+    }
+  };
+
+  const handleOpenCreateRuleSet = () => {
+    setNewRuleSetName('');
+    setNewRuleSetDescription('');
+    setIsRuleSetModalOpen(true);
+  };
+
+  const handleCreateRuleSet = () => {
+    if (!newRuleSetName.trim()) {
+      alert('Please provide a name for the new Rule Set.');
+      return;
+    }
+    const created = RuleService.createRuleSet(newRuleSetName, newRuleSetDescription);
+    const updatedSets = RuleService.getRuleSets();
+    setRuleSets(updatedSets);
+    setIsRuleSetModalOpen(false);
+    handleSwitchRuleSet(created.id);
+  };
+
+  const handleDeleteRuleSet = (ruleSetId: string) => {
+    if (ruleSets.length <= 1) {
+      alert('At least one Rule Set must remain.');
+      return;
+    }
+    if (!confirm('Delete this Rule Set? Its rules cannot be recovered.')) return;
+    RuleService.deleteRuleSet(ruleSetId);
+    const updatedSets = RuleService.getRuleSets();
+    setRuleSets(updatedSets);
+    if (blueprint?.ruleSetId === ruleSetId && updatedSets[0]) {
+      handleSwitchRuleSet(updatedSets[0].id);
+    }
+  };
+
   const filteredRules = activeRuleSet.rules.filter((rule) => {
     const matchesCategory = selectedCategory === 'all' || rule.category === selectedCategory;
     const matchesSearch =
@@ -315,6 +365,42 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
+        </div>
+      </div>
+
+      {/* Rule Set Container Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-[#181a20] border border-[#2b303d] rounded-xl p-3">
+        <div className="flex items-center gap-2 flex-1">
+          <span className="text-[10px] text-gray-400 font-semibold shrink-0">Active Rule Set:</span>
+          <select
+            value={activeRuleSet.id}
+            onChange={(e) => handleSwitchRuleSet(e.target.value)}
+            disabled={!blueprint || !setSelectedBlueprint}
+            className="flex-1 bg-[#12141a] border border-[#2b303d] rounded p-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+          >
+            {ruleSets.map((rs) => (
+              <option key={rs.id} value={rs.id}>
+                {rs.name} ({rs.rules.length} rules)
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleOpenCreateRuleSet}
+            className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-emerald-400 border border-emerald-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" aria-hidden="true" /> New Rule Set
+          </button>
+          {ruleSets.length > 1 && (
+            <button
+              onClick={() => handleDeleteRuleSet(activeRuleSet.id)}
+              aria-label={`Delete rule set ${activeRuleSet.name}`}
+              className="p-2 bg-[#202430] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -675,6 +761,67 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                 className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
               >
                 Save Policy Rule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Rule Set Modal */}
+      {isRuleSetModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
+              <span className="font-bold text-sm text-white flex items-center gap-2">
+                <Zap className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                Create New Rule Set
+              </span>
+              <button
+                onClick={() => setIsRuleSetModalOpen(false)}
+                aria-label="Close dialog"
+                className="p-1 rounded text-gray-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Rule Set Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fintech Compliance Policy"
+                  value={newRuleSetName}
+                  onChange={(e) => setNewRuleSetName(e.target.value)}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-400 block mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  placeholder="What this rule set enforces..."
+                  value={newRuleSetDescription}
+                  onChange={(e) => setNewRuleSetDescription(e.target.value)}
+                  className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
+              <button
+                type="button"
+                onClick={() => setIsRuleSetModalOpen(false)}
+                className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateRuleSet}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer"
+              >
+                Create Rule Set
               </button>
             </div>
           </div>

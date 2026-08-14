@@ -38,6 +38,29 @@ export class RuleService {
     return this.getRuleSets().find((rs) => rs.id === id);
   }
 
+  /**
+   * Creates a brand-new, empty (no rules) Rule Set container so a Blueprint can
+   * be switched to a dedicated policy set instead of only editing the one
+   * pre-seeded rule set (Phase 2b, see PLAN.md).
+   */
+  static createRuleSet(name: string, description: string): RuleSet {
+    const newRuleSet: RuleSet = {
+      id: `ruleset-custom-${Date.now()}`,
+      name: name.trim() || 'Untitled Rule Set',
+      description: description.trim(),
+      rules: [],
+    };
+    const ruleSets = this.getRuleSets();
+    ruleSetRepository.saveRuleSets([...ruleSets, newRuleSet]);
+    return newRuleSet;
+  }
+
+  static deleteRuleSet(ruleSetId: string): void {
+    const ruleSets = this.getRuleSets();
+    if (ruleSets.length <= 1) return;
+    ruleSetRepository.saveRuleSets(ruleSets.filter((rs) => rs.id !== ruleSetId));
+  }
+
   static toggleRule(ruleSetId: string, ruleId: string, isEnabled: boolean): void {
     const ruleSets = this.getRuleSets();
     const rs = ruleSets.find((r) => r.id === ruleSetId);
