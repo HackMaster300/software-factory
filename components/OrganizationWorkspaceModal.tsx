@@ -5,6 +5,9 @@ import { Building2, FolderGit2, Plus, Edit3, Trash2, X } from 'lucide-react';
 import { Organization, Workspace } from '../types/factory';
 import { useOrganizations, useWorkspaces } from '../services/storageService';
 import { organizationRepository, workspaceRepository } from '../services/repositories';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Input, Textarea, Select } from './ui/Input';
 
 interface OrganizationWorkspaceModalProps {
   isOpen: boolean;
@@ -163,17 +166,13 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
           <div className="p-4 border-r border-[#2b303d] overflow-y-auto space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-200">Organizations ({organizations.length})</span>
-              <button
-                onClick={handleOpenAddOrg}
-                aria-label="New Organization"
-                className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md cursor-pointer"
-              >
+              <Button size="icon" variant="primary" onClick={handleOpenAddOrg} aria-label="New Organization">
                 <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
+              </Button>
             </div>
 
             {organizations.length === 0 ? (
-              <div className="text-center py-8 space-y-2 text-gray-500">
+              <Card className="text-center py-8 space-y-2 text-gray-500">
                 <Building2 className="w-6 h-6 mx-auto text-gray-600" aria-hidden="true" />
                 <p className="text-xs">No organizations yet.</p>
                 <button
@@ -182,20 +181,17 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
                 >
                   Create your first organization
                 </button>
-              </div>
+              </Card>
             ) : (
               <div className="space-y-2">
                 {organizations.map((org) => {
                   const isSelected = activeOrgId === org.id;
                   return (
-                    <div
+                    <Card
                       key={org.id}
+                      interactive
                       onClick={() => setSelectedOrgId(org.id)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-blue-600/20 border-blue-500'
-                          : 'bg-[#13151c] border-[#262a36] hover:border-gray-600'
-                      }`}
+                      className={isSelected ? 'border-blue-500 bg-blue-600/10' : ''}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
@@ -205,86 +201,77 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <button
+                          <Button
+                            size="icon"
+                            variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleOpenEditOrg(org);
                             }}
                             aria-label={`Edit organization ${org.name}`}
-                            className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteOrg(org);
                             }}
                             aria-label={`Delete organization ${org.name}`}
-                            className="p-1 text-gray-400 hover:text-red-400 rounded cursor-pointer"
+                            className="hover:text-red-400"
                           >
                             <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
             )}
 
             {isOrgFormOpen && (
-              <form
-                onSubmit={handleSaveOrg}
-                className="p-3 bg-[#13151c] border border-[#2e3446] rounded-lg space-y-2"
-              >
+              <form onSubmit={handleSaveOrg} className="bg-[#181a20] border border-[#2b303d] rounded-lg p-4 space-y-2">
                 <div className="text-xs font-semibold text-gray-200">
                   {editingOrg ? 'Edit Organization' : 'New Organization'}
                 </div>
-                <input
+                <Input
                   type="text"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
                   placeholder="Organization name"
-                  className="w-full bg-[#0f1115] border border-[#2e3446] text-white rounded p-2 text-xs focus:outline-none focus:border-blue-500"
                   required
                 />
-                <input
+                <Input
                   type="text"
                   value={orgCode}
                   onChange={(e) => setOrgCode(e.target.value)}
                   placeholder="Short code (e.g. ACME)"
-                  className="w-full bg-[#0f1115] border border-[#2e3446] text-white rounded p-2 text-xs focus:outline-none focus:border-blue-500"
                   required
                 />
-                <select
-                  value={orgPlan}
-                  onChange={(e) => setOrgPlan(e.target.value as Organization['plan'])}
-                  className="w-full bg-[#0f1115] border border-[#2e3446] text-white rounded p-2 text-xs focus:outline-none focus:border-blue-500"
-                >
+                <Select value={orgPlan} onChange={(e) => setOrgPlan(e.target.value as Organization['plan'])}>
                   {PLAN_OPTIONS.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <div className="flex justify-end gap-2 pt-1">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => {
                       setIsOrgFormOpen(false);
                       resetOrgForm();
                     }}
-                    className="px-3 py-1.5 bg-[#202430] text-gray-300 hover:text-white rounded cursor-pointer text-xs"
                   >
                     Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold cursor-pointer text-xs"
-                  >
+                  </Button>
+                  <Button type="submit" variant="primary">
                     Save
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
@@ -297,14 +284,9 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
                 <FolderGit2 className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
                 Workspaces ({scopedWorkspaces.length})
               </span>
-              <button
-                onClick={handleOpenAddWs}
-                disabled={!activeOrgId}
-                aria-label="New Workspace"
-                className="p-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white rounded-md cursor-pointer"
-              >
+              <Button size="icon" variant="primary" onClick={handleOpenAddWs} disabled={!activeOrgId} aria-label="New Workspace">
                 <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
+              </Button>
             </div>
 
             {!activeOrgId ? (
@@ -312,7 +294,7 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
                 Create or select an organization first.
               </div>
             ) : scopedWorkspaces.length === 0 ? (
-              <div className="text-center py-8 space-y-2 text-gray-500">
+              <Card className="text-center py-8 space-y-2 text-gray-500">
                 <FolderGit2 className="w-6 h-6 mx-auto text-gray-600" aria-hidden="true" />
                 <p className="text-xs">No workspaces yet for this organization.</p>
                 <button
@@ -321,11 +303,11 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
                 >
                   Create your first workspace
                 </button>
-              </div>
+              </Card>
             ) : (
               <div className="space-y-2">
                 {scopedWorkspaces.map((ws) => (
-                  <div key={ws.id} className="p-3 rounded-lg border bg-[#13151c] border-[#262a36]">
+                  <Card key={ws.id}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="font-semibold text-gray-100 text-xs">{ws.name}</div>
@@ -334,67 +316,62 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
                         )}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => handleOpenEditWs(ws)}
                           aria-label={`Edit workspace ${ws.name}`}
-                          className="p-1 text-gray-400 hover:text-white rounded cursor-pointer"
                         >
                           <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => handleDeleteWs(ws)}
                           aria-label={`Delete workspace ${ws.name}`}
-                          className="p-1 text-gray-400 hover:text-red-400 rounded cursor-pointer"
+                          className="hover:text-red-400"
                         >
                           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
 
             {isWsFormOpen && activeOrgId && (
-              <form
-                onSubmit={handleSaveWs}
-                className="p-3 bg-[#13151c] border border-[#2e3446] rounded-lg space-y-2"
-              >
+              <form onSubmit={handleSaveWs} className="bg-[#181a20] border border-[#2b303d] rounded-lg p-4 space-y-2">
                 <div className="text-xs font-semibold text-gray-200">
                   {editingWs ? 'Edit Workspace' : 'New Workspace'}
                 </div>
-                <input
+                <Input
                   type="text"
                   value={wsName}
                   onChange={(e) => setWsName(e.target.value)}
                   placeholder="Workspace name"
-                  className="w-full bg-[#0f1115] border border-[#2e3446] text-white rounded p-2 text-xs focus:outline-none focus:border-blue-500"
                   required
                 />
-                <textarea
+                <Textarea
                   value={wsDescription}
                   onChange={(e) => setWsDescription(e.target.value)}
                   placeholder="Description (optional)"
                   rows={2}
-                  className="w-full bg-[#0f1115] border border-[#2e3446] text-white rounded p-2 text-xs focus:outline-none focus:border-blue-500"
                 />
                 <div className="flex justify-end gap-2 pt-1">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => {
                       setIsWsFormOpen(false);
                       resetWsForm();
                     }}
-                    className="px-3 py-1.5 bg-[#202430] text-gray-300 hover:text-white rounded cursor-pointer text-xs"
                   >
                     Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold cursor-pointer text-xs"
-                  >
+                  </Button>
+                  <Button type="submit" variant="primary">
                     Save
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
