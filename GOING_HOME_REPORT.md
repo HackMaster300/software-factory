@@ -2,6 +2,31 @@
 
 Autonomous work log. Newest session on top.
 
+## Phase 4 in progress — second session-limit interruption this session (2026-08-14)
+
+Two consecutive attempts at Phase 4 (visual design cleanup) hit an account-level API session
+limit mid-work — this is the second such interruption this session (Phase 2b's first attempt hit
+the same wall earlier and had to be retried after a wait). This one got further before failing:
+the agent had already committed `components/ui/{Button,Badge,Card,Input}.tsx` and converted
+Header/Sidebar/DashboardView (`2de830b`) and was partway through `FeatureManifestsView.tsx` when
+it stopped.
+
+Rather than discard real, working progress: I independently verified the in-progress
+`FeatureManifestsView.tsx` state myself — `npm run lint`/`npm run test` (57/57) both clean,
+`npm run build` clean, and a full Playwright pass (create a Feature Manifest, activate it, delete
+it) confirmed zero regressions and zero console errors — then committed it myself (`402ecd4`)
+since it was complete and correct, just not yet committed by the agent that wrote it.
+
+**State at handoff**: Phase 4 is genuinely partial, not fake-complete. Primitives exist and are
+proven to work (4 views converted, full CRUD verified on one of them). The remaining ~11 views
+still use the original one-off Tailwind styling and are unconverted — see `PLAN.md`'s Phase 4
+section for the exact list. `PLAN.md` is updated to reflect this honestly (checked items are
+genuinely done, the rest is explicitly marked not-yet-done, not silently skipped).
+
+**Given two session-limit hits in one session**, the next dispatch should probably wait a full
+interval before retrying rather than immediately re-attempting, since capacity appears
+constrained right now rather than this being a one-off fluke.
+
 ## Phase 3 complete (2026-08-14)
 
 Implemented Phase 3 ("Bring-your-own AI provider key") per `PLAN.md`.
