@@ -134,29 +134,65 @@ things).
 
 Heavier: two of these need new domain types first.
 
-- [ ] Feature Manifest: full create/edit builder — name, category, dependencies, optional/
+- [x] Feature Manifest: full create/edit builder — name, category, dependencies, optional/
       recommended dependencies, conflicting features, questions, generated files preview,
-      security warnings, impact scores. Reuse the existing detail-view fields in
-      `FeatureManifestsView` as the shape of the edit form; don't invent new fields.
-- [ ] Rule Set: today only individual rules within one fixed, pre-seeded rule set are editable.
-      Add the ability to create a whole new Rule Set (name, description) and switch a Blueprint's
-      active rule set between them.
-- [ ] Technology Stack: user-defined language/framework/package-manager/testing-framework/
-      target-runtime — currently `TechStacksView` is read-only display of the seeded catalog only.
-- [ ] Cache Profile, Logging Profile: these exist in `types/factory.ts` and `StorageService`
-      already but have **zero UI** — `TechStacksView`'s tabs only cover stacks/db/security/docker.
-      Add the missing tabs, plus create/edit/delete.
-- [ ] Encryption Profile, Deployment Profile, Authentication Profile: **don't exist in
-      `types/factory.ts` at all yet.** Add minimal but real types (look at the shape of
-      `ProfileSecurity`/`ProfileDatabase` for the pattern — id/name plus a handful of
-      domain-relevant fields, not a kitchen sink), a repository each (Phase 0 pattern), storage
-      keys in `StorageService`, and list+create+edit+delete UI (extend `TechStacksView`'s tabs
-      again, keeping one consistent "Technology & Profiles" surface rather than scattering these
-      across unrelated views).
-- [ ] Vitest coverage for new services/repositories/validation logic.
-- [ ] Verify: lint, build, test, Playwright pass (cleared `localStorage`) confirming every new
-      entity type can actually be created, edited, and deleted from the UI — not just that the
-      code compiles.
+      security warnings, impact scores. Reused the existing detail-view fields in
+      `FeatureManifestsView` as the shape of the edit form; no new fields invented on the
+      `FeatureManifest` type. Dependency lists (dependencies/optionalDependencies/
+      recommendedDependencies/conflictingFeatures) are toggled via checkbox pills against the
+      existing feature catalog rather than free-text IDs. Questions and Generated Files are
+      fully repeatable add/edit/remove rows. Switched the view from a direct
+      `FeatureService.getAllFeatures()` call to the reactive `useFeatureManifests()` hook so
+      create/edit/delete reflect immediately without a manual refresh.
+- [x] Rule Set: added `RuleService.createRuleSet(name, description)` (new empty-of-rules
+      `RuleSet`, persisted via the existing `saveRuleSets`) and `RuleService.deleteRuleSet`
+      (refuses to delete the last remaining set). `RuleEngineView` now reads its active rule set
+      from `blueprint.ruleSetId` (previously always `ruleSets[0]`, ignoring the field entirely)
+      and exposes a "Rule Set" switcher dropdown + "New Rule Set" / delete buttons; switching
+      calls `setSelectedBlueprint` to update `ruleSetId` on the live blueprint, same mutation
+      pattern already used for `techStackId`/`architectureStyle` in `BlueprintsView` (persisted
+      to a Template only on explicit "Save Blueprint").
+- [x] Technology Stack: user-defined language/framework/package-manager/testing-framework/
+      target-runtime. Added `techStackRepository.saveTechStacks` (was read-only) and full
+      create/edit/delete UI in `TechStacksView`'s "Language Stacks" tab; `language` stays
+      constrained to the existing `TechStack['language']` union via a `<select>`, no free-text
+      language field.
+- [x] Cache Profile, Logging Profile: added `saveCacheProfiles`/`saveLoggingProfiles` to
+      `StorageService` and `IProfileRepository` (same precedent as Organization/Workspace
+      `save*` additions in Phase 2a) plus new `useCacheProfiles()`/`useLoggingProfiles()` hooks.
+      `TechStacksView` gained `'cache'` and `'logging'` tabs with full create/edit/delete and the
+      established empty-state pattern.
+- [x] Encryption Profile, Deployment Profile, Authentication Profile: added as brand-new types
+      to `types/factory.ts` — `ProfileEncryption { id, name, algorithm, keyRotationDays,
+      encryptAtRest, encryptInTransit }`, `ProfileDeployment { id, name, targetPlatform,
+      replicas, autoScale, strategy }`, `ProfileAuthentication { id, name, provider,
+      sessionTimeoutMinutes, enableMfa }` — each a handful of genuinely load-bearing fields
+      modeled on `ProfileSecurity`/`ProfileDatabase`, not a kitchen sink. Added storage keys +
+      get/save in `StorageService`, extended `IProfileRepository`/`LocalStorageProfileRepository`
+      (kept all profile types in one grouped repository file, matching the existing
+      Security/Database/Docker/Cache/Logging grouping, rather than one file per type — the
+      shared "Technology & Profiles" information architecture already groups them on one view),
+      new `use*Profiles()` hooks, and three new `TechStacksView` tabs with full
+      create/edit/delete + empty states. Start genuinely empty (no invented catalog), same as
+      AI Agents/Plugins in Phase 2a.
+- [x] Vitest coverage added: `profile.repository.test.ts` (cache/logging round-trip + genuinely-
+      empty-start and round-trip for all 3 new profile types + delete-by-filter),
+      `techStack.repository.test.ts` (seeded catalog + custom stack round-trip/delete),
+      `ruleService.test.ts` (createRuleSet including untitled-name fallback, deleteRuleSet
+      including the "can't delete the last one" guard), and new `FeatureService.saveFeature`
+      cases appended to `featureService.test.ts` (create, in-place update, delete-by-filter).
+      40/40 tests passing (19 new).
+- [x] Verified: lint clean (zero warnings), build clean, test 40/40 passing, and a full
+      Playwright pass starting from `localStorage.clear()` — created a Feature Manifest with a
+      question and a generated file row (visible, zero console errors), created a new Rule Set
+      and confirmed the Blueprint immediately switched to it (header showed "0 / 0 Active Rules"
+      confirming the live rule set actually changed, not just the dropdown label), created a
+      custom Technology Stack, created a Cache/Logging/Encryption/Deployment/Authentication
+      profile of each type, edited the seeded Cache profile's TTL and confirmed the update
+      persisted, then deleted the Encryption profile, the custom Tech Stack, the custom Rule Set,
+      and the Feature Manifest — every list returned to its correct empty/remaining state with
+      zero console errors throughout (only clean states observed, no pre-existing favicon 404
+      even resurfaced in this run).
 
 Backlog, not this plan: a standalone global Package catalog (packages stay scoped per-module in
 the Scaffolder, which already works well and wasn't something the user asked to change).

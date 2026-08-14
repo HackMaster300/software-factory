@@ -2,7 +2,107 @@
 
 Autonomous work log. Newest session on top.
 
-## Phase 2b blocked — API session limit hit (2026-08-14)
+## Phase 2b complete (2026-08-14)
+
+Implemented Phase 2b ("Feature Manifest, Rule Set, Technology Stack, remaining Profiles") per
+`PLAN.md`. This is a fresh implementation, not a resumption of the earlier session below that hit
+an account-level API session limit before writing any code — nothing from that attempt existed to
+build on.
+
+- **Feature Manifest create/edit builder**: `FeatureManifestsView.tsx` gained a "Create Feature
+  Manifest" button plus Edit/Delete on the inspector panel. The form reuses the exact fields the
+  detail panel already renders — name, category, description, tags, dependencies/
+  optionalDependencies/recommendedDependencies/conflictingFeatures, questions, generated files,
+  security warnings, impact scores — no new fields invented on the `FeatureManifest` type.
+  Dependency relationship lists are toggled via checkbox pills against the live feature catalog
+  (excluding the feature being edited) instead of free-text ID entry, since typos there would
+  silently break Smart Dependency resolution. Questions and Generated Files are repeatable
+  add/edit/remove rows. Switched the view off a raw `FeatureService.getAllFeatures()` call onto
+  the reactive `useFeatureManifests()` hook so create/edit/delete reflect immediately without a
+  manual refresh (this was a latent gap — the view wasn't reactive even before this phase).
+- **Rule Set as a container**: `RuleEngineView` previously always evaluated `ruleSets[0]`,
+  completely ignoring `blueprint.ruleSetId` — so the field existed on the `Blueprint` type but did
+  nothing. Added `RuleService.createRuleSet(name, description)` (a new, empty-of-rules `RuleSet`)
+  and `RuleService.deleteRuleSet` (refuses to delete the last remaining set, since the view always
+  needs *an* active rule set to evaluate against). Added a "Rule Set" switcher dropdown plus
+  New/Delete controls to `RuleEngineView`; switching calls `setSelectedBlueprint` to update the
+  live blueprint's `ruleSetId`, matching the existing mutation pattern already used for
+  `techStackId`/`architectureStyle` in `BlueprintsView` (only persisted to a `Template` on
+  explicit "Save Blueprint" — verified this is pre-existing behavior, not a new inconsistency).
+- **Technology Stack creation**: `TechStacksView`'s "Language Stacks" tab was read-only display of
+  the seeded catalog. Added `techStackRepository.saveTechStacks` (was a getter-only stub since
+  Phase 0) and full create/edit/delete UI. `language` stays constrained to the existing
+  `TechStack['language']` union via a `<select>`, never a free-text field, per the plan's explicit
+  instruction.
+- **Cache Profile & Logging Profile UI**: these existed in the data model with zero UI. Added
+  `saveCacheProfiles`/`saveLoggingProfiles` to `StorageService` and `IProfileRepository` — the
+  same "getter existed, save method was missing" gap Organization/Workspace had before Phase 2a
+  closed it, same fix shape. Added `useCacheProfiles()`/`useLoggingProfiles()` hooks and two new
+  `TechStacksView` tabs with full create/edit/delete + the established empty-state pattern.
+- **Encryption/Deployment/Authentication Profile — brand-new types.** Decisions on exact fields
+  (kept deliberately small, modeled on `ProfileSecurity`/`ProfileDatabase`'s "id/name plus a
+  handful of domain-relevant fields" shape):
+  - `ProfileEncryption { id, name, algorithm, keyRotationDays, encryptAtRest, encryptInTransit }`
+    — `algorithm` is a union (`AES-256-GCM` | `AES-128-CBC` | `ChaCha20-Poly1305` | `RSA-OAEP`)
+    covering the encryption choices a generated project would actually plausibly offer;
+    `keyRotationDays` and the two boolean toggles are the operationally meaningful knobs, not a
+    full KMS configuration surface.
+  - `ProfileDeployment { id, name, targetPlatform, replicas, autoScale, strategy }` —
+    `targetPlatform` union (`Kubernetes` | `Cloud Run` | `Azure App Service` | `AWS ECS` |
+    `Bare Metal`) matches the plan's own suggested values exactly; `strategy` (`RollingUpdate` |
+    `BlueGreen` | `Canary`) was added because a platform choice without a rollout strategy is an
+    incomplete deployment profile in practice.
+  - `ProfileAuthentication { id, name, provider, sessionTimeoutMinutes, enableMfa }` — `provider`
+    union (`JWT` | `OAuth2` | `SAML` | `API Key`) again matches the plan's suggested values;
+    `sessionTimeoutMinutes` and `enableMfa` are the two settings that actually vary per
+    integration in the kind of enterprise blueprints this app generates.
+  - Kept all profile types (existing five plus these three) in one grouped `IProfileRepository`
+    file rather than one repository file per type — this matches the pre-existing Security/
+    Database/Docker/Cache/Logging grouping and the fact that they all live on a single
+    "Technology & Profiles" `TechStacksView` surface by design (PLAN.md explicitly says "keeping
+    one consistent Technology & Profiles surface rather than scattering these across unrelated
+    views" — extended that same reasoning to the repository layer, not just the UI). Added
+    storage keys, get/save in `StorageService`, new hooks, and three new `TechStacksView` tabs
+    with full create/edit/delete + empty states. These start genuinely empty (no invented
+    catalog), same precedent as AI Agents/Plugins in Phase 2a.
+- **Vitest coverage added**: `profile.repository.test.ts` (cache/logging round-trip,
+  genuinely-empty-start + round-trip + delete-by-filter for all 3 new profile types),
+  `techStack.repository.test.ts` (seeded catalog present by default, custom stack round-trip and
+  delete), `ruleService.test.ts` (`createRuleSet` including the untitled-name fallback,
+  `deleteRuleSet` including the "can't delete the last remaining set" guard), and new
+  `FeatureService.saveFeature` cases appended to the existing `featureService.test.ts` (create,
+  in-place update rather than duplicate, delete-by-filter). **40/40 tests passing (19 new since
+  Phase 2a's 21).**
+- **Verification, all actually run and observed this session**:
+  - `npm run test` — 40/40 passing (10 test files), confirmed via direct terminal output twice
+    (once mid-implementation, once as the final pre-commit check).
+  - `npm run lint` — clean, zero warnings, confirmed twice (same cadence as test).
+  - `npm run build` — clean after `rm -rf .next` (no stale-cache ENOENT); production build
+    succeeded, static pages generated, no type errors.
+  - **Playwright, from a real cleared `localStorage`**: navigated to `http://localhost:3000` after
+    killing anything on port 3000 first (none was running), ran `npm run build && npm run start`,
+    cleared `localStorage` and reloaded. Then, with a live browser session: created a Feature
+    Manifest ("GraphQL Gateway") including adding one configuration question and one generated
+    file row, confirmed it appeared in the list and inspector with zero console errors; created a
+    new Rule Set ("Fintech Compliance Policy") and confirmed the Blueprint's active rule set
+    switched live (header changed from "6 / 6 Active Rules" to "0 / 0 Active Rules", not just a
+    dropdown label change); created a custom Technology Stack ("Bun + Elysia Edge API"); created
+    one Cache, Logging (via editing the seeded Redis profile's TTL 30→45 and confirming it
+    persisted), Encryption, Deployment, and Authentication profile each; then deleted the
+    Encryption profile, the custom Tech Stack, the custom Rule Set (confirmed it fell back to the
+    remaining "Strict Clean Architecture" set), and the Feature Manifest — every list returned to
+    its correct empty/remaining state. **Zero console errors observed at any point in this pass**,
+    including on the final full-page reload.
+- **Nothing blocked, no new dependency needed.** All work used the existing repository pattern,
+  `useSyncExternalStore` hooks, Tailwind classes, and `lucide-react` icons already in the project.
+- **Commits**: Feature Manifest builder (`eed7bf6`), Rule Set container (`9c381f7`), Technology
+  Stack creation + Cache/Logging tabs + Encryption/Deployment/Authentication profiles (`57fb15e`,
+  combined into one commit rather than three because they all touch the same rewritten
+  `TechStacksView.tsx` and overlapping `StorageService`/`types/factory.ts` regions — splitting
+  further would have meant hand-surgery on diffs rather than genuinely independent changes).
+  `PLAN.md` and this report updated in a following commit. Local commits only, nothing pushed.
+
+## Phase 2b blocked — API session limit hit (2026-08-14, earlier session)
 
 The subagent dispatched for Phase 2b failed early with "You've hit your session limit · resets
 7pm (Africa/Johannesburg)" — a hard external rate limit on the account, not a code or plan
