@@ -7,6 +7,9 @@ import {
   ProfileDocker,
   ProfileCache,
   ProfileLogging,
+  ProfileEncryption,
+  ProfileDeployment,
+  ProfileAuthentication,
   RuleSet,
   FeatureManifest,
   Blueprint,
@@ -192,6 +195,15 @@ export const initialLoggingProfiles: ProfileLogging[] = [
     sinkToSeqOrJaeger: true,
   },
 ];
+
+// Phase 2b (see PLAN.md): Encryption/Deployment/Authentication Profile are net-new
+// entities that don't exist as a pre-seeded platform catalog. No fabricated history —
+// the app starts genuinely empty for these too, same as AI Agents/Plugins in Phase 2a.
+export const initialEncryptionProfiles: ProfileEncryption[] = [];
+
+export const initialDeploymentProfiles: ProfileDeployment[] = [];
+
+export const initialAuthenticationProfiles: ProfileAuthentication[] = [];
 
 export const initialRuleSets: RuleSet[] = [
   {

@@ -302,6 +302,32 @@ export interface Plugin {
   isActive: boolean;
 }
 
+export interface ProfileEncryption {
+  id: string;
+  name: string;
+  algorithm: 'AES-256-GCM' | 'AES-128-CBC' | 'ChaCha20-Poly1305' | 'RSA-OAEP';
+  keyRotationDays: number;
+  encryptAtRest: boolean;
+  encryptInTransit: boolean;
+}
+
+export interface ProfileDeployment {
+  id: string;
+  name: string;
+  targetPlatform: 'Kubernetes' | 'Cloud Run' | 'Azure App Service' | 'AWS ECS' | 'Bare Metal';
+  replicas: number;
+  autoScale: boolean;
+  strategy: 'RollingUpdate' | 'BlueGreen' | 'Canary';
+}
+
+export interface ProfileAuthentication {
+  id: string;
+  name: string;
+  provider: 'JWT' | 'OAuth2' | 'SAML' | 'API Key';
+  sessionTimeoutMinutes: number;
+  enableMfa: boolean;
+}
+
 export interface AffectedComponentImpact {
   type: 'ConnectionString' | 'Package' | 'Docker' | 'HealthCheck' | 'ORMProvider' | 'MigrationProject' | 'Documentation' | 'CodeFile';
   name: string;

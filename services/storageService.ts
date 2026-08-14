@@ -8,6 +8,9 @@ import {
   ProfileDocker,
   ProfileCache,
   ProfileLogging,
+  ProfileEncryption,
+  ProfileDeployment,
+  ProfileAuthentication,
   RuleSet,
   FeatureManifest,
   Template,
@@ -28,6 +31,9 @@ import {
   initialDockerProfiles,
   initialCacheProfiles,
   initialLoggingProfiles,
+  initialEncryptionProfiles,
+  initialDeploymentProfiles,
+  initialAuthenticationProfiles,
   initialRuleSets,
   initialFeatureManifests,
   initialTemplates,
@@ -48,6 +54,9 @@ const STORAGE_KEYS = {
   PROFILES_DOCKER: 'sf_profiles_docker_v2',
   PROFILES_CACHE: 'sf_profiles_cache_v2',
   PROFILES_LOGGING: 'sf_profiles_logging_v2',
+  PROFILES_ENCRYPTION: 'sf_profiles_encryption_v2',
+  PROFILES_DEPLOYMENT: 'sf_profiles_deployment_v2',
+  PROFILES_AUTHENTICATION: 'sf_profiles_authentication_v2',
   RULE_SETS: 'sf_rule_sets_v2',
   FEATURE_MANIFESTS: 'sf_feature_manifests_v2',
   TEMPLATES: 'sf_templates_v2',
@@ -99,6 +108,26 @@ export function useWorkspaces() {
 
 export function useTechStacks() {
   return useStorage(() => StorageService.getTechStacks(), initialTechStacks);
+}
+
+export function useCacheProfiles() {
+  return useStorage(() => StorageService.getCacheProfiles(), initialCacheProfiles);
+}
+
+export function useLoggingProfiles() {
+  return useStorage(() => StorageService.getLoggingProfiles(), initialLoggingProfiles);
+}
+
+export function useEncryptionProfiles() {
+  return useStorage(() => StorageService.getEncryptionProfiles(), initialEncryptionProfiles);
+}
+
+export function useDeploymentProfiles() {
+  return useStorage(() => StorageService.getDeploymentProfiles(), initialDeploymentProfiles);
+}
+
+export function useAuthenticationProfiles() {
+  return useStorage(() => StorageService.getAuthenticationProfiles(), initialAuthenticationProfiles);
 }
 
 export function useRuleSets() {
@@ -191,6 +220,9 @@ export class StorageService {
       setItem(STORAGE_KEYS.PROFILES_DOCKER, initialDockerProfiles);
       setItem(STORAGE_KEYS.PROFILES_CACHE, initialCacheProfiles);
       setItem(STORAGE_KEYS.PROFILES_LOGGING, initialLoggingProfiles);
+      setItem(STORAGE_KEYS.PROFILES_ENCRYPTION, initialEncryptionProfiles);
+      setItem(STORAGE_KEYS.PROFILES_DEPLOYMENT, initialDeploymentProfiles);
+      setItem(STORAGE_KEYS.PROFILES_AUTHENTICATION, initialAuthenticationProfiles);
       setItem(STORAGE_KEYS.RULE_SETS, initialRuleSets);
       setItem(STORAGE_KEYS.FEATURE_MANIFESTS, initialFeatureManifests);
       setItem(STORAGE_KEYS.TEMPLATES, initialTemplates);
@@ -223,24 +255,72 @@ export class StorageService {
     return getItem(STORAGE_KEYS.TECH_STACKS, initialTechStacks);
   }
 
+  static saveTechStacks(stacks: TechStack[]): void {
+    setItem(STORAGE_KEYS.TECH_STACKS, stacks);
+  }
+
   static getSecurityProfiles(): ProfileSecurity[] {
     return getItem(STORAGE_KEYS.PROFILES_SECURITY, initialSecurityProfiles);
+  }
+
+  static saveSecurityProfiles(profiles: ProfileSecurity[]): void {
+    setItem(STORAGE_KEYS.PROFILES_SECURITY, profiles);
   }
 
   static getDatabaseProfiles(): ProfileDatabase[] {
     return getItem(STORAGE_KEYS.PROFILES_DATABASE, initialDatabaseProfiles);
   }
 
+  static saveDatabaseProfiles(profiles: ProfileDatabase[]): void {
+    setItem(STORAGE_KEYS.PROFILES_DATABASE, profiles);
+  }
+
   static getDockerProfiles(): ProfileDocker[] {
     return getItem(STORAGE_KEYS.PROFILES_DOCKER, initialDockerProfiles);
+  }
+
+  static saveDockerProfiles(profiles: ProfileDocker[]): void {
+    setItem(STORAGE_KEYS.PROFILES_DOCKER, profiles);
   }
 
   static getCacheProfiles(): ProfileCache[] {
     return getItem(STORAGE_KEYS.PROFILES_CACHE, initialCacheProfiles);
   }
 
+  static saveCacheProfiles(profiles: ProfileCache[]): void {
+    setItem(STORAGE_KEYS.PROFILES_CACHE, profiles);
+  }
+
   static getLoggingProfiles(): ProfileLogging[] {
     return getItem(STORAGE_KEYS.PROFILES_LOGGING, initialLoggingProfiles);
+  }
+
+  static saveLoggingProfiles(profiles: ProfileLogging[]): void {
+    setItem(STORAGE_KEYS.PROFILES_LOGGING, profiles);
+  }
+
+  static getEncryptionProfiles(): ProfileEncryption[] {
+    return getItem(STORAGE_KEYS.PROFILES_ENCRYPTION, initialEncryptionProfiles);
+  }
+
+  static saveEncryptionProfiles(profiles: ProfileEncryption[]): void {
+    setItem(STORAGE_KEYS.PROFILES_ENCRYPTION, profiles);
+  }
+
+  static getDeploymentProfiles(): ProfileDeployment[] {
+    return getItem(STORAGE_KEYS.PROFILES_DEPLOYMENT, initialDeploymentProfiles);
+  }
+
+  static saveDeploymentProfiles(profiles: ProfileDeployment[]): void {
+    setItem(STORAGE_KEYS.PROFILES_DEPLOYMENT, profiles);
+  }
+
+  static getAuthenticationProfiles(): ProfileAuthentication[] {
+    return getItem(STORAGE_KEYS.PROFILES_AUTHENTICATION, initialAuthenticationProfiles);
+  }
+
+  static saveAuthenticationProfiles(profiles: ProfileAuthentication[]): void {
+    setItem(STORAGE_KEYS.PROFILES_AUTHENTICATION, profiles);
   }
 
   static getRuleSets(): RuleSet[] {
@@ -320,6 +400,11 @@ export class StorageService {
       organizations: this.getOrganizations(),
       workspaces: this.getWorkspaces(),
       techStacks: this.getTechStacks(),
+      cacheProfiles: this.getCacheProfiles(),
+      loggingProfiles: this.getLoggingProfiles(),
+      encryptionProfiles: this.getEncryptionProfiles(),
+      deploymentProfiles: this.getDeploymentProfiles(),
+      authenticationProfiles: this.getAuthenticationProfiles(),
       ruleSets: this.getRuleSets(),
       featureManifests: this.getFeatureManifests(),
       templates: this.getTemplates(),
@@ -346,6 +431,12 @@ export class StorageService {
       if (data.workspaces) setItem(STORAGE_KEYS.WORKSPACES, data.workspaces);
       if (data.aiAgents) setItem(STORAGE_KEYS.AI_AGENTS, data.aiAgents);
       if (data.plugins) setItem(STORAGE_KEYS.PLUGINS, data.plugins);
+      if (data.techStacks) setItem(STORAGE_KEYS.TECH_STACKS, data.techStacks);
+      if (data.cacheProfiles) setItem(STORAGE_KEYS.PROFILES_CACHE, data.cacheProfiles);
+      if (data.loggingProfiles) setItem(STORAGE_KEYS.PROFILES_LOGGING, data.loggingProfiles);
+      if (data.encryptionProfiles) setItem(STORAGE_KEYS.PROFILES_ENCRYPTION, data.encryptionProfiles);
+      if (data.deploymentProfiles) setItem(STORAGE_KEYS.PROFILES_DEPLOYMENT, data.deploymentProfiles);
+      if (data.authenticationProfiles) setItem(STORAGE_KEYS.PROFILES_AUTHENTICATION, data.authenticationProfiles);
       notifyStorageChange();
       return true;
     } catch (e) {
