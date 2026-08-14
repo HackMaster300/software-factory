@@ -2,6 +2,27 @@
 
 Autonomous work log. Newest session on top.
 
+## Phase 2b blocked — API session limit hit (2026-08-14)
+
+The subagent dispatched for Phase 2b failed early with "You've hit your session limit · resets
+7pm (Africa/Johannesburg)" — a hard external rate limit on the account, not a code or plan
+problem. It failed during initial investigation (reading `BlueprintsView`/`ProjectScaffolderView`/
+`profile.repository.ts` to understand where `ruleSetId` is set) — **before writing any code**, so
+there is nothing uncommitted, no partial state, no cleanup needed. Verified: `git status` is clean,
+`HEAD` is still `414999e` (Phase 2a's last commit).
+
+**State at handoff**: Phase 0, 1, 2a are done and independently verified (by me, not just by the
+agents that did the work — lint/build/test re-run myself, plus a real Playwright click-through
+from cleared `localStorage` for 1 and 2a). Phase 2b has not started. `PLAN.md` is fully up to date
+and unaffected by this failure — its Phase 2b checklist is exactly as it was, nothing to revert.
+
+**Next step for continuing this loop**: re-dispatch the same Phase 2b agent task (the prompt used
+is reconstructable from `PLAN.md`'s Phase 2b section, which has the full itemized checklist) once
+the account's session limit has reset. Since the exact reset time is in a different timezone than
+this session's clock, the loop will keep retrying at its normal cadence rather than trying to
+compute an exact wait — a rate-limit failure is cheap to detect and retry, unlike wasted
+implementation work.
+
 ## PLAN.md Phase 2a complete (2026-08-13)
 
 Implemented Phase 2a ("Organization, Workspace, AI Agent, Plugins") per `PLAN.md`.
