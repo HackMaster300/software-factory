@@ -26,6 +26,10 @@ import {
 } from '../../types/factory';
 import { StorageService, useCacheProfiles, useLoggingProfiles, useEncryptionProfiles, useDeploymentProfiles, useAuthenticationProfiles, useTechStacks } from '../../services/storageService';
 import { techStackRepository, profileRepository } from '../../services/repositories';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Input, Textarea, Select } from '../ui/Input';
 
 const LANGUAGES: TechStack['language'][] = ['csharp', 'typescript', 'java', 'go', 'python', 'rust', 'kotlin', 'dart'];
 const CACHE_PROVIDERS: ProfileCache['provider'][] = ['Redis', 'In-Memory', 'Memcached'];
@@ -303,18 +307,16 @@ export const TechStacksView: React.FC = () => {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono text-[10px] font-semibold">
-              Platform Registry
-            </span>
+            <Badge tone="brand">Platform Registry</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">{stacks.length} Supported Frameworks</span>
           </div>
           <h1 className="text-lg font-bold text-white tracking-tight">Technology Stacks & Infrastructure Profiles</h1>
         </div>
-      </div>
+      </Card>
 
       {/* Tabs Bar */}
       <div className="flex items-center gap-2 border-b border-[#2b303d] pb-2 overflow-x-auto no-scrollbar">
@@ -336,59 +338,46 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'stacks' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button
-              onClick={handleOpenAddStack}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-            >
+            <Button variant="primary" onClick={handleOpenAddStack}>
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Tech Stack
-            </button>
+            </Button>
           </div>
           {stacks.length === 0 ? (
-            <div className="text-center py-16 space-y-2 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-500">
+            <Card className="text-center py-16 space-y-2 text-gray-500">
               <Cpu className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs">No technology stacks yet.</p>
               <button onClick={handleOpenAddStack} className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium">
                 Create your first tech stack
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {stacks.map((st) => (
-                <div key={st.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+                <Card key={st.id} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-bold text-sm text-white">{st.name}</div>
                       <div className="text-[11px] font-mono text-blue-400">{st.language} • {st.framework}</div>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-[#222734] border border-[#303748] text-gray-300 font-mono text-[10px]">
-                      {st.targetRuntime}
-                    </span>
+                    <Badge tone="neutral" className="normal-case">{st.targetRuntime}</Badge>
                   </div>
 
                   <div className="text-gray-400 text-xs">{st.description}</div>
 
-                  <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-gray-400 pt-2 border-t border-[#262a36]">
+                  <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-gray-400 pt-2 border-t border-[#2b303d]">
                     <div>Package Mgr: <span className="text-gray-200">{st.packageManager}</span></div>
                     <div>Testing: <span className="text-gray-200">{st.testingFramework}</span></div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button
-                      onClick={() => handleOpenEditStack(st)}
-                      aria-label={`Edit tech stack ${st.name}`}
-                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]"
-                    >
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleOpenEditStack(st)} aria-label={`Edit tech stack ${st.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteStack(st.id)}
-                      aria-label={`Delete tech stack ${st.name}`}
-                      className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50"
-                    >
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteStack(st.id)} aria-label={`Delete tech stack ${st.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -398,13 +387,13 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'db' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {dbProfiles.map((db) => (
-            <div key={db.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+            <Card key={db.id} className="space-y-2">
               <div className="font-bold text-sm text-white">{db.name}</div>
-              <div className="text-xs text-gray-400">Provider: <span className="font-mono text-blue-400">{db.provider}</span> • ORM: <span className="font-mono text-purple-400">{db.orm}</span></div>
-              <div className="p-2 bg-[#12141a] border border-[#252834] rounded font-mono text-[10px] text-gray-300 truncate">
+              <div className="text-xs text-gray-400">Provider: <span className="font-mono text-blue-400">{db.provider}</span> • ORM: <span className="font-mono text-blue-400">{db.orm}</span></div>
+              <div className="p-2 bg-[#13151b] border border-[#2b303d] rounded font-mono text-[10px] text-gray-300 truncate">
                 Connection Key: {db.connectionStringName} (Migrations: {db.enableMigrations ? 'Enabled' : 'Disabled'})
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -412,13 +401,13 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'security' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {secProfiles.map((sec) => (
-            <div key={sec.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+            <Card key={sec.id} className="space-y-2">
               <div className="font-bold text-sm text-white">{sec.name}</div>
               <div className="text-xs text-gray-400">JWT Issuer: <span className="font-mono text-emerald-400">{sec.jwtIssuer}</span></div>
               <div className="text-[11px] text-gray-400 font-mono">
                 Lifetime: {sec.tokenLifetimeMinutes}m • CORS: {sec.enableCors ? 'Active' : 'Off'} • Rate Limit: {sec.enableRateLimiting ? `${sec.rateLimitPermitLimit} reqs` : 'Disabled'}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -426,13 +415,13 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'docker' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {dockerProfiles.map((doc) => (
-            <div key={doc.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+            <Card key={doc.id} className="space-y-2">
               <div className="font-bold text-sm text-white">{doc.name}</div>
-              <div className="text-xs text-gray-400">Base Image: <span className="font-mono text-purple-400">{doc.baseImage}</span></div>
+              <div className="text-xs text-gray-400">Base Image: <span className="font-mono text-blue-400">{doc.baseImage}</span></div>
               <div className="text-[11px] text-gray-400 font-mono">
                 Multi-Stage: {doc.multiStage ? 'Enabled' : 'Disabled'} • Ports: {doc.exposePorts.join(', ')} • Compose: {doc.includeDockerCompose ? 'Yes' : 'No'}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -440,39 +429,36 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'cache' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button
-              onClick={handleOpenAddCache}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-            >
+            <Button variant="primary" onClick={handleOpenAddCache}>
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Cache Profile
-            </button>
+            </Button>
           </div>
           {cacheProfiles.length === 0 ? (
-            <div className="text-center py-16 space-y-2 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-500">
+            <Card className="text-center py-16 space-y-2 text-gray-500">
               <Zap className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs">No cache profiles yet.</p>
               <button onClick={handleOpenAddCache} className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium">
                 Create your first cache profile
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {cacheProfiles.map((p) => (
-                <div key={p.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+                <Card key={p.id} className="space-y-2">
                   <div className="font-bold text-sm text-white">{p.name}</div>
                   <div className="text-xs text-gray-400">Provider: <span className="font-mono text-blue-400">{p.provider}</span></div>
                   <div className="text-[11px] text-gray-400 font-mono">
                     Default TTL: {p.defaultTtlMinutes}m • Distributed Lock: {p.enableDistributedLock ? 'Enabled' : 'Disabled'}
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button onClick={() => handleOpenEditCache(p)} aria-label={`Edit cache profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleOpenEditCache(p)} aria-label={`Edit cache profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button onClick={() => handleDeleteCache(p.id)} aria-label={`Delete cache profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50">
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteCache(p.id)} aria-label={`Delete cache profile ${p.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -482,39 +468,36 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'logging' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button
-              onClick={handleOpenAddLogging}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-            >
+            <Button variant="primary" onClick={handleOpenAddLogging}>
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Logging Profile
-            </button>
+            </Button>
           </div>
           {loggingProfiles.length === 0 ? (
-            <div className="text-center py-16 space-y-2 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-500">
+            <Card className="text-center py-16 space-y-2 text-gray-500">
               <Activity className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs">No logging profiles yet.</p>
               <button onClick={handleOpenAddLogging} className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium">
                 Create your first logging profile
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {loggingProfiles.map((p) => (
-                <div key={p.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+                <Card key={p.id} className="space-y-2">
                   <div className="font-bold text-sm text-white">{p.name}</div>
-                  <div className="text-xs text-gray-400">Provider: <span className="font-mono text-blue-400">{p.provider}</span> • Min Level: <span className="font-mono text-purple-400">{p.minLevel}</span></div>
+                  <div className="text-xs text-gray-400">Provider: <span className="font-mono text-blue-400">{p.provider}</span> • Min Level: <span className="font-mono text-blue-400">{p.minLevel}</span></div>
                   <div className="text-[11px] text-gray-400 font-mono">
                     JSON: {p.structuredJson ? 'Yes' : 'No'} • Console: {p.sinkToConsole ? 'Yes' : 'No'} • Seq/Jaeger: {p.sinkToSeqOrJaeger ? 'Yes' : 'No'}
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button onClick={() => handleOpenEditLogging(p)} aria-label={`Edit logging profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleOpenEditLogging(p)} aria-label={`Edit logging profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button onClick={() => handleDeleteLogging(p.id)} aria-label={`Delete logging profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50">
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteLogging(p.id)} aria-label={`Delete logging profile ${p.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -524,39 +507,36 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'encryption' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button
-              onClick={handleOpenAddEncryption}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-            >
+            <Button variant="primary" onClick={handleOpenAddEncryption}>
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Encryption Profile
-            </button>
+            </Button>
           </div>
           {encryptionProfiles.length === 0 ? (
-            <div className="text-center py-16 space-y-2 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-500">
+            <Card className="text-center py-16 space-y-2 text-gray-500">
               <Lock className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs">No encryption profiles yet.</p>
               <button onClick={handleOpenAddEncryption} className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium">
                 Create your first encryption profile
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {encryptionProfiles.map((p) => (
-                <div key={p.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+                <Card key={p.id} className="space-y-2">
                   <div className="font-bold text-sm text-white">{p.name}</div>
                   <div className="text-xs text-gray-400">Algorithm: <span className="font-mono text-blue-400">{p.algorithm}</span></div>
                   <div className="text-[11px] text-gray-400 font-mono">
                     Key Rotation: {p.keyRotationDays}d • At Rest: {p.encryptAtRest ? 'Yes' : 'No'} • In Transit: {p.encryptInTransit ? 'Yes' : 'No'}
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button onClick={() => handleOpenEditEncryption(p)} aria-label={`Edit encryption profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleOpenEditEncryption(p)} aria-label={`Edit encryption profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button onClick={() => handleDeleteEncryption(p.id)} aria-label={`Delete encryption profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50">
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteEncryption(p.id)} aria-label={`Delete encryption profile ${p.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -566,39 +546,36 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'deployment' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button
-              onClick={handleOpenAddDeployment}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-            >
+            <Button variant="primary" onClick={handleOpenAddDeployment}>
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Deployment Profile
-            </button>
+            </Button>
           </div>
           {deploymentProfiles.length === 0 ? (
-            <div className="text-center py-16 space-y-2 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-500">
+            <Card className="text-center py-16 space-y-2 text-gray-500">
               <Rocket className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs">No deployment profiles yet.</p>
               <button onClick={handleOpenAddDeployment} className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium">
                 Create your first deployment profile
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {deploymentProfiles.map((p) => (
-                <div key={p.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+                <Card key={p.id} className="space-y-2">
                   <div className="font-bold text-sm text-white">{p.name}</div>
-                  <div className="text-xs text-gray-400">Target: <span className="font-mono text-blue-400">{p.targetPlatform}</span> • Strategy: <span className="font-mono text-purple-400">{p.strategy}</span></div>
+                  <div className="text-xs text-gray-400">Target: <span className="font-mono text-blue-400">{p.targetPlatform}</span> • Strategy: <span className="font-mono text-blue-400">{p.strategy}</span></div>
                   <div className="text-[11px] text-gray-400 font-mono">
                     Replicas: {p.replicas} • Auto-Scale: {p.autoScale ? 'Enabled' : 'Disabled'}
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button onClick={() => handleOpenEditDeployment(p)} aria-label={`Edit deployment profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleOpenEditDeployment(p)} aria-label={`Edit deployment profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button onClick={() => handleDeleteDeployment(p.id)} aria-label={`Delete deployment profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50">
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteDeployment(p.id)} aria-label={`Delete deployment profile ${p.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -608,39 +585,36 @@ export const TechStacksView: React.FC = () => {
       {activeTab === 'authentication' && (
         <div className="space-y-3">
           <div className="flex justify-end">
-            <button
-              onClick={handleOpenAddAuth}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-            >
+            <Button variant="primary" onClick={handleOpenAddAuth}>
               <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Authentication Profile
-            </button>
+            </Button>
           </div>
           {authenticationProfiles.length === 0 ? (
-            <div className="text-center py-16 space-y-2 bg-[#181a20] border border-[#2b303d] rounded-xl text-gray-500">
+            <Card className="text-center py-16 space-y-2 text-gray-500">
               <KeyRound className="w-8 h-8 mx-auto text-gray-600" aria-hidden="true" />
               <p className="text-xs">No authentication profiles yet.</p>
               <button onClick={handleOpenAddAuth} className="text-[11px] text-blue-400 hover:text-blue-300 cursor-pointer font-medium">
                 Create your first authentication profile
               </button>
-            </div>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {authenticationProfiles.map((p) => (
-                <div key={p.id} className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-2">
+                <Card key={p.id} className="space-y-2">
                   <div className="font-bold text-sm text-white">{p.name}</div>
                   <div className="text-xs text-gray-400">Provider: <span className="font-mono text-blue-400">{p.provider}</span></div>
                   <div className="text-[11px] text-gray-400 font-mono">
                     Session Timeout: {p.sessionTimeoutMinutes}m • MFA: {p.enableMfa ? 'Enabled' : 'Disabled'}
                   </div>
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                    <button onClick={() => handleOpenEditAuth(p)} aria-label={`Edit authentication profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleOpenEditAuth(p)} aria-label={`Edit authentication profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
-                    </button>
-                    <button onClick={() => handleDeleteAuth(p.id)} aria-label={`Delete authentication profile ${p.name}`} className="px-2.5 py-1 bg-[#222734] hover:bg-red-900/40 text-red-400 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-red-800/50">
+                    </Button>
+                    <Button size="sm" onClick={() => handleDeleteAuth(p.id)} aria-label={`Delete authentication profile ${p.name}`} className="hover:text-red-400">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Delete
-                    </button>
+                    </Button>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -653,7 +627,7 @@ export const TechStacksView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-lg w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-cyan-400" aria-hidden="true" />
+                <Cpu className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingStackId ? 'Edit Technology Stack' : 'Create Technology Stack'}
               </span>
               <button onClick={() => setIsStackModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
@@ -663,42 +637,42 @@ export const TechStacksView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Stack Name</label>
-                <input type="text" placeholder="e.g. Bun + Elysia Edge API" value={stackForm.name} onChange={(e) => setStackForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Bun + Elysia Edge API" value={stackForm.name} onChange={(e) => setStackForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Language</label>
-                  <select value={stackForm.language} onChange={(e) => setStackForm((p) => ({ ...p, language: e.target.value as TechStack['language'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={stackForm.language} onChange={(e) => setStackForm((p) => ({ ...p, language: e.target.value as TechStack['language'] }))}>
                     {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Framework</label>
-                  <input type="text" placeholder="e.g. Elysia" value={stackForm.framework} onChange={(e) => setStackForm((p) => ({ ...p, framework: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                  <Input type="text" placeholder="e.g. Elysia" value={stackForm.framework} onChange={(e) => setStackForm((p) => ({ ...p, framework: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Package Manager</label>
-                  <input type="text" placeholder="e.g. bun" value={stackForm.packageManager} onChange={(e) => setStackForm((p) => ({ ...p, packageManager: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                  <Input type="text" placeholder="e.g. bun" value={stackForm.packageManager} onChange={(e) => setStackForm((p) => ({ ...p, packageManager: e.target.value }))} />
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Testing Framework</label>
-                  <input type="text" placeholder="e.g. bun:test" value={stackForm.testingFramework} onChange={(e) => setStackForm((p) => ({ ...p, testingFramework: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                  <Input type="text" placeholder="e.g. bun:test" value={stackForm.testingFramework} onChange={(e) => setStackForm((p) => ({ ...p, testingFramework: e.target.value }))} />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Target Runtime</label>
-                <input type="text" placeholder="e.g. Bun 1.x Container" value={stackForm.targetRuntime} onChange={(e) => setStackForm((p) => ({ ...p, targetRuntime: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Bun 1.x Container" value={stackForm.targetRuntime} onChange={(e) => setStackForm((p) => ({ ...p, targetRuntime: e.target.value }))} />
               </div>
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Description</label>
-                <textarea rows={2} placeholder="What this stack is optimized for..." value={stackForm.description} onChange={(e) => setStackForm((p) => ({ ...p, description: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500 leading-relaxed" />
+                <Textarea rows={2} placeholder="What this stack is optimized for..." value={stackForm.description} onChange={(e) => setStackForm((p) => ({ ...p, description: e.target.value }))} />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button type="button" onClick={() => setIsStackModalOpen(false)} className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleSaveStack} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer">Save Tech Stack</button>
+              <Button variant="secondary" onClick={() => setIsStackModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveStack}>Save Tech Stack</Button>
             </div>
           </div>
         </div>
@@ -710,7 +684,7 @@ export const TechStacksView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-400" aria-hidden="true" />
+                <Zap className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingCacheId ? 'Edit Cache Profile' : 'Create Cache Profile'}
               </span>
               <button onClick={() => setIsCacheModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
@@ -720,18 +694,18 @@ export const TechStacksView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
-                <input type="text" placeholder="e.g. Redis Sentinel HA Cache" value={cacheForm.name} onChange={(e) => setCacheForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Redis Sentinel HA Cache" value={cacheForm.name} onChange={(e) => setCacheForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Provider</label>
-                  <select value={cacheForm.provider} onChange={(e) => setCacheForm((p) => ({ ...p, provider: e.target.value as ProfileCache['provider'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={cacheForm.provider} onChange={(e) => setCacheForm((p) => ({ ...p, provider: e.target.value as ProfileCache['provider'] }))}>
                     {CACHE_PROVIDERS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Default TTL (minutes)</label>
-                  <input type="number" value={cacheForm.defaultTtlMinutes} onChange={(e) => setCacheForm((p) => ({ ...p, defaultTtlMinutes: Number(e.target.value) || 0 }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                  <Input type="number" value={cacheForm.defaultTtlMinutes} onChange={(e) => setCacheForm((p) => ({ ...p, defaultTtlMinutes: Number(e.target.value) || 0 }))} />
                 </div>
               </div>
               <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
@@ -740,8 +714,8 @@ export const TechStacksView: React.FC = () => {
               </label>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button type="button" onClick={() => setIsCacheModalOpen(false)} className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleSaveCache} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer">Save Cache Profile</button>
+              <Button variant="secondary" onClick={() => setIsCacheModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveCache}>Save Cache Profile</Button>
             </div>
           </div>
         </div>
@@ -753,7 +727,7 @@ export const TechStacksView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Activity className="w-4 h-4 text-emerald-400" aria-hidden="true" />
+                <Activity className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingLoggingId ? 'Edit Logging Profile' : 'Create Logging Profile'}
               </span>
               <button onClick={() => setIsLoggingModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
@@ -763,20 +737,20 @@ export const TechStacksView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
-                <input type="text" placeholder="e.g. Winston + Console + Loki" value={loggingForm.name} onChange={(e) => setLoggingForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Winston + Console + Loki" value={loggingForm.name} onChange={(e) => setLoggingForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Provider</label>
-                  <select value={loggingForm.provider} onChange={(e) => setLoggingForm((p) => ({ ...p, provider: e.target.value as ProfileLogging['provider'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={loggingForm.provider} onChange={(e) => setLoggingForm((p) => ({ ...p, provider: e.target.value as ProfileLogging['provider'] }))}>
                     {LOGGING_PROVIDERS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Minimum Level</label>
-                  <select value={loggingForm.minLevel} onChange={(e) => setLoggingForm((p) => ({ ...p, minLevel: e.target.value as ProfileLogging['minLevel'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={loggingForm.minLevel} onChange={(e) => setLoggingForm((p) => ({ ...p, minLevel: e.target.value as ProfileLogging['minLevel'] }))}>
                     {LOG_LEVELS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -795,8 +769,8 @@ export const TechStacksView: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button type="button" onClick={() => setIsLoggingModalOpen(false)} className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleSaveLogging} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer">Save Logging Profile</button>
+              <Button variant="secondary" onClick={() => setIsLoggingModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveLogging}>Save Logging Profile</Button>
             </div>
           </div>
         </div>
@@ -808,7 +782,7 @@ export const TechStacksView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Lock className="w-4 h-4 text-rose-400" aria-hidden="true" />
+                <Lock className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingEncryptionId ? 'Edit Encryption Profile' : 'Create Encryption Profile'}
               </span>
               <button onClick={() => setIsEncryptionModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
@@ -818,18 +792,18 @@ export const TechStacksView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
-                <input type="text" placeholder="e.g. Enterprise At-Rest AES-256" value={encryptionForm.name} onChange={(e) => setEncryptionForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Enterprise At-Rest AES-256" value={encryptionForm.name} onChange={(e) => setEncryptionForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Algorithm</label>
-                  <select value={encryptionForm.algorithm} onChange={(e) => setEncryptionForm((p) => ({ ...p, algorithm: e.target.value as ProfileEncryption['algorithm'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={encryptionForm.algorithm} onChange={(e) => setEncryptionForm((p) => ({ ...p, algorithm: e.target.value as ProfileEncryption['algorithm'] }))}>
                     {ENCRYPTION_ALGORITHMS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Key Rotation (days)</label>
-                  <input type="number" value={encryptionForm.keyRotationDays} onChange={(e) => setEncryptionForm((p) => ({ ...p, keyRotationDays: Number(e.target.value) || 0 }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                  <Input type="number" value={encryptionForm.keyRotationDays} onChange={(e) => setEncryptionForm((p) => ({ ...p, keyRotationDays: Number(e.target.value) || 0 }))} />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -844,8 +818,8 @@ export const TechStacksView: React.FC = () => {
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button type="button" onClick={() => setIsEncryptionModalOpen(false)} className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleSaveEncryption} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer">Save Encryption Profile</button>
+              <Button variant="secondary" onClick={() => setIsEncryptionModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveEncryption}>Save Encryption Profile</Button>
             </div>
           </div>
         </div>
@@ -867,25 +841,25 @@ export const TechStacksView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
-                <input type="text" placeholder="e.g. Production Kubernetes Cluster" value={deploymentForm.name} onChange={(e) => setDeploymentForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Production Kubernetes Cluster" value={deploymentForm.name} onChange={(e) => setDeploymentForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Target Platform</label>
-                  <select value={deploymentForm.targetPlatform} onChange={(e) => setDeploymentForm((p) => ({ ...p, targetPlatform: e.target.value as ProfileDeployment['targetPlatform'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={deploymentForm.targetPlatform} onChange={(e) => setDeploymentForm((p) => ({ ...p, targetPlatform: e.target.value as ProfileDeployment['targetPlatform'] }))}>
                     {DEPLOYMENT_PLATFORMS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Strategy</label>
-                  <select value={deploymentForm.strategy} onChange={(e) => setDeploymentForm((p) => ({ ...p, strategy: e.target.value as ProfileDeployment['strategy'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={deploymentForm.strategy} onChange={(e) => setDeploymentForm((p) => ({ ...p, strategy: e.target.value as ProfileDeployment['strategy'] }))}>
                     {DEPLOYMENT_STRATEGIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
               </div>
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Replicas</label>
-                <input type="number" min={1} value={deploymentForm.replicas} onChange={(e) => setDeploymentForm((p) => ({ ...p, replicas: Number(e.target.value) || 1 }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="number" min={1} value={deploymentForm.replicas} onChange={(e) => setDeploymentForm((p) => ({ ...p, replicas: Number(e.target.value) || 1 }))} />
               </div>
               <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
                 <input type="checkbox" checked={deploymentForm.autoScale} onChange={(e) => setDeploymentForm((p) => ({ ...p, autoScale: e.target.checked }))} className="rounded border-gray-600 bg-gray-800 text-blue-600 focus:ring-blue-500 cursor-pointer" />
@@ -893,8 +867,8 @@ export const TechStacksView: React.FC = () => {
               </label>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button type="button" onClick={() => setIsDeploymentModalOpen(false)} className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleSaveDeployment} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer">Save Deployment Profile</button>
+              <Button variant="secondary" onClick={() => setIsDeploymentModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveDeployment}>Save Deployment Profile</Button>
             </div>
           </div>
         </div>
@@ -906,7 +880,7 @@ export const TechStacksView: React.FC = () => {
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-md w-full p-5 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-amber-400" aria-hidden="true" />
+                <KeyRound className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingAuthId ? 'Edit Authentication Profile' : 'Create Authentication Profile'}
               </span>
               <button onClick={() => setIsAuthModalOpen(false)} aria-label="Close dialog" className="p-1 rounded text-gray-400 hover:text-white cursor-pointer">
@@ -916,18 +890,18 @@ export const TechStacksView: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="text-[10px] text-gray-400 block mb-1">Profile Name</label>
-                <input type="text" placeholder="e.g. Enterprise SSO SAML" value={authForm.name} onChange={(e) => setAuthForm((p) => ({ ...p, name: e.target.value }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                <Input type="text" placeholder="e.g. Enterprise SSO SAML" value={authForm.name} onChange={(e) => setAuthForm((p) => ({ ...p, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Provider</label>
-                  <select value={authForm.provider} onChange={(e) => setAuthForm((p) => ({ ...p, provider: e.target.value as ProfileAuthentication['provider'] }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500">
+                  <Select value={authForm.provider} onChange={(e) => setAuthForm((p) => ({ ...p, provider: e.target.value as ProfileAuthentication['provider'] }))}>
                     {AUTH_PROVIDERS.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Session Timeout (minutes)</label>
-                  <input type="number" value={authForm.sessionTimeoutMinutes} onChange={(e) => setAuthForm((p) => ({ ...p, sessionTimeoutMinutes: Number(e.target.value) || 0 }))} className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-blue-500" />
+                  <Input type="number" value={authForm.sessionTimeoutMinutes} onChange={(e) => setAuthForm((p) => ({ ...p, sessionTimeoutMinutes: Number(e.target.value) || 0 }))} />
                 </div>
               </div>
               <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
@@ -936,8 +910,8 @@ export const TechStacksView: React.FC = () => {
               </label>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-[#262a36]">
-              <button type="button" onClick={() => setIsAuthModalOpen(false)} className="px-3 py-1.5 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded font-medium cursor-pointer">Cancel</button>
-              <button type="button" onClick={handleSaveAuth} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium cursor-pointer">Save Authentication Profile</button>
+              <Button variant="secondary" onClick={() => setIsAuthModalOpen(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSaveAuth}>Save Authentication Profile</Button>
             </div>
           </div>
         </div>
