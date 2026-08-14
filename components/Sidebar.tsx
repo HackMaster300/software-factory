@@ -14,6 +14,7 @@ import {
   Settings,
   HelpCircle,
   Puzzle,
+  X,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
@@ -21,9 +22,11 @@ import { Badge } from './ui/Badge';
 interface SidebarProps {
   activeView: string;
   setActiveView: (view: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isOpen, onClose }) => {
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, badge: null },
     { id: 'blueprints', label: 'Blueprints', icon: Layers, badge: 'Visual' },
@@ -37,68 +40,95 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView }) =
     { id: 'impact', label: 'Impact Analyzer', icon: GitCompare, badge: 'What-If' },
   ];
 
+  const handleNavigate = (id: string) => {
+    setActiveView(id);
+    onClose();
+  };
+
   return (
-    <aside className="w-56 bg-[#121418] border-r border-[#262933] flex flex-col justify-between select-none shrink-0">
-      <div className="py-2">
-        <div className="px-3 py-1.5 flex items-center justify-between">
-          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-gray-400">
-            Software Factory IDE
-          </span>
+    <>
+      {/* Backdrop: only rendered below the lg breakpoint, while the drawer is open */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out bg-[#121418] border-r border-[#262933] flex flex-col justify-between select-none shrink-0 lg:static lg:inset-auto lg:z-auto lg:w-56 lg:translate-x-0 lg:transition-none ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="py-2 overflow-y-auto">
+          <div className="px-3 py-1.5 flex items-center justify-between">
+            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-gray-400">
+              Software Factory IDE
+            </span>
+            <button
+              onClick={onClose}
+              aria-label="Close navigation menu"
+              className="lg:hidden min-w-11 min-h-11 inline-flex items-center justify-center text-gray-400 hover:text-white cursor-pointer -mr-1.5"
+            >
+              <X className="w-4 h-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className="px-2 mb-2">
+            <Button
+              variant="primary"
+              onClick={() => handleNavigate('scaffolder')}
+              className="w-full rounded-lg py-2"
+            >
+              <Wand2 className="w-3.5 h-3.5" />
+              <span>+ New Project</span>
+            </Button>
+          </div>
+
+          <nav className="mt-1 space-y-0.5 px-1.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigate(item.id)}
+                  className={`w-full flex items-center justify-between px-2.5 py-2.5 lg:py-2 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1d24] border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <Badge tone={isActive ? 'brand' : 'neutral'} className="border-0 normal-case">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        <div className="px-2 mb-2">
-          <Button
-            variant="primary"
-            onClick={() => setActiveView('scaffolder')}
-            className="w-full rounded-lg py-2"
-          >
-            <Wand2 className="w-3.5 h-3.5" />
-            <span>+ New Project</span>
-          </Button>
+        {/* Footer Info */}
+        <div className="p-3 border-t border-[#262933] bg-[#0e1013]/60 space-y-2">
+          <div className="flex items-center justify-between text-[11px] text-gray-400">
+            <span>Engine Status</span>
+            <span className="flex items-center gap-1 text-emerald-400 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              LocalStorage Persistent
+            </span>
+          </div>
+          <div className="text-[10px] text-gray-400 font-mono">
+            Ready for REST API Handshake
+          </div>
         </div>
-
-        <nav className="mt-1 space-y-0.5 px-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveView(item.id)}
-                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  isActive
-                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-[#1a1d24] border border-transparent'
-                }`}
-              >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
-                  <span className="truncate">{item.label}</span>
-                </div>
-                {item.badge && (
-                  <Badge tone={isActive ? 'brand' : 'neutral'} className="border-0 normal-case">
-                    {item.badge}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Footer Info */}
-      <div className="p-3 border-t border-[#262933] bg-[#0e1013]/60 space-y-2">
-        <div className="flex items-center justify-between text-[11px] text-gray-400">
-          <span>Engine Status</span>
-          <span className="flex items-center gap-1 text-emerald-400 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            LocalStorage Persistent
-          </span>
-        </div>
-        <div className="text-[10px] text-gray-400 font-mono">
-          Ready for REST API Handshake
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

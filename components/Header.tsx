@@ -18,6 +18,7 @@ import {
   Plus,
   Wand2,
   Settings2,
+  Menu,
 } from 'lucide-react';
 import { StorageService, useOrganizations, useWorkspaces } from '../services/storageService';
 import { ValidationService } from '../services/validationService';
@@ -34,6 +35,7 @@ interface HeaderProps {
   toggleAIDrawer: () => void;
   isAIDrawerOpen: boolean;
   selectedBlueprint: Blueprint;
+  toggleSidebar: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,6 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
   toggleAIDrawer,
   isAIDrawerOpen,
   selectedBlueprint,
+  toggleSidebar,
 }) => {
   const orgs = useOrganizations();
   const workspaces = useWorkspaces();
@@ -125,12 +128,20 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="h-14 bg-[#14161b] border-b border-[#2a2e39] flex items-center justify-between px-4 text-sm text-gray-200 select-none z-30 sticky top-0">
       {/* Left branding & Workspace selector */}
       <div className="flex items-center gap-3">
+        <button
+          onClick={toggleSidebar}
+          aria-label="Toggle navigation menu"
+          className="lg:hidden min-w-11 min-h-11 -ml-2 inline-flex items-center justify-center text-gray-300 hover:text-white cursor-pointer"
+        >
+          <Menu className="w-5 h-5" aria-hidden="true" />
+        </button>
+
         <div className="flex items-center gap-2 pr-3 border-r border-[#2b303c]">
           <div className="p-1.5 rounded-md bg-blue-600/20 text-blue-400 border border-blue-500/30">
             <Cpu className="w-4 h-4" />
           </div>
-          <span className="font-semibold text-white tracking-tight mono-font">SoftwareFactory</span>
-          <Badge tone="brand" className="normal-case">IDE v2.5</Badge>
+          <span className="font-semibold text-white tracking-tight mono-font hidden sm:inline">SoftwareFactory</span>
+          <Badge tone="brand" className="normal-case hidden sm:inline-flex">IDE v2.5</Badge>
         </div>
 
         {/* Org & Workspace Picker */}
@@ -197,11 +208,12 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Center Search / Command Palette Bar */}
       <button
         onClick={openCommandPalette}
-        className="flex items-center gap-3 bg-[#1a1d24] hover:bg-[#222630] border border-[#2e3340] hover:border-gray-600 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer w-48 sm:w-64 md:w-80 justify-between"
+        aria-label="Open command palette"
+        className="flex items-center gap-3 min-h-11 min-w-11 bg-[#1a1d24] hover:bg-[#222630] border border-[#2e3340] hover:border-gray-600 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer justify-center sm:w-48 md:w-64 lg:w-80 sm:justify-between"
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-          <span className="truncate">Search blueprints, rules, features...</span>
+          <span className="hidden sm:inline truncate">Search blueprints, rules, features...</span>
         </div>
         <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-[#282d38] border border-[#373e4f] text-gray-300 rounded font-mono">
           ⌘K
@@ -213,30 +225,30 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Real-time Validation Status Pill */}
         <button
           onClick={() => setActiveView('rules')}
-          className="flex items-center gap-2 px-2.5 py-1 rounded-md text-xs border bg-[#1a1d24] hover:bg-[#222630] transition-colors cursor-pointer"
+          className="flex items-center gap-2 px-2.5 py-1 min-h-11 sm:min-h-0 rounded-md text-xs border bg-[#1a1d24] hover:bg-[#222630] transition-colors cursor-pointer"
         >
           {errorCount > 0 ? (
             <span className="flex items-center gap-1 text-red-400 font-medium">
               <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-              {errorCount} Error{errorCount > 1 ? 's' : ''}
+              <span className="hidden sm:inline">{errorCount} Error{errorCount > 1 ? 's' : ''}</span>
             </span>
           ) : warningCount > 0 ? (
             <span className="flex items-center gap-1 text-amber-400 font-medium">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              {warningCount} Warning{warningCount > 1 ? 's' : ''}
+              <span className="hidden sm:inline">{warningCount} Warning{warningCount > 1 ? 's' : ''}</span>
             </span>
           ) : (
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Valid Architecture
+              <span className="hidden sm:inline">Valid Architecture</span>
             </span>
           )}
 
-          <div className="w-px h-3 bg-[#2e3340]" />
+          <div className="hidden sm:block w-px h-3 bg-[#2e3340]" />
 
           <div className="flex items-center gap-1 text-blue-400 font-mono">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-            <span>{scores.qualityScore}% Quality</span>
+            <span>{scores.qualityScore}%<span className="hidden sm:inline"> Quality</span></span>
           </div>
         </button>
 

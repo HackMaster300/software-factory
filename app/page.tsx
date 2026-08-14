@@ -52,6 +52,7 @@ export default function SoftwareFactoryPage() {
   const [isAIDrawerOpen, setIsAIDrawerOpen] = useState<boolean>(false);
   const [aiDrawerPrompt, setAiDrawerPrompt] = useState<string>('');
   const [isAdvisorOpen, setIsAdvisorOpen] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   const templates = useTemplates();
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint>(
@@ -186,12 +187,18 @@ export default function SoftwareFactoryPage() {
         toggleAIDrawer={() => setIsAIDrawerOpen((prev) => !prev)}
         isAIDrawerOpen={isAIDrawerOpen}
         selectedBlueprint={selectedBlueprint}
+        toggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
       />
 
       {/* Main Viewport Container */}
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Explorer Sidebar */}
-        <Sidebar activeView={activeView} setActiveView={setActiveView} />
+        {/* Left Explorer Sidebar (off-canvas drawer below lg, static above) */}
+        <Sidebar
+          activeView={activeView}
+          setActiveView={setActiveView}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
 
         {/* Center Main Workspace Content Viewport */}
         <main className="flex-1 overflow-y-auto bg-[#0f1115] relative">
