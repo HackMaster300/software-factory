@@ -3,11 +3,7 @@
 import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
 import {
-  Wand2,
-  Layers,
   Box,
-  Server,
-  FileCode,
   FolderGit2,
   Folder,
   File,
@@ -15,14 +11,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Play,
-  Cpu,
   ShieldCheck,
-  Check,
   Sparkles,
-  Zap,
-  Gauge,
   Code2,
-  Terminal,
   Trash2,
   Plus,
   Settings,
@@ -51,6 +42,10 @@ import { AdvisorService } from '../../services/advisorService';
 import { BlueprintService } from '../../services/blueprintService';
 import { RuleService } from '../../services/ruleService';
 import { AIService } from '../../services/aiService';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Input, Textarea, Select } from '../ui/Input';
 
 function checkCausesCircularDependency(
   projects: Array<{ id: string; references: string[] }>,
@@ -646,12 +641,10 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Wizard Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono text-[10px] font-semibold">
-              Autonomous Software Engineering Flow
-            </span>
+            <Badge tone="brand">Autonomous Engineering Flow</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">Step {step} of 4</span>
           </div>
@@ -682,21 +675,21 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
             </button>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Live Quality Score Badge Bar */}
-      <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-3 flex flex-wrap items-center justify-between gap-4">
+      <Card className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 font-mono font-bold text-base">
             {liveScores.qualityScore}
           </div>
           <div>
             <div className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Live Score Simulator
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> Live Score Simulator
             </div>
             <div className="text-[11px] text-gray-400">
               Active Stack: <span className="text-blue-300 font-mono">{activeTechStack.name}</span> | Arch:{' '}
-              <span className="text-purple-300 font-mono">{editableBlueprint.architectureStyle}</span>
+              <span className="text-gray-200 font-mono">{editableBlueprint.architectureStyle}</span>
             </div>
           </div>
         </div>
@@ -704,43 +697,43 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
         <div className="flex items-center gap-4 text-xs font-mono">
           <div className="text-center">
             <div className="text-gray-400 text-[10px]">SECURITY</div>
-            <div className="text-emerald-400 font-bold">{liveScores.securityScore}/100</div>
+            <div className="text-gray-100 font-bold">{liveScores.securityScore}/100</div>
           </div>
           <div className="text-center">
             <div className="text-gray-400 text-[10px]">ARCH</div>
-            <div className="text-blue-400 font-bold">{liveScores.architectureScore}/100</div>
+            <div className="text-gray-100 font-bold">{liveScores.architectureScore}/100</div>
           </div>
           <div className="text-center">
             <div className="text-gray-400 text-[10px]">PERF</div>
-            <div className="text-purple-400 font-bold">{liveScores.performanceScore}/100</div>
+            <div className="text-gray-100 font-bold">{liveScores.performanceScore}/100</div>
           </div>
           <div className="text-center">
             <div className="text-gray-400 text-[10px]">SCALE</div>
-            <div className="text-cyan-400 font-bold">{liveScores.scalabilityScore}/100</div>
+            <div className="text-gray-100 font-bold">{liveScores.scalabilityScore}/100</div>
           </div>
           <div className="text-center">
             <div className="text-gray-400 text-[10px]">MAINTAIN</div>
-            <div className="text-amber-400 font-bold">{liveScores.maintainabilityScore}/100</div>
+            <div className="text-gray-100 font-bold">{liveScores.maintainabilityScore}/100</div>
           </div>
           {/* Rule Guardrail Status Badge */}
           <div className="text-center border-l border-[#2e3446] pl-4">
             <div className="text-gray-400 text-[10px]">RULE ENGINE</div>
             {ruleReport.failedCount === 0 ? (
-              <div className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> PASSED
-              </div>
+              <Badge tone="success" className="text-[11px] normal-case">
+                <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" /> PASSED
+              </Badge>
             ) : (
-              <div className="text-amber-400 font-bold text-[11px] flex items-center gap-1">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" /> {ruleReport.failedCount} WARN
-              </div>
+              <Badge tone="warning" className="text-[11px] normal-case">
+                <ShieldAlert className="w-3.5 h-3.5" aria-hidden="true" /> {ruleReport.failedCount} WARN
+              </Badge>
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Step Content Panels */}
       {step === 1 && (
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-5 space-y-6">
+        <Card className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-white">Step 1: Solution Identifier & Primary Tech Stack Selection</h2>
             <p className="text-gray-400 text-xs">
@@ -751,24 +744,22 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
           <div className="space-y-4">
             <div>
               <label className="text-gray-300 block mb-1 font-medium">Solution Namespace / Project Identifier</label>
-              <input
+              <Input
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                className="w-full max-w-xl bg-[#13151c] border border-[#2e3446] text-white rounded-lg p-2.5 focus:outline-none focus:border-blue-500 font-mono text-xs"
+                className="max-w-xl font-mono"
               />
             </div>
 
             {/* Functional Description & Smart Package Suggester Section */}
-            <div className="bg-[#13151c] border border-[#2d3345] rounded-xl p-4 space-y-3">
+            <Card className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#252a38] pb-2.5">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-emerald-400" />
+                    <Package className="w-4 h-4 text-blue-400" aria-hidden="true" />
                     <h3 className="font-bold text-gray-100 text-xs">Descrição do Funcionamento do Projecto & Sugestão de Pacotes</h3>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px] font-semibold">
-                      AI & Keyword Engine
-                    </span>
+                    <Badge tone="brand">AI & Keyword Engine</Badge>
                   </div>
                   <p className="text-[11px] text-gray-400">
                     Descreva o funcionamento do projecto para sugerir e incluir automaticamente os pacotes e bibliotecas ideais para cada módulo da arquitetura.
@@ -776,27 +767,20 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleAnalyzePackagesWithAi}
-                    disabled={isAnalyzingAiPackages}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-semibold cursor-pointer shadow-sm transition-colors"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <Button size="sm" variant="secondary" onClick={handleAnalyzePackagesWithAi} disabled={isAnalyzingAiPackages}>
+                    <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>{isAnalyzingAiPackages ? 'Analisando...' : 'Analisar Funcionamento via AI'}</span>
-                  </button>
-                  <button
-                    onClick={handleApplyAllSuggestedPackages}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold cursor-pointer shadow-sm transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button size="sm" variant="primary" onClick={handleApplyAllSuggestedPackages}>
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Aplicar {suggestedPackages.length} Pacotes Sugeridos</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div>
                 <label className="text-gray-300 block mb-1 font-medium text-[11px]">Descrição do Funcionamento e Requisitos Operacionais:</label>
-                <textarea
+                <Textarea
                   rows={3}
                   value={projectDescription}
                   onChange={(e) => {
@@ -804,7 +788,6 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                     setEditableBlueprint((prev) => ({ ...prev, description: e.target.value }));
                   }}
                   placeholder="Ex: API de pagamento com autenticação JWT, banco de dados PostgreSQL com EF Core/Prisma, cache Redis, fila RabbitMQ para eventos, logs com Serilog e Swagger..."
-                  className="w-full bg-[#181a22] border border-[#2d3345] text-white rounded-lg p-2.5 focus:outline-none focus:border-emerald-500 text-xs font-sans"
                 />
               </div>
 
@@ -823,7 +806,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       setProjectDescription(presetDesc);
                       setEditableBlueprint((prev) => ({ ...prev, description: presetDesc }));
                     }}
-                    className="px-2 py-0.5 rounded bg-[#1e2330] hover:bg-emerald-950 text-emerald-300 border border-emerald-500/20 font-mono cursor-pointer transition-colors"
+                    className="px-2 py-0.5 rounded bg-[#1c2029] hover:bg-[#242a36] text-gray-300 border border-[#2e3340] font-mono cursor-pointer transition-colors"
                   >
                     {presetDesc.split(' ')[0]} {presetDesc.split(' ')[1]}...
                   </button>
@@ -833,8 +816,8 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
               {/* Display Auto-Suggested Packages Chips */}
               <div className="pt-2 border-t border-[#232838] space-y-2">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-emerald-300 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Pacotes Sugeridos Automaticamente ({suggestedPackages.length} Identificados)
+                  <span className="font-semibold text-gray-300 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> Pacotes Sugeridos Automaticamente ({suggestedPackages.length} Identificados)
                   </span>
                   <span className="text-gray-400 font-mono text-[10px]">
                     Stack: <strong className="text-blue-300">{activeTechStack.name}</strong>
@@ -843,37 +826,34 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {suggestedPackages.map((sug, idx) => (
-                    <div key={idx} className="p-2 rounded-lg bg-[#1a1e28] border border-emerald-500/30 flex items-start justify-between space-x-2">
+                    <Card key={idx} flat className="border border-[#2b303d] flex items-start justify-between space-x-2 p-2">
                       <div className="space-y-0.5 min-w-0">
-                        <div className="text-[11px] font-bold text-emerald-300 font-mono truncate">{sug.packageName}</div>
+                        <div className="text-[11px] font-bold text-gray-100 font-mono truncate">{sug.packageName}</div>
                         <div className="text-[10px] text-gray-400 truncate">{sug.reason}</div>
                         <div className="flex items-center gap-1 pt-0.5 font-mono text-[9px]">
-                          <span className="px-1 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-500/30">
-                            v{sug.version}
-                          </span>
-                          <span className="px-1 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-500/30">
-                            👉 {sug.targetModuleType}
-                          </span>
+                          <Badge tone="neutral" className="normal-case">v{sug.version}</Badge>
+                          <Badge tone="brand" className="normal-case">{sug.targetModuleType}</Badge>
                         </div>
                       </div>
 
-                      <button
+                      <Button
+                        size="sm"
                         onClick={() => {
                           const targetProj = editableBlueprint.projects.find((p) => p.type === sug.targetModuleType) || editableBlueprint.projects[0];
                           if (targetProj) {
                             handleAddPackageToProj(targetProj.id, sug.packageName, sug.version);
                           }
                         }}
-                        className="px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-500/40 rounded text-[10px] font-mono shrink-0 cursor-pointer transition-colors"
                         title={`Adicionar ao módulo ${sug.targetModuleType}`}
+                        className="shrink-0"
                       >
                         + Add
-                      </button>
-                    </div>
+                      </Button>
+                    </Card>
                   ))}
 
                   {suggestedPackages.length === 0 && (
-                    <div className="col-span-full text-[11px] text-gray-500 italic p-2 bg-[#181a22] rounded border border-[#2b3040]">
+                    <div className="col-span-full text-[11px] text-gray-500 italic p-2 bg-[#13151b] rounded border border-[#2b303d]">
                       Digite os requisitos do funcionamento do projecto no campo acima para visualizar e sugerir pacotes automaticamente.
                     </div>
                   )}
@@ -882,17 +862,17 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
 
               {/* AI Output Result Box if invoked */}
               {aiPackageAnalysisText && (
-                <div className="mt-3 p-3 rounded-lg bg-[#171b26] border border-purple-500/40 space-y-2">
-                  <div className="flex items-center gap-1.5 text-purple-300 font-bold text-xs border-b border-purple-500/20 pb-1">
-                    <Sparkles className="w-4 h-4 text-amber-300" />
+                <Card flat className="border border-[#2b303d] space-y-2">
+                  <div className="flex items-center gap-1.5 text-gray-200 font-bold text-xs border-b border-[#232838] pb-1">
+                    <Sparkles className="w-4 h-4 text-blue-400" aria-hidden="true" />
                     <span>Parecer do Arquiteto de Software AI sobre os Pacotes Sugeridos:</span>
                   </div>
                   <div className="text-[11px] text-gray-300 whitespace-pre-line leading-relaxed font-mono">
                     {aiPackageAnalysisText}
                   </div>
-                </div>
+                </Card>
               )}
-            </div>
+            </Card>
 
             <div>
               <label className="text-gray-300 block mb-2 font-medium">Choose Programming Language & Framework Stack</label>
@@ -900,27 +880,22 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 {techStacks.map((st) => {
                   const isSelected = editableBlueprint.techStackId === st.id;
                   return (
-                    <div
+                    <Card
                       key={st.id}
+                      interactive
                       onClick={() => handleSelectTechStack(st.id)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 relative ${
-                        isSelected
-                          ? 'bg-blue-600/20 border-blue-500 text-white shadow-md'
-                          : 'bg-[#13151c] border-[#292d3b] text-gray-400 hover:text-gray-200 hover:border-gray-600'
-                      }`}
+                      className={`space-y-2 ${isSelected ? 'border-blue-500 bg-blue-600/10' : ''}`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-gray-100">{st.name}</span>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-400" aria-hidden="true" />}
                       </div>
                       <div className="text-[11px] text-gray-400 line-clamp-2">{st.description}</div>
                       <div className="flex items-center gap-2 pt-1 font-mono text-[10px] text-gray-400">
-                        <span className="px-1.5 py-0.5 rounded bg-[#1e222d] border border-[#2b3040] uppercase">
-                          {st.language}
-                        </span>
+                        <Badge tone="neutral" className="normal-case">{st.language}</Badge>
                         <span>{st.framework}</span>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
@@ -932,48 +907,40 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 {templates.map((tmpl) => {
                   const isSelected = selectedTemplateId === tmpl.id;
                   return (
-                    <div
+                    <Card
                       key={tmpl.id}
+                      interactive
                       onClick={() => handleSelectTemplate(tmpl.id)}
-                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start justify-between ${
-                        isSelected
-                          ? 'bg-blue-600/20 border-blue-500 text-white'
-                          : 'bg-[#13151c] border-[#292d3b] text-gray-400 hover:text-gray-200'
-                      }`}
+                      className={`flex items-start justify-between ${isSelected ? 'border-blue-500 bg-blue-600/10' : ''}`}
                     >
                       <div className="space-y-1">
                         <div className="font-semibold text-gray-200 text-xs">{tmpl.name}</div>
                         <div className="text-[11px] text-gray-400">{tmpl.description}</div>
                         <div className="flex flex-wrap gap-1 pt-1">
                           {tmpl.tags.map((tag) => (
-                            <span key={tag} className="px-1.5 py-0.5 rounded bg-[#1f2430] text-[10px] text-blue-300">
-                              {tag}
-                            </span>
+                            <Badge key={tag} tone="neutral" className="normal-case">{tag}</Badge>
                           ))}
                         </div>
                       </div>
-                      {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-1" />}
-                    </div>
+                      {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0 mt-1" aria-hidden="true" />}
+                    </Card>
                   );
                 })}
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end pt-3 border-t border-[#292d3b]">
-            <button
-              onClick={() => setStep(2)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold cursor-pointer"
-            >
+          <div className="flex justify-end pt-3 border-t border-[#2b303d]">
+            <Button variant="primary" onClick={() => setStep(2)}>
               <span>Next: Architecture Style</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {step === 2 && (
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-5 space-y-6">
+        <Card className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-white">Step 2: Custom Architectural Pattern & Component Hierarchy</h2>
             <p className="text-gray-400 text-xs">
@@ -991,34 +958,29 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
             ].map((arch) => {
               const isSelected = editableBlueprint.architectureStyle === arch.id;
               return (
-                <div
+                <Card
                   key={arch.id}
+                  interactive
                   onClick={() => handleSelectArchStyle(arch.id as ArchitectureStyle)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 ${
-                    isSelected
-                      ? 'bg-purple-600/20 border-purple-500 text-white shadow-md'
-                      : 'bg-[#13151c] border-[#292d3b] text-gray-400 hover:text-gray-200 hover:border-gray-600'
-                  }`}
+                  className={`space-y-2 ${isSelected ? 'border-blue-500 bg-blue-600/10' : ''}`}
                 >
                   <div className="font-bold text-xs text-gray-100">{arch.title}</div>
                   <div className="text-[11px] text-gray-400">{arch.desc}</div>
-                </div>
+                </Card>
               );
             })}
           </div>
 
           {/* Solution Project Modules (.csproj / Crates / Packages) Customization */}
-          <div className="space-y-3 bg-[#13151c] border border-[#2b303d] rounded-xl p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#282d3c] pb-3">
+          <Card className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#232838] pb-3">
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-100 text-xs">
                     Solution Project Modules Selection ({editableBlueprint.projects.length}{' '}
                     {activeTechStack.language === 'csharp' ? '.csproj' : activeTechStack.language === 'rust' ? 'crates' : 'modules'})
                   </h3>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono text-[10px] font-bold">
-                    {editableBlueprint.projects.length} Projects
-                  </span>
+                  <Badge tone="brand">{editableBlueprint.projects.length} Projects</Badge>
                 </div>
                 <p className="text-[11px] text-gray-400">
                   Select how many project modules / .csproj files to include or add custom ones tailored to your solution domain.
@@ -1029,59 +991,49 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
               <div className="flex items-center gap-1">
                 <span className="text-[10px] text-gray-400 mr-1 font-mono">Preset Count:</span>
                 {[1, 2, 3, 4, 5].map((cnt) => (
-                  <button
+                  <Button
                     key={cnt}
+                    size="sm"
+                    variant={editableBlueprint.projects.length === cnt ? 'primary' : 'secondary'}
                     onClick={() => handlePresetModuleCount(cnt)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer transition-colors ${
-                      editableBlueprint.projects.length === cnt
-                        ? 'bg-blue-600 text-white font-bold'
-                        : 'bg-[#1f2430] text-gray-400 hover:text-white'
-                    }`}
                   >
                     {cnt} {cnt === 1 ? 'Proj' : 'Projs'}
-                  </button>
+                  </Button>
                 ))}
-                <button
-                  onClick={() => setIsAddingModule(!isAddingModule)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-medium ml-2 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
+                <Button size="sm" variant="primary" onClick={() => setIsAddingModule(!isAddingModule)} className="ml-2">
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Add Module</span>
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Inline Module Adder */}
             {isAddingModule && (
-              <div className="bg-[#1a1d26] border border-blue-500/40 rounded-lg p-3 space-y-3 my-2">
+              <Card className="border-blue-500/40 space-y-3 my-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-blue-400 text-xs flex items-center gap-1">
-                    <Plus className="w-3.5 h-3.5" /> Add New Solution Module / .csproj
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Add New Solution Module / .csproj
                   </span>
-                  <button onClick={() => setIsAddingModule(false)} className="text-gray-400 hover:text-white text-xs">
+                  <Button size="sm" variant="ghost" onClick={() => setIsAddingModule(false)}>
                     Cancel
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div>
                     <label className="text-[10px] text-gray-400 block mb-1">Module Name</label>
-                    <input
+                    <Input
                       type="text"
                       placeholder={activeTechStack.language === 'csharp' ? `${projectName}.Worker` : 'src/worker'}
                       value={newModuleName}
                       onChange={(e) => setNewModuleName(e.target.value)}
-                      className="w-full bg-[#13151c] border border-[#2b3040] text-white rounded p-1.5 text-xs font-mono"
+                      className="font-mono"
                     />
                   </div>
 
                   <div>
                     <label className="text-[10px] text-gray-400 block mb-1">Layer Type</label>
-                    <select
-                      value={newModuleType}
-                      onChange={(e) => setNewModuleType(e.target.value as any)}
-                      className="w-full bg-[#13151c] border border-[#2b3040] text-white rounded p-1.5 text-xs"
-                    >
+                    <Select value={newModuleType} onChange={(e) => setNewModuleType(e.target.value as any)}>
                       <option value="Core">Core (Entities & Interfaces)</option>
                       <option value="Application">Application (Use Cases)</option>
                       <option value="Infrastructure">Infrastructure (DB/Services)</option>
@@ -1089,17 +1041,16 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       <option value="Worker">Worker (Background Queue)</option>
                       <option value="Tests">Tests (Unit & Integration)</option>
                       <option value="UI">UI (Frontend App)</option>
-                    </select>
+                    </Select>
                   </div>
 
                   <div>
                     <label className="text-[10px] text-gray-400 block mb-1">Description</label>
-                    <input
+                    <Input
                       type="text"
                       placeholder="e.g., Background scheduled job consumer"
                       value={newModuleDesc}
                       onChange={(e) => setNewModuleDesc(e.target.value)}
-                      className="w-full bg-[#13151c] border border-[#2b3040] text-white rounded p-1.5 text-xs"
                     />
                   </div>
                 </div>
@@ -1107,7 +1058,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 {editableBlueprint.projects.length > 0 && (
                   <div>
                     <label className="text-[10px] text-gray-400 block mb-1">Initial Module Dependencies (References)</label>
-                    <div className="flex flex-wrap gap-2 bg-[#13151c] p-2 rounded border border-[#2b3040]">
+                    <div className="flex flex-wrap gap-2 bg-[#13151b] p-2 rounded border border-[#2b303d]">
                       {editableBlueprint.projects.map((p) => {
                         const isSelected = newModuleReferences.includes(p.id);
                         return (
@@ -1131,39 +1082,36 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 )}
 
                 <div className="flex justify-end pt-1">
-                  <button
-                    onClick={handleAddCustomModule}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-medium text-xs cursor-pointer"
-                  >
+                  <Button size="sm" variant="primary" onClick={handleAddCustomModule}>
                     Confirm & Add Module
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             )}
 
             {/* List of Configured Project Modules */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {editableBlueprint.projects.map((proj) => (
-                <div key={proj.id} className="p-3 bg-[#181a22] border border-[#292d3b] rounded-lg space-y-2 relative group hover:border-gray-500 transition-colors">
+                <Card key={proj.id} className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-0.5">
                       <div className="font-bold text-blue-400 text-xs flex items-center gap-1.5">
-                        <Box className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        <Box className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
                         <span>{proj.name}</span>
                       </div>
-                      <span className="inline-block px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-mono">
-                        {proj.type} Layer
-                      </span>
+                      <Badge tone="neutral" className="normal-case">{proj.type} Layer</Badge>
                     </div>
 
-                    <button
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       onClick={() => handleRemoveModule(proj.id)}
-                      className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 transition-colors cursor-pointer"
                       title="Remove module"
                       aria-label={`Remove module ${proj.name}`}
+                      className="hover:text-red-400"
                     >
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                    </button>
+                    </Button>
                   </div>
 
                   <p className="text-gray-400 text-[11px] leading-tight">{proj.description}</p>
@@ -1171,17 +1119,17 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                   {/* Outbound Project Reference Badges */}
                   <div className="space-y-1">
                     <div className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                      <Link2 className="w-3 h-3 text-gray-400" />
+                      <Link2 className="w-3 h-3 text-gray-400" aria-hidden="true" />
                       <span>Outbound References:</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {proj.references.map((refId) => {
                         const refP = editableBlueprint.projects.find((p) => p.id === refId);
                         return (
-                          <span key={refId} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[10px] font-mono">
-                            <ArrowRight className="w-2.5 h-2.5 text-blue-400" />
+                          <Badge key={refId} tone="brand" className="normal-case">
+                            <ArrowRight className="w-2.5 h-2.5" aria-hidden="true" />
                             {refP ? refP.name.split('.').pop() : refId}
-                          </span>
+                          </Badge>
                         );
                       })}
                       {proj.references.length === 0 && (
@@ -1199,7 +1147,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       }}
                       className="flex items-center gap-1 text-blue-400 hover:text-blue-300 font-mono cursor-pointer"
                     >
-                      <GitFork className="w-3 h-3" />
+                      <GitFork className="w-3 h-3" aria-hidden="true" />
                       <span>{editingRefProjId === proj.id ? 'Close Ref Editor' : `Refs (${proj.references.length})`}</span>
                     </button>
 
@@ -1208,9 +1156,9 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                         setEditingPkgProjId(editingPkgProjId === proj.id ? null : proj.id);
                         setEditingRefProjId(null);
                       }}
-                      className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-mono cursor-pointer"
+                      className="flex items-center gap-1 text-gray-300 hover:text-white font-mono cursor-pointer"
                     >
-                      <Package className="w-3 h-3" />
+                      <Package className="w-3 h-3" aria-hidden="true" />
                       <span>{editingPkgProjId === proj.id ? 'Close Packages' : `Packages (${(proj.packages || []).length})`}</span>
                     </button>
 
@@ -1219,8 +1167,8 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
 
                   {/* Inline Reference Editor Drawer */}
                   {editingRefProjId === proj.id && (
-                    <div className="mt-2 p-2 bg-[#13151c] border border-[#2e3444] rounded space-y-1.5">
-                      <div className="font-semibold text-gray-300 text-[11px] flex items-center justify-between border-b border-[#242838] pb-1">
+                    <Card flat className="border border-[#2b303d] space-y-1.5">
+                      <div className="font-semibold text-gray-300 text-[11px] flex items-center justify-between border-b border-[#232838] pb-1">
                         <span>Toggle Outbound References:</span>
                         <span className="text-[10px] text-gray-500 font-mono">ProjectReference</span>
                       </div>
@@ -1235,14 +1183,14 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                               <label
                                 key={otherProj.id}
                                 className={`flex items-center justify-between p-1.5 rounded text-[11px] font-mono transition-colors ${
-                                  isRef ? 'bg-blue-900/30 border border-blue-500/40 text-blue-200' : 'bg-[#1a1d26] border border-[#272b38] text-gray-400 hover:text-gray-200'
+                                  isRef ? 'bg-blue-900/30 border border-blue-500/40 text-blue-200' : 'bg-[#13151b] border border-[#2b303d] text-gray-400 hover:text-gray-200'
                                 } ${causesCycle ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                               >
                                 <span className="truncate mr-2">{otherProj.name}</span>
                                 <div className="flex items-center gap-1 shrink-0">
                                   {causesCycle && (
                                     <span className="text-[9px] text-amber-400 font-sans flex items-center gap-0.5" title="Adding this reference causes a circular loop">
-                                      <ShieldAlert className="w-3 h-3 text-amber-400" /> Cycle
+                                      <ShieldAlert className="w-3 h-3" aria-hidden="true" /> Cycle
                                     </span>
                                   )}
                                   <input
@@ -1257,15 +1205,15 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                             );
                           })}
                       </div>
-                    </div>
+                    </Card>
                   )}
 
                   {/* Inline Package Manager Drawer (Item 4) */}
                   {editingPkgProjId === proj.id && (
-                    <div className="mt-2 p-2 bg-[#13151c] border border-emerald-500/30 rounded space-y-2">
-                      <div className="font-semibold text-emerald-300 text-[11px] flex items-center justify-between border-b border-[#242838] pb-1">
+                    <Card flat className="border border-[#2b303d] space-y-2">
+                      <div className="font-semibold text-gray-200 text-[11px] flex items-center justify-between border-b border-[#232838] pb-1">
                         <span className="flex items-center gap-1">
-                          <Package className="w-3 h-3 text-emerald-400" /> Module Package Dependencies
+                          <Package className="w-3 h-3" aria-hidden="true" /> Module Package Dependencies
                         </span>
                         <span className="text-[10px] text-gray-400 font-mono">
                           {activeTechStack.language === 'csharp' ? 'NuGet' : activeTechStack.language === 'rust' ? 'Crates' : 'npm'}
@@ -1275,8 +1223,8 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       {/* Current packages list */}
                       <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
                         {(proj.packages || []).map((pkg) => (
-                          <div key={pkg.name} className="flex items-center justify-between p-1 rounded bg-[#1c202b] border border-[#2a3040] text-[10px] font-mono">
-                            <span className="text-emerald-300 truncate">{pkg.name}</span>
+                          <div key={pkg.name} className="flex items-center justify-between p-1 rounded bg-[#13151b] border border-[#2b303d] text-[10px] font-mono">
+                            <span className="text-gray-200 truncate">{pkg.name}</span>
                             <div className="flex items-center gap-1 shrink-0">
                               <span className="text-gray-400">v{pkg.version}</span>
                               <button
@@ -1297,40 +1245,34 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       </div>
 
                       {/* Package add form */}
-                      <div className="pt-1 border-t border-[#242838] space-y-1.5">
+                      <div className="pt-1 border-t border-[#232838] space-y-1.5">
                         <div className="flex items-center gap-1">
-                          <input
+                          <Input
                             type="text"
                             placeholder={activeTechStack.language === 'csharp' ? 'e.g., MediatR' : 'e.g., express'}
                             value={newPkgName}
                             onChange={(e) => setNewPkgName(e.target.value)}
-                            className="flex-1 bg-[#181a22] border border-[#2d3345] text-white rounded px-2 py-1 text-[11px] font-mono"
+                            className="flex-1 font-mono"
                           />
-                          <input
+                          <Input
                             type="text"
                             placeholder="1.0.0"
                             value={newPkgVer}
                             onChange={(e) => setNewPkgVer(e.target.value)}
-                            className="w-16 bg-[#181a22] border border-[#2d3345] text-white rounded px-2 py-1 text-[11px] font-mono"
+                            className="w-16 font-mono"
                           />
-                          <button
-                            onClick={() => handleAddPackageToProj(proj.id, newPkgName, newPkgVer)}
-                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-medium cursor-pointer"
-                          >
+                          <Button size="sm" variant="primary" onClick={() => handleAddPackageToProj(proj.id, newPkgName, newPkgVer)}>
                             Add
-                          </button>
+                          </Button>
                         </div>
 
                         {/* Quick Presets & Operational Suggestions for Module */}
                         <div className="space-y-1 pt-1 border-t border-[#232838]">
                           <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-emerald-300 font-semibold flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-amber-400" /> Sugeridos com Base no Funcionamento para {proj.name}:
+                            <span className="text-gray-300 font-semibold flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-blue-400" aria-hidden="true" /> Sugeridos com Base no Funcionamento para {proj.name}:
                             </span>
-                            <button
-                              onClick={handleApplyAllSuggestedPackages}
-                              className="text-[9px] text-blue-400 hover:underline font-mono"
-                            >
+                            <button onClick={handleApplyAllSuggestedPackages} className="text-[9px] text-blue-400 hover:underline font-mono">
                               Aplicar Todos
                             </button>
                           </div>
@@ -1347,8 +1289,8 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                                     onClick={() => handleAddPackageToProj(proj.id, sugPkg.packageName, sugPkg.version)}
                                     className={`px-1.5 py-0.5 rounded border text-[9px] font-mono transition-colors flex items-center gap-1 cursor-pointer ${
                                       isAdded
-                                        ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30 opacity-70 cursor-default'
-                                        : 'bg-[#1e2330] hover:bg-emerald-900 text-emerald-300 border-emerald-500/30'
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 opacity-70 cursor-default'
+                                        : 'bg-[#1c2029] hover:bg-[#242a36] text-gray-300 border-[#2e3340]'
                                     }`}
                                     title={sugPkg.reason}
                                   >
@@ -1365,100 +1307,91 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* Environment File (.env) Configuration Choice */}
-          <div className="space-y-4 bg-[#13151c] border border-[#2b303d] rounded-xl p-4">
-            <div className="space-y-1 border-b border-[#282d3c] pb-3">
+          <Card className="space-y-4">
+            <div className="space-y-1 border-b border-[#232838] pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-400" />
+                <FileText className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 <h3 className="font-semibold text-gray-100 text-xs">
                   Environment Variable & Local Secret Configuration (.env)
                 </h3>
               </div>
               <p className="text-[11px] text-gray-400">
-                Choose whether your generated project should include local <span className="text-emerald-400 font-mono">.env</span> configuration files or rely purely on direct OS / Cloud environment variables.
+                Choose whether your generated project should include local <span className="text-gray-200 font-mono">.env</span> configuration files or rely purely on direct OS / Cloud environment variables.
               </p>
             </div>
 
             {/* Prompt Option Selection Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div
+              <Card
+                interactive
                 onClick={() => setUseEnvFile(true)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 ${
-                  useEnvFile
-                    ? 'bg-emerald-950/30 border-emerald-500 text-white shadow-md'
-                    : 'bg-[#181a20] border-[#292d3b] text-gray-400 hover:text-gray-200'
-                }`}
+                className={`space-y-2 ${useEnvFile ? 'border-blue-500 bg-blue-600/10' : ''}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-emerald-300 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Use .env Local Configuration Files
+                  <span className="font-bold text-xs text-gray-100 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400" aria-hidden="true" /> Use .env Local Configuration Files
                   </span>
-                  {useEnvFile && <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px]">Active</span>}
+                  {useEnvFile && <Badge tone="success">Active</Badge>}
                 </div>
                 <p className="text-[11px] text-gray-300 leading-normal">
-                  Generates <span className="font-mono text-emerald-400 text-[10px]">.env</span> and <span className="font-mono text-emerald-400 text-[10px]">.env.example</span> in solution root with customizable keys for local development.
+                  Generates <span className="font-mono text-gray-200 text-[10px]">.env</span> and <span className="font-mono text-gray-200 text-[10px]">.env.example</span> in solution root with customizable keys for local development.
                 </p>
-              </div>
+              </Card>
 
-              <div
+              <Card
+                interactive
                 onClick={() => setUseEnvFile(false)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 ${
-                  !useEnvFile
-                    ? 'bg-blue-950/30 border-blue-500 text-white shadow-md'
-                    : 'bg-[#181a20] border-[#292d3b] text-gray-400 hover:text-gray-200'
-                }`}
+                className={`space-y-2 ${!useEnvFile ? 'border-blue-500 bg-blue-600/10' : ''}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-blue-300 flex items-center gap-1.5">
-                    <Settings className="w-4 h-4 text-blue-400" /> Do NOT Use .env Files (Direct OS / Secret Manager)
+                  <span className="font-bold text-xs text-gray-100 flex items-center gap-1.5">
+                    <Settings className="w-4 h-4 text-blue-400" aria-hidden="true" /> Do NOT Use .env Files (Direct OS / Secret Manager)
                   </span>
-                  {!useEnvFile && <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px]">Active</span>}
+                  {!useEnvFile && <Badge tone="success">Active</Badge>}
                 </div>
                 <p className="text-[11px] text-gray-300 leading-normal">
                   No local <span className="font-mono text-gray-400 text-[10px]">.env</span> files. Configures environment setting loading via OS process environment variables, Docker secrets, or cloud vaults.
                 </p>
-              </div>
+              </Card>
             </div>
 
             {/* Configurable .env Variables Editor Table (Only shown if useEnvFile is true) */}
             {useEnvFile && (
-              <div className="bg-[#181a20] border border-[#2b3040] rounded-lg p-3 space-y-3">
+              <Card className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-gray-200 text-xs flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-amber-400" /> Configured .env Keys & Values ({envVars.length})
+                    <Key className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> Configured .env Keys & Values ({envVars.length})
                   </span>
 
                   {/* Preset Quick Add Buttons */}
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      onClick={handleLoadStackEnvPresets}
-                      className="px-2 py-0.5 bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-500/30 rounded text-[10px] font-medium cursor-pointer flex items-center gap-1 mr-1"
-                    >
-                      <Settings className="w-3 h-3" /> Auto-Load {activeTechStack.name} Presets
-                    </button>
+                    <Button size="sm" variant="secondary" onClick={handleLoadStackEnvPresets} className="mr-1">
+                      <Settings className="w-3 h-3" aria-hidden="true" /> Auto-Load {activeTechStack.name} Presets
+                    </Button>
                     <span className="text-[10px] text-gray-400">Presets:</span>
                     <button
                       onClick={() => handleAddPresetEnv('DATABASE_URL', 'postgresql://admin:secret@localhost:5432/db', 'Primary Database Connection')}
-                      className="px-1.5 py-0.5 bg-[#232836] hover:bg-[#2d3448] text-amber-300 rounded text-[10px] cursor-pointer"
+                      className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-gray-300 rounded text-[10px] cursor-pointer"
                     >
                       + Postgres
                     </button>
                     <button
                       onClick={() => handleAddPresetEnv('JWT_SECRET', 'super-secret-key-32-bytes-minimum!', 'Token Auth Secret')}
-                      className="px-1.5 py-0.5 bg-[#232836] hover:bg-[#2d3448] text-amber-300 rounded text-[10px] cursor-pointer"
+                      className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-gray-300 rounded text-[10px] cursor-pointer"
                     >
                       + JWT
                     </button>
                     <button
                       onClick={() => handleAddPresetEnv('REDIS_URL', 'redis://localhost:6379', 'Redis Host')}
-                      className="px-1.5 py-0.5 bg-[#232836] hover:bg-[#2d3448] text-amber-300 rounded text-[10px] cursor-pointer"
+                      className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-gray-300 rounded text-[10px] cursor-pointer"
                     >
                       + Redis
                     </button>
@@ -1466,42 +1399,38 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 </div>
 
                 {/* Variable Creation Row */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-2 bg-[#13151c] p-2 rounded border border-[#292d3b]">
-                  <input
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2 bg-[#13151b] p-2 rounded border border-[#2b303d]">
+                  <Input
                     type="text"
                     placeholder="KEY (e.g., API_KEY)"
                     value={newEnvKey}
                     onChange={(e) => setNewEnvKey(e.target.value)}
-                    className="bg-[#1a1d26] border border-[#2f3547] text-amber-300 rounded p-1.5 text-xs font-mono"
+                    className="font-mono"
                   />
-                  <input
+                  <Input
                     type="text"
                     placeholder="VALUE (e.g., secret_123)"
                     value={newEnvVal}
                     onChange={(e) => setNewEnvVal(e.target.value)}
-                    className="bg-[#1a1d26] border border-[#2f3547] text-gray-200 rounded p-1.5 text-xs font-mono"
+                    className="font-mono"
                   />
-                  <input
+                  <Input
                     type="text"
                     placeholder="Description (optional)"
                     value={newEnvDesc}
                     onChange={(e) => setNewEnvDesc(e.target.value)}
-                    className="bg-[#1a1d26] border border-[#2f3547] text-gray-400 rounded p-1.5 text-xs"
                   />
-                  <button
-                    onClick={handleAddEnvVar}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white rounded p-1.5 text-xs font-semibold cursor-pointer flex items-center justify-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Add Variable
-                  </button>
+                  <Button variant="primary" onClick={handleAddEnvVar}>
+                    <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Add Variable
+                  </Button>
                 </div>
 
                 {/* Active Key Value Table */}
                 <div className="space-y-1 font-mono text-[11px]">
                   {envVars.map((v) => (
-                    <div key={v.key} className="flex items-center justify-between p-2 bg-[#13151c] border border-[#262a38] rounded">
+                    <div key={v.key} className="flex items-center justify-between p-2 bg-[#13151b] border border-[#2b303d] rounded">
                       <div className="flex items-center gap-3">
-                        <span className="text-amber-400 font-bold">{v.key}</span>
+                        <span className="text-gray-200 font-bold">{v.key}</span>
                         <span className="text-gray-500">=</span>
                         <span className="text-gray-300">{v.value}</span>
                         {v.description && <span className="text-gray-500 font-sans text-[10px]">({v.description})</span>}
@@ -1513,37 +1442,31 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                         title="Delete key"
                         aria-label={`Delete environment variable ${v.key}`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
             )}
-          </div>
+          </Card>
 
-          <div className="flex justify-between pt-3 border-t border-[#292d3b]">
-            <button
-              onClick={() => setStep(1)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#202430] text-gray-300 hover:text-white rounded-lg cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
+          <div className="flex justify-between pt-3 border-t border-[#2b303d]">
+            <Button variant="secondary" onClick={() => setStep(1)}>
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               <span>Back</span>
-            </button>
+            </Button>
 
-            <button
-              onClick={() => setStep(3)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold cursor-pointer"
-            >
+            <Button variant="primary" onClick={() => setStep(3)}>
               <span>Next: Live Score Rationale</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {step === 3 && (
-        <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-5 space-y-6">
+        <Card className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-white">Step 3: Quality Score Rationale & Recommendation Analysis</h2>
             <p className="text-gray-400 text-xs">
@@ -1553,13 +1476,13 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {liveScores.rationale.map((rat) => (
-              <div key={rat.category} className="p-4 bg-[#13151c] border border-[#292d3b] rounded-xl space-y-2">
+              <Card key={rat.category} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-gray-200 text-xs">{rat.category}</span>
                   <span className="font-mono text-xs font-bold text-blue-400">{rat.score}/100</span>
                 </div>
                 <div className="text-xs text-gray-300">{rat.reason}</div>
-                <div className="pt-2 border-t border-[#232836]">
+                <div className="pt-2 border-t border-[#232838]">
                   <div className="text-[10px] font-semibold text-gray-400 uppercase">Recommendations:</div>
                   <ul className="list-disc list-inside text-[11px] text-amber-300/80 space-y-0.5 mt-1">
                     {rat.recommendations.map((rec, idx) => (
@@ -1567,74 +1490,66 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                     ))}
                   </ul>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
-          <div className="flex justify-between pt-3 border-t border-[#292d3b]">
-            <button
-              onClick={() => setStep(2)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#202430] text-gray-300 hover:text-white rounded-lg cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
+          <div className="flex justify-between pt-3 border-t border-[#2b303d]">
+            <Button variant="secondary" onClick={() => setStep(2)}>
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               <span>Back</span>
-            </button>
+            </Button>
 
-            <button
-              onClick={() => setStep(4)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold cursor-pointer"
-            >
+            <Button variant="primary" onClick={() => setStep(4)}>
               <span>Next: Live Code & Solution Preview</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {step === 4 && (
         <div className="space-y-5">
           {/* Solution Estimates Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+          <Card className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <div className="text-[10px] text-gray-400 uppercase font-mono">Estimated Files</div>
               <div className="text-lg font-bold text-blue-400 font-mono">{solutionPreview.estimatedFileCount}</div>
             </div>
             <div>
               <div className="text-[10px] text-gray-400 uppercase font-mono">Directories</div>
-              <div className="text-lg font-bold text-purple-400 font-mono">{solutionPreview.estimatedFolderCount}</div>
+              <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.estimatedFolderCount}</div>
             </div>
             <div>
               <div className="text-[10px] text-gray-400 uppercase font-mono">Project References</div>
-              <div className="text-lg font-bold text-cyan-400 font-mono">{solutionPreview.projectReferencesCount}</div>
+              <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.projectReferencesCount}</div>
             </div>
             <div>
               <div className="text-[10px] text-gray-400 uppercase font-mono">Package Dependencies</div>
-              <div className="text-lg font-bold text-emerald-400 font-mono">{solutionPreview.packageDependenciesCount}</div>
+              <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.packageDependenciesCount}</div>
             </div>
-          </div>
+          </Card>
 
           {/* Main Solution Explorer & Monaco Code Inspector */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+          <Card className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left 4 Cols: Virtual Solution Tree */}
-            <div className="lg:col-span-4 bg-[#13151c] border border-[#272b38] rounded-lg p-3 space-y-2 max-h-[500px] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-[#292d3b] pb-2 text-xs font-semibold text-gray-200">
+            <Card flat className="lg:col-span-4 border border-[#2b303d] space-y-2 max-h-[500px] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-[#232838] pb-2 text-xs font-semibold text-gray-200">
                 <div className="flex items-center gap-1.5 text-blue-400">
-                  <FolderGit2 className="w-4 h-4" />
+                  <FolderGit2 className="w-4 h-4" aria-hidden="true" />
                   <span>{solutionPreview.solutionName}</span>
                 </div>
               </div>
 
               {renderTree(solutionPreview.solutionTree)}
-            </div>
+            </Card>
 
             {/* Right 8 Cols: Monaco Code Inspector */}
-            <div className="lg:col-span-8 bg-[#13151c] border border-[#272b38] rounded-lg overflow-hidden flex flex-col h-[500px]">
-              <div className="px-4 py-2 bg-[#1c202a] border-b border-[#2b3040] flex items-center justify-between text-xs font-mono text-gray-300">
+            <Card flat className="lg:col-span-8 border border-[#2b303d] overflow-hidden flex flex-col h-[500px] p-0">
+              <div className="px-4 py-2 bg-[#13151b] border-b border-[#2b303d] flex items-center justify-between text-xs font-mono text-gray-300">
                 <span>{selectedFileNode ? selectedFileNode.path : 'Select a file from the tree to inspect code'}</span>
                 {selectedFileNode?.language && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#272c3d] text-blue-300 uppercase">
-                    {selectedFileNode.language}
-                  </span>
+                  <Badge tone="brand" className="normal-case">{selectedFileNode.language}</Badge>
                 )}
               </div>
 
@@ -1658,76 +1573,67 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+            </Card>
+          </Card>
 
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
-            <button
-              onClick={() => setStep(3)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#202430] text-gray-300 hover:text-white rounded-lg cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
+          <Card className="flex flex-wrap items-center justify-between gap-3">
+            <Button variant="secondary" onClick={() => setStep(3)}>
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
               <span>Back</span>
-            </button>
+            </Button>
 
             <div className="flex items-center gap-3">
               {/* IDE Export & Direct Launch Button */}
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setShowIdeExportModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#202534] hover:bg-[#282f42] text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/60 rounded-lg font-bold text-xs shadow-md transition-all cursor-pointer"
                 title="Open in VS Code, Visual Studio, JetBrains Rider, or launch CLI"
               >
-                <Laptop className="w-4 h-4 text-emerald-400" />
+                <Laptop className="w-4 h-4" aria-hidden="true" />
                 <span>IDE Export & Launch</span>
-              </button>
+              </Button>
 
               {/* Download ZIP Button (Item 5 - Always Preserved) */}
-              <button
+              <Button
+                variant="primary"
                 onClick={handleDownloadSolutionZip}
                 disabled={isDownloadingZip}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-blue-600/20 transition-all cursor-pointer disabled:opacity-50"
                 title="Export complete solution as a compressed .ZIP file containing all projects, manifests, Dockerfile & .env"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4" aria-hidden="true" />
                 <span>{isDownloadingZip ? 'Zipping...' : 'Download Solution ZIP'}</span>
-              </button>
+              </Button>
 
               {isGenerated ? (
                 <div className="flex items-center gap-3">
                   <span className="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
-                    <CheckCircle2 className="w-4 h-4" /> Saved to LocalStorage!
+                    <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Saved to LocalStorage!
                   </span>
-                  <button
-                    onClick={() => setActiveView('dashboard')}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold cursor-pointer text-xs"
-                  >
+                  <Button variant="primary" onClick={() => setActiveView('dashboard')}>
                     Return to Dashboard
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
-                  onClick={handleCompleteGeneration}
-                  className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-600/30 transition-all cursor-pointer text-xs"
-                >
-                  <Play className="w-4 h-4 fill-current" />
+                <Button variant="primary" onClick={handleCompleteGeneration}>
+                  <Play className="w-4 h-4 fill-current" aria-hidden="true" />
                   <span>Generate & Instantiate Solution</span>
-                </button>
+                </Button>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* IDE Export & Direct Launch Modal */}
       {showIdeExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#141721] border border-[#2e3548] rounded-2xl max-w-3xl w-full p-6 space-y-6 shadow-2xl text-xs text-gray-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-3xl w-full p-6 space-y-5 shadow-2xl text-xs text-gray-200 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-[#252a3b] pb-4">
+            <div className="flex items-start justify-between border-b border-[#262a36] pb-4">
               <div>
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-base">
-                  <Laptop className="w-5 h-5 text-emerald-400" />
+                <div className="flex items-center gap-2 text-white font-bold text-base">
+                  <Laptop className="w-5 h-5 text-blue-400" aria-hidden="true" />
                   <span>IDE Direct Export & Local Workspace Integration</span>
                 </div>
                 <p className="text-gray-400 text-xs mt-1">
@@ -1737,116 +1643,104 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
               <button
                 onClick={() => setShowIdeExportModal(false)}
                 aria-label="Close export dialog"
-                className="p-1 text-gray-400 hover:text-white rounded-lg bg-[#1e2230] hover:bg-[#282d40] cursor-pointer"
+                className="p-1 text-gray-400 hover:text-white rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
             {/* Fase 2: Direct Disk Sync (File System Access API) Section */}
-            <div className="p-4 bg-gradient-to-r from-emerald-950/40 to-teal-950/40 border border-emerald-500/40 rounded-xl space-y-3">
+            <Card className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-emerald-300 text-xs flex items-center gap-2">
-                    <FolderCheck className="w-4 h-4 text-emerald-400" />
+                  <div className="font-bold text-gray-100 text-xs flex items-center gap-2">
+                    <FolderCheck className="w-4 h-4 text-blue-400" aria-hidden="true" />
                     <span>Fase 2: Direct Local Disk Sync (Browser File System Access API)</span>
                   </div>
                   <p className="text-gray-300 text-[11px] mt-0.5">
                     Write solution files directly to a folder on your computer without zipping/unzipping.
                   </p>
                 </div>
-                <button
-                  onClick={() => handleExportDirectToDisk(false)}
-                  disabled={directDiskStatus === 'writing'}
-                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5 shrink-0 disabled:opacity-50"
-                >
-                  <FolderCheck className="w-3.5 h-3.5" />
+                <Button variant="primary" onClick={() => handleExportDirectToDisk(false)} disabled={directDiskStatus === 'writing'} className="shrink-0">
+                  <FolderCheck className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>{directDiskStatus === 'writing' ? 'Syncing...' : 'Select Local Folder & Write Files'}</span>
-                </button>
+                </Button>
               </div>
 
               {directDiskStatus === 'success' && (
-                <div className="p-2.5 bg-emerald-900/30 border border-emerald-500/50 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300">
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300">
                   <span className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
                     Successfully written <strong className="text-white">{writtenFilesCount} files</strong> to <code className="text-emerald-200">&quot;{selectedFolderName}&quot;</code>!
                   </span>
-                  <button
-                    onClick={handleLaunchVSCodeDirectly}
-                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-sans text-[10px] font-bold flex items-center gap-1 shrink-0 cursor-pointer"
-                    title={`Open ${localPathInput} in VS Code`}
-                  >
-                    <ExternalLink className="w-3 h-3" /> Open in VS Code
-                  </button>
+                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title={`Open ${localPathInput} in VS Code`} className="shrink-0">
+                    <ExternalLink className="w-3 h-3" aria-hidden="true" /> Open in VS Code
+                  </Button>
                 </div>
               )}
 
               {directDiskStatus === 'iframe_blocked' && (
-                <div className="p-3 bg-amber-950/40 border border-amber-500/50 rounded-lg space-y-2 text-[11px] text-amber-200">
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2 text-[11px] text-amber-200">
                   <div className="flex items-center gap-2 font-bold text-amber-300">
-                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                    <ShieldAlert className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>Browser Security Restriction (Iframe Preview Sandbox)</span>
                   </div>
                   <p className="text-gray-300 leading-relaxed">
                     Browsers block direct folder pickers inside sandboxed preview frames for security. To sync solution files directly to your local disk, open this app in a standalone tab, or download the compressed ZIP bundle.
                   </p>
                   <div className="flex items-center gap-2 pt-1">
-                    <button
+                    <Button
+                      size="sm"
+                      variant="secondary"
                       onClick={() => {
                         const cleanUrl = window.location.origin + window.location.pathname;
                         window.open(cleanUrl, '_blank');
                       }}
-                      className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded text-[10px] flex items-center gap-1.5 cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>Open App in New Tab to Sync Disk</span>
-                    </button>
-                    <button
-                      onClick={handleDownloadSolutionZip}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-[10px] flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" variant="primary" onClick={handleDownloadSolutionZip}>
+                      <Download className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>Download Solution ZIP</span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
 
               {directDiskStatus === 'error' && (
-                <div className="p-2.5 bg-red-900/30 border border-red-500/50 rounded-lg text-red-300 text-[11px]">
+                <div className="p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-[11px]">
                   An error occurred while writing files to disk. Ensure browser permissions are granted or use the ZIP download fallback.
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* IDE Export Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* VS Code Card */}
-              <div className="p-4 bg-[#1a1d2b] border border-blue-500/30 rounded-xl space-y-3">
+              <Card className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-blue-400 text-sm flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-blue-400" /> Visual Studio Code (Desktop & Web)
+                    <Code2 className="w-4 h-4" aria-hidden="true" /> Visual Studio Code (Desktop & Web)
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px]">
-                    .code-workspace
-                  </span>
+                  <Badge tone="brand" className="normal-case">.code-workspace</Badge>
                 </div>
                 <p className="text-gray-300 text-[11px] leading-relaxed">
                   Generates pre-configured <code className="text-blue-300">{`.vscode/launch.json`}</code>, <code className="text-blue-300">{`.vscode/tasks.json`}</code>, and workspace settings for <span className="text-white font-semibold">{activeTechStack.name}</span>.
                 </p>
 
-                <div className="space-y-2 pt-2 border-t border-[#252a3a]">
+                <div className="space-y-2 pt-2 border-t border-[#232838]">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
                       <span>1) Caminho Completo da Pasta no seu PC:</span>
                       <span className="text-blue-400 text-[9px]">Onde salvou/descompactou</span>
                     </div>
-                    <input
+                    <Input
                       type="text"
                       value={localPathInput}
                       onChange={(e) => setLocalPathInput(e.target.value)}
                       placeholder={`C:\\Projects\\${selectedFolderName || projectName}`}
-                      className="w-full bg-[#11131c] border border-[#282e40] focus:border-blue-500 rounded px-2.5 py-1.5 text-xs font-mono text-white outline-none"
+                      className="font-mono"
                     />
 
                     {/* Quick Path Presets */}
@@ -1855,21 +1749,21 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                       <button
                         type="button"
                         onClick={() => setLocalPathInput(`C:\\Projects\\${selectedFolderName || projectName}`)}
-                        className="px-1.5 py-0.5 bg-[#1f2434] hover:bg-[#2a3045] text-blue-300 rounded font-mono text-[9.5px] cursor-pointer shrink-0 border border-blue-500/20"
+                        className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-blue-300 rounded font-mono text-[9.5px] cursor-pointer shrink-0 border border-[#2e3340]"
                       >
                         C:\Projects\...
                       </button>
                       <button
                         type="button"
                         onClick={() => setLocalPathInput(`C:\\Users\\Downloads\\${selectedFolderName || projectName}`)}
-                        className="px-1.5 py-0.5 bg-[#1f2434] hover:bg-[#2a3045] text-blue-300 rounded font-mono text-[9.5px] cursor-pointer shrink-0 border border-blue-500/20"
+                        className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-blue-300 rounded font-mono text-[9.5px] cursor-pointer shrink-0 border border-[#2e3340]"
                       >
                         C:\Users\...\Downloads\...
                       </button>
                       <button
                         type="button"
                         onClick={() => setLocalPathInput(`~/Projects/${selectedFolderName || projectName}`)}
-                        className="px-1.5 py-0.5 bg-[#1f2434] hover:bg-[#2a3045] text-blue-300 rounded font-mono text-[9.5px] cursor-pointer shrink-0 border border-blue-500/20"
+                        className="px-1.5 py-0.5 bg-[#1c2029] hover:bg-[#242a36] text-blue-300 rounded font-mono text-[9.5px] cursor-pointer shrink-0 border border-[#2e3340]"
                       >
                         ~/Projects/...
                       </button>
@@ -1877,191 +1771,180 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                   </div>
 
                   <div className="space-y-2">
-                    <button
+                    <Button
+                      variant="primary"
                       onClick={() => handleExportDirectToDisk(true)}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs transition-all cursor-pointer shadow-lg"
                       title="Select local folder on your PC, save solution files, and open in VS Code"
+                      className="w-full justify-center"
                     >
-                      <FolderCheck className="w-4 h-4 text-emerald-200" />
+                      <FolderCheck className="w-4 h-4" aria-hidden="true" />
                       <span>Select Folder, Save Files &amp; Open in VS Code</span>
-                    </button>
+                    </Button>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={handleLaunchVSCodeDirectly}
-                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#1b1f2e] hover:bg-[#252a3f] text-blue-300 border border-blue-500/30 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
                         title={`Direct launch: vscode://file/${localPathInput}`}
+                        className="justify-center"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Launch vscode:// Directly</span>
-                      </button>
+                      </Button>
 
                       <a
                         href="https://vscode.dev"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-500 text-white rounded-lg font-semibold text-[11px] transition-all cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium text-xs transition-colors cursor-pointer"
                         title="Open VS Code Web directly in browser"
                       >
-                        <Globe className="w-3.5 h-3.5" />
+                        <Globe className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>VS Code Web</span>
                       </a>
                     </div>
                   </div>
 
-                  <div className="bg-[#11131c] border border-[#282e40] rounded-lg p-2 text-[10px] text-gray-300 space-y-1">
-                    <div className="font-semibold text-blue-300">💡 Como funciona o salvamento e abertura:</div>
+                  <div className="bg-[#13151b] border border-[#2b303d] rounded-lg p-2 text-[10px] text-gray-300 space-y-1">
+                    <div className="font-semibold text-gray-200">Como funciona o salvamento e abertura:</div>
                     <ul className="list-disc list-inside space-y-0.5 text-gray-400">
-                      <li><strong>Salvar primeiro:</strong> Baixe o ZIP ou use a <span className="text-emerald-300">Fase 2 (Gravação Direta em Disco)</span> acima para criar os ficheiros na pasta local.</li>
+                      <li><strong>Salvar primeiro:</strong> Baixe o ZIP ou use a <span className="text-gray-300">Fase 2 (Gravação Direta em Disco)</span> acima para criar os ficheiros na pasta local.</li>
                       <li><strong>Abrir no VS Code:</strong> O VS Code Desktop precisa de saber o caminho exato da pasta no seu disco rígido (<code className="text-gray-200">C:\Projetos\...</code>). Se abrir sem salvar primeiro, o VS Code exibirá &quot;Path does not exist&quot;.</li>
                     </ul>
                   </div>
 
-                  <div className="flex items-center justify-between bg-[#11131c] border border-[#282e40] rounded px-2.5 py-1.5 font-mono text-[11px] mt-1">
+                  <div className="flex items-center justify-between bg-[#13151b] border border-[#2b303d] rounded px-2.5 py-1.5 font-mono text-[11px] mt-1">
                     <span className="text-gray-300">code .</span>
-                    <button
-                      onClick={() => handleCopyCmd('code .')}
-                      className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 cursor-pointer"
-                    >
-                      <Copy className="w-3 h-3" />
+                    <button onClick={() => handleCopyCmd('code .')} className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 cursor-pointer">
+                      <Copy className="w-3 h-3" aria-hidden="true" />
                       <span>{copiedCmdText === 'code .' ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>
-              </div>
+              </Card>
 
               {/* Visual Studio / Rider Card */}
-              <div className="p-4 bg-[#1a1d2b] border border-purple-500/30 rounded-xl space-y-3">
+              <Card className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-purple-400 text-sm flex items-center gap-2">
-                    <Monitor className="w-4 h-4 text-purple-400" /> Visual Studio & Rider
+                  <span className="font-bold text-gray-100 text-sm flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-blue-400" aria-hidden="true" /> Visual Studio & Rider
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-[10px]">
-                    .sln / .csproj
-                  </span>
+                  <Badge tone="neutral" className="normal-case">.sln / .csproj</Badge>
                 </div>
                 <p className="text-gray-300 text-[11px] leading-relaxed">
-                  Includes complete Microsoft Visual Studio Solution file <code className="text-purple-300">{`${projectName}.sln`}</code> with auto-wired inter-module dependencies and package references.
+                  Includes complete Microsoft Visual Studio Solution file <code className="text-gray-200">{`${projectName}.sln`}</code> with auto-wired inter-module dependencies and package references.
                 </p>
 
-                <div className="space-y-2 pt-2 border-t border-[#252a3a]">
+                <div className="space-y-2 pt-2 border-t border-[#232838]">
                   <div className="text-[10px] text-gray-400 font-mono">Visual Studio / Rider Commands:</div>
-                  <div className="flex items-center justify-between bg-[#11131c] border border-[#282e40] rounded px-2.5 py-1.5 font-mono text-[11px]">
-                    <span className="text-purple-300 truncate">devenv {projectName}.sln</span>
+                  <div className="flex items-center justify-between bg-[#13151b] border border-[#2b303d] rounded px-2.5 py-1.5 font-mono text-[11px]">
+                    <span className="text-gray-200 truncate">devenv {projectName}.sln</span>
                     <button
                       onClick={() => handleCopyCmd(`devenv ${projectName}.sln`)}
                       className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 shrink-0 cursor-pointer ml-2"
                     >
-                      <Copy className="w-3 h-3" />
+                      <Copy className="w-3 h-3" aria-hidden="true" />
                       <span>{copiedCmdText === `devenv ${projectName}.sln` ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
-                  <div className="flex items-center justify-between bg-[#11131c] border border-[#282e40] rounded px-2.5 py-1.5 font-mono text-[11px]">
-                    <span className="text-purple-300 truncate">rider {projectName}.sln</span>
+                  <div className="flex items-center justify-between bg-[#13151b] border border-[#2b303d] rounded px-2.5 py-1.5 font-mono text-[11px]">
+                    <span className="text-gray-200 truncate">rider {projectName}.sln</span>
                     <button
                       onClick={() => handleCopyCmd(`rider ${projectName}.sln`)}
                       className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 shrink-0 cursor-pointer ml-2"
                     >
-                      <Copy className="w-3 h-3" />
+                      <Copy className="w-3 h-3" aria-hidden="true" />
                       <span>{copiedCmdText === `rider ${projectName}.sln` ? 'Copied!' : 'Copy'}</span>
                     </button>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Shell Setup Script Section */}
-            <div className="p-4 bg-[#181c28] border border-emerald-500/30 rounded-xl space-y-3">
+            <Card className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-400 text-xs flex items-center gap-2">
-                  <TerminalSquare className="w-4 h-4 text-emerald-400" /> Automated Local Environment Launcher (setup-ide.sh)
+                <span className="font-bold text-gray-100 text-xs flex items-center gap-2">
+                  <TerminalSquare className="w-4 h-4 text-blue-400" aria-hidden="true" /> Automated Local Environment Launcher (setup-ide.sh)
                 </span>
                 <span className="text-gray-400 font-mono text-[10px]">Bash / PowerShell</span>
               </div>
               <p className="text-gray-300 text-[11px]">
                 Run the included shell script inside your unzipped folder to automatically initialize Git, restore dependencies, and launch your preferred editor:
               </p>
-              <div className="flex items-center justify-between bg-[#10121a] border border-[#282d3e] rounded-lg p-3 font-mono text-[11px] text-emerald-300">
+              <div className="flex items-center justify-between bg-[#13151b] border border-[#2b303d] rounded-lg p-3 font-mono text-[11px] text-gray-200">
                 <span>chmod +x setup-ide.sh && ./setup-ide.sh</span>
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleCopyCmd('chmod +x setup-ide.sh && ./setup-ide.sh')}
-                  className="px-2.5 py-1 bg-[#1e2332] hover:bg-[#282f44] text-white rounded text-[10px] flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Copy className="w-3 h-3 text-emerald-400" />
+                  <Copy className="w-3 h-3" aria-hidden="true" />
                   <span>{copiedCmdText === 'chmod +x setup-ide.sh && ./setup-ide.sh' ? 'Copied!' : 'Copy Script Command'}</span>
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
 
             {/* Fase 3: Git & Remote Repository Push/Sync Integration */}
-            <div className="p-4 bg-[#171a26] border border-indigo-500/30 rounded-xl space-y-3">
+            <Card className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-indigo-400 text-xs flex items-center gap-2">
-                  <GitBranch className="w-4 h-4 text-indigo-400" />
+                <span className="font-bold text-gray-100 text-xs flex items-center gap-2">
+                  <GitBranch className="w-4 h-4 text-blue-400" aria-hidden="true" />
                   <span>Fase 3: Git & Remote Repository Push/Sync Integration</span>
                 </span>
-                <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono text-[10px]">
-                  GitHub / GitLab / Azure DevOps
-                </span>
+                <Badge tone="neutral" className="normal-case">GitHub / GitLab / Azure DevOps</Badge>
               </div>
               <p className="text-gray-300 text-[11px]">
                 To publish this scaffolded <span className="text-white font-mono">{projectName}</span> architecture directly to GitHub or your organization&apos;s remote Git host:
               </p>
 
-              <div className="space-y-1.5 bg-[#10121a] border border-[#262b3c] rounded-lg p-3 font-mono text-[11px]">
+              <div className="space-y-1.5 bg-[#13151b] border border-[#2b303d] rounded-lg p-3 font-mono text-[11px]">
                 <div className="flex items-center justify-between text-gray-300">
                   <span>git init &amp;&amp; git add . &amp;&amp; git commit -m &quot;feat: scaffold architecture using Factory Platform&quot;</span>
                   <button
                     onClick={() => handleCopyCmd('git init && git add . && git commit -m "feat: scaffold architecture using Factory Platform"')}
                     className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 shrink-0 ml-2 cursor-pointer"
                   >
-                    <Copy className="w-3 h-3 text-indigo-400" />
+                    <Copy className="w-3 h-3" aria-hidden="true" />
                     <span>Copy</span>
                   </button>
                 </div>
-                <div className="flex items-center justify-between text-indigo-300 border-t border-[#222736] pt-1.5">
+                <div className="flex items-center justify-between text-gray-300 border-t border-[#232838] pt-1.5">
                   <span>git remote add origin https://github.com/your-org/{projectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.git</span>
                   <button
                     onClick={() => handleCopyCmd(`git remote add origin https://github.com/your-org/${projectName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.git`)}
                     className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 shrink-0 ml-2 cursor-pointer"
                   >
-                    <Copy className="w-3 h-3 text-indigo-400" />
+                    <Copy className="w-3 h-3" aria-hidden="true" />
                     <span>Copy</span>
                   </button>
                 </div>
-                <div className="flex items-center justify-between text-emerald-300 border-t border-[#222736] pt-1.5">
+                <div className="flex items-center justify-between text-emerald-300 border-t border-[#232838] pt-1.5">
                   <span>git branch -M main && git push -u origin main</span>
                   <button
                     onClick={() => handleCopyCmd('git branch -M main && git push -u origin main')}
                     className="text-gray-400 hover:text-white text-[10px] flex items-center gap-1 shrink-0 ml-2 cursor-pointer"
                   >
-                    <Copy className="w-3 h-3 text-indigo-400" />
+                    <Copy className="w-3 h-3" aria-hidden="true" />
                     <span>Copy</span>
                   </button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Footer with ZIP Download Fallback */}
-            <div className="flex items-center justify-between pt-4 border-t border-[#252a3b]">
+            <div className="flex items-center justify-between pt-4 border-t border-[#262a36]">
               <div className="text-gray-400 text-[11px] flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> All solution files, configs & scripts are included in the downloadable ZIP bundle.
+                <ShieldCheck className="w-4 h-4 text-emerald-400" aria-hidden="true" /> All solution files, configs & scripts are included in the downloadable ZIP bundle.
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleDownloadSolutionZip}
-                  disabled={isDownloadingZip}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg font-bold text-xs shadow-md cursor-pointer disabled:opacity-50"
-                >
-                  <Download className="w-3.5 h-3.5" />
+                <Button variant="primary" onClick={handleDownloadSolutionZip} disabled={isDownloadingZip}>
+                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>{isDownloadingZip ? 'Downloading...' : 'Download Solution ZIP'}</span>
-                </button>
-                <button
-                  onClick={() => setShowIdeExportModal(false)}
-                  className="px-4 py-2 bg-[#1e2230] hover:bg-[#282d40] text-gray-300 rounded-lg text-xs font-semibold cursor-pointer"
-                >
+                </Button>
+                <Button variant="secondary" onClick={() => setShowIdeExportModal(false)}>
                   Close
-                </button>
+                </Button>
               </div>
             </div>
           </div>
