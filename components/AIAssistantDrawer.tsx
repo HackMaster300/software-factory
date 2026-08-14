@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { AIService } from '../services/aiService';
 import { Blueprint } from '../types/factory';
-import { useAIAgents } from '../services/storageService';
+import { useAIAgents, useAIProviders } from '../services/storageService';
 
 interface AIAssistantDrawerProps {
   isOpen: boolean;
@@ -45,6 +45,8 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
   initialPrompt,
 }) => {
   const customAgents = useAIAgents();
+  const providers = useAIProviders();
+  const activeProvider = providers.find((p) => p.isActiveDefault);
   const [selectedRole, setSelectedRole] = useState('Software Architect');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -131,7 +133,9 @@ User Request: ${currentPrompt}
           </div>
           <div>
             <div className="font-semibold text-white text-xs">AI Architect Assistant</div>
-            <div className="text-[10px] text-gray-400 font-mono">Server-Side Gemini 3.6 Flash Engine</div>
+            <div className="text-[10px] text-gray-400 font-mono">
+              {activeProvider ? `${activeProvider.name} (${activeProvider.provider})` : 'Server-Side Gemini • Simulated until a provider key is configured'}
+            </div>
           </div>
         </div>
 
