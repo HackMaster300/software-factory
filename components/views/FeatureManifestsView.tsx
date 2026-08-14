@@ -25,6 +25,9 @@ import { FeatureManifest, FeatureCategory, FeatureQuestion, GeneratedFile, Bluep
 import { FeatureService } from '../../services/featureService';
 import { useFeatureManifests } from '../../services/storageService';
 import { featureManifestRepository } from '../../services/repositories';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
 
 interface FeatureManifestsViewProps {
   blueprint: Blueprint;
@@ -202,12 +205,10 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono font-semibold text-[10px]">
-              Core Architecture Engine
-            </span>
+            <Badge tone="brand">Core Architecture Engine</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">{activeFeatureIds.length} Active Modules</span>
           </div>
@@ -215,24 +216,21 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => openAIRefactor(`Analyze feature configuration for blueprint '${blueprint.name}'. Review active features: ${activeFeatureIds.join(', ')}.`)}
-            className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-blue-400 border border-blue-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+            className="bg-[#1c2230] text-blue-300 border border-blue-500/30 hover:bg-blue-900/30"
           >
             <Sparkles className="w-3.5 h-3.5" /> AI Feature Advisor
-          </button>
-          <button
-            onClick={handleOpenAdd}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleOpenAdd}>
             <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Create Feature Manifest
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Smart Dependency Alert Banner if user explicitly disabled recommended features */}
       {disabledRecommendedFeatures.length > 0 && (
-        <div className="p-3 bg-amber-950/20 border border-amber-800/40 rounded-xl space-y-1">
+        <div className="p-3 bg-amber-950/20 border border-amber-800/40 rounded-lg space-y-1">
           <div className="flex items-center gap-2 font-semibold text-amber-400 text-xs">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>Smart Dependency Notification: Explicitly Disabled Recommendations</span>
@@ -272,7 +270,7 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-2.5 py-1 rounded-full text-[10px] font-medium whitespace-nowrap cursor-pointer transition-colors border ${
                     selectedCategory === cat
-                      ? 'bg-purple-600/20 text-purple-300 border-purple-500/40'
+                      ? 'bg-blue-600/20 text-blue-300 border-blue-500/40'
                       : 'bg-[#181a20] text-gray-400 border-[#2b303d] hover:text-gray-200'
                   }`}
                 >
@@ -314,9 +312,9 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                 <div
                   key={feat.id}
                   onClick={() => setSelectedFeatureId(feat.id)}
-                  className={`p-3 rounded-xl border transition-all cursor-pointer space-y-2 ${
+                  className={`p-3 rounded-lg border transition-colors cursor-pointer space-y-2 ${
                     isSelected
-                      ? 'bg-purple-600/15 border-purple-500 shadow-md shadow-purple-500/10'
+                      ? 'bg-blue-600/15 border-blue-500'
                       : 'bg-[#181a20] border-[#2b303d] hover:border-gray-600'
                   }`}
                 >
@@ -362,16 +360,14 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
         </div>
 
         {/* Right 7 Cols: Feature Inspector & Manifest Detail View */}
-        <div className="lg:col-span-7 bg-[#181a20] border border-[#2b303d] rounded-xl p-5 space-y-5">
+        <Card className="lg:col-span-7 p-5 space-y-5">
           {selectedFeature ? (
             <>
               {/* Feature Title & Action Bar */}
               <div className="flex items-start justify-between pb-3 border-b border-[#2b303d]">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono text-[10px] font-semibold">
-                      {selectedFeature.category} Manifest
-                    </span>
+                    <Badge tone="brand">{selectedFeature.category} Manifest</Badge>
                     <span className="text-gray-500 font-mono text-[10px]">{selectedFeature.id}</span>
                   </div>
                   <h2 className="text-base font-bold text-white">{selectedFeature.name}</h2>
@@ -379,36 +375,39 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleOpenEditFeature(selectedFeature)}
                     aria-label={`Edit feature manifest ${selectedFeature.name}`}
-                    className="p-2 bg-[#222734] hover:bg-[#2b3142] text-gray-300 border border-[#303748] rounded-lg cursor-pointer"
                   >
                     <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleDeleteFeature(selectedFeature)}
                     aria-label={`Delete feature manifest ${selectedFeature.name}`}
-                    className="p-2 bg-[#222734] hover:bg-red-900/40 text-red-400 border border-[#303748] hover:border-red-800/50 rounded-lg cursor-pointer"
+                    className="hover:text-red-400"
                   >
                     <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleToggleFeature(selectedFeature.id)}
-                    className={`px-4 py-2 rounded-lg font-semibold text-xs transition-colors cursor-pointer ${
+                    className={
                       activeFeatureIds.includes(selectedFeature.id)
                         ? 'bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30'
-                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30'
-                    }`}
+                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                    }
                   >
                     {activeFeatureIds.includes(selectedFeature.id) ? 'Disable Feature' : 'Activate Feature'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* Dependencies & Conflicts */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-[#13151b] border border-[#262a36] rounded-lg space-y-1.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:divide-x md:divide-[#262a36]">
+                <div className="space-y-1.5">
                   <div className="font-semibold text-gray-200 text-xs flex items-center gap-1.5">
                     <Box className="w-3.5 h-3.5 text-blue-400" />
                     <span>Recommended Smart Dependencies</span>
@@ -416,9 +415,7 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                   <div className="flex flex-wrap gap-1 text-[10px] font-mono text-gray-300">
                     {selectedFeature.recommendedDependencies?.length ? (
                       selectedFeature.recommendedDependencies.map((rec) => (
-                        <span key={rec} className="px-2 py-0.5 rounded bg-[#202533] border border-[#2f3649]">
-                          {rec}
-                        </span>
+                        <Badge key={rec} className="normal-case">{rec}</Badge>
                       ))
                     ) : (
                       <span className="text-gray-500 italic">None</span>
@@ -426,7 +423,7 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#13151b] border border-[#262a36] rounded-lg space-y-1.5">
+                <div className="space-y-1.5 md:pl-4">
                   <div className="font-semibold text-gray-200 text-xs flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
                     <span>Conflicting Features</span>
@@ -434,9 +431,7 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                   <div className="flex flex-wrap gap-1 text-[10px] font-mono text-gray-300">
                     {selectedFeature.conflictingFeatures?.length ? (
                       selectedFeature.conflictingFeatures.map((c) => (
-                        <span key={c} className="px-2 py-0.5 rounded bg-rose-950/30 text-rose-300 border border-rose-800/40">
-                          {c}
-                        </span>
+                        <Badge key={c} tone="danger" className="normal-case">{c}</Badge>
                       ))
                     ) : (
                       <span className="text-gray-500 italic">None</span>
@@ -446,42 +441,31 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
               </div>
 
               {/* Impact Scores Bar */}
-              <div className="p-3.5 bg-[#13151b] border border-[#262a36] rounded-lg space-y-2">
+              <div className="pt-3 border-t border-[#2b303d] space-y-2">
                 <div className="font-semibold text-gray-200 text-xs">Architectural Impact Ratings</div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center font-mono text-[10px]">
-                  <div className="bg-[#1d212c] p-1.5 rounded border border-[#2e3446]">
-                    <div className="text-gray-400">Security</div>
-                    <div className="text-emerald-400 font-bold text-xs">+{selectedFeature.impactScores?.security || 0}</div>
-                  </div>
-                  <div className="bg-[#1d212c] p-1.5 rounded border border-[#2e3446]">
-                    <div className="text-gray-400">Architecture</div>
-                    <div className="text-blue-400 font-bold text-xs">+{selectedFeature.impactScores?.architecture || 0}</div>
-                  </div>
-                  <div className="bg-[#1d212c] p-1.5 rounded border border-[#2e3446]">
-                    <div className="text-gray-400">Performance</div>
-                    <div className="text-amber-400 font-bold text-xs">+{selectedFeature.impactScores?.performance || 0}</div>
-                  </div>
-                  <div className="bg-[#1d212c] p-1.5 rounded border border-[#2e3446]">
-                    <div className="text-gray-400">Scalability</div>
-                    <div className="text-purple-400 font-bold text-xs">+{selectedFeature.impactScores?.scalability || 0}</div>
-                  </div>
-                  <div className="bg-[#1d212c] p-1.5 rounded border border-[#2e3446]">
-                    <div className="text-gray-400">Maintainability</div>
-                    <div className="text-cyan-400 font-bold text-xs">+{selectedFeature.impactScores?.maintainability || 0}</div>
-                  </div>
-                  <div className="bg-[#1d212c] p-1.5 rounded border border-[#2e3446]">
-                    <div className="text-gray-400">Complexity</div>
-                    <div className="text-rose-400 font-bold text-xs">+{selectedFeature.impactScores?.complexity || 0}</div>
-                  </div>
+                  {([
+                    ['Security', selectedFeature.impactScores?.security],
+                    ['Architecture', selectedFeature.impactScores?.architecture],
+                    ['Performance', selectedFeature.impactScores?.performance],
+                    ['Scalability', selectedFeature.impactScores?.scalability],
+                    ['Maintainability', selectedFeature.impactScores?.maintainability],
+                    ['Complexity', selectedFeature.impactScores?.complexity],
+                  ] as Array<[string, number | undefined]>).map(([label, value]) => (
+                    <div key={label}>
+                      <div className="text-gray-400">{label}</div>
+                      <div className="text-blue-400 font-bold text-xs">+{value || 0}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Generated Files & Packages Preview */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-3 border-t border-[#2b303d]">
                 <div className="font-semibold text-gray-200 text-xs">Generated Code Files & Package Manifests</div>
 
                 {selectedFeature.generatedFiles?.map((gf, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-[#12141a] border border-[#282c38] font-mono text-[11px] space-y-1">
+                  <div key={i} className="p-3 rounded-lg bg-[#12141a] font-mono text-[11px] space-y-1">
                     <div className="flex items-center justify-between text-blue-400 font-semibold">
                       <div className="flex items-center gap-2">
                         <FileCode className="w-3.5 h-3.5" />
@@ -490,23 +474,23 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                       <span className="text-[10px] text-gray-500 uppercase">{gf.language}</span>
                     </div>
                     <p className="text-gray-400 text-[10px] font-sans">{gf.description}</p>
-                    <pre className="p-2 bg-[#0a0c0e] rounded text-gray-300 text-[10px] overflow-x-auto leading-relaxed border border-[#1e222e]">
+                    <pre className="p-2 bg-[#0a0c0e] rounded text-gray-300 text-[10px] overflow-x-auto leading-relaxed">
                       {gf.templateSnippet}
                     </pre>
                   </div>
                 ))}
 
                 {selectedFeature.generatedPackages?.length > 0 && (
-                  <div className="p-3 rounded-lg bg-[#12141a] border border-[#282c38] space-y-2">
+                  <div className="p-3 rounded-lg bg-[#12141a] space-y-2">
                     <div className="font-semibold text-gray-300 text-xs flex items-center gap-1.5">
-                      <Package className="w-3.5 h-3.5 text-purple-400" />
+                      <Package className="w-3.5 h-3.5 text-blue-400" />
                       <span>Required Package Dependencies</span>
                     </div>
                     <div className="flex flex-wrap gap-2 text-[10px] font-mono">
                       {selectedFeature.generatedPackages.map((pkg, idx) => (
-                        <div key={idx} className="px-2.5 py-1 rounded bg-[#202534] border border-[#30374a] text-purple-300">
+                        <Badge key={idx} tone="brand" className="normal-case px-2.5 py-1">
                           {pkg.name} <span className="text-gray-400">v{pkg.version}</span> [{pkg.packageManager}]
-                        </div>
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -559,7 +543,7 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
               </button>
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* CREATE / EDIT FEATURE MANIFEST MODAL */}
@@ -568,7 +552,7 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
           <div className="bg-[#181a20] border border-[#2b303d] rounded-xl max-w-3xl w-full p-5 space-y-4 shadow-2xl my-8">
             <div className="flex items-center justify-between border-b border-[#262a36] pb-3">
               <span className="font-bold text-sm text-white flex items-center gap-2">
-                <Box className="w-4 h-4 text-purple-400" aria-hidden="true" />
+                <Box className="w-4 h-4 text-blue-400" aria-hidden="true" />
                 {editingFeatureId ? 'Edit Feature Manifest' : 'Create Feature Manifest'}
               </span>
               <button
