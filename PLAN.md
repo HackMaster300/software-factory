@@ -252,48 +252,41 @@ the Scaffolder, which already works well and wasn't something the user asked to 
 
 ## Phase 4 — Visual design cleanup
 
-**In progress — substantial verified progress landed this session; not yet complete.** Two prior
-agent attempts hit an account-level API session limit mid-work (not a code problem). The first left
-nothing to recover (failed before any file changes). The second got further: it committed
-`components/ui/{Button,Badge,Card,Input}.tsx` plus Header/Sidebar/DashboardView conversions
-(`2de830b`) and a verified `FeatureManifestsView.tsx` conversion (`402ecd4`). This (third) session
-continued from there and converted six more views, one commit per view, each independently
-lint/build/test/Playwright-verified before committing: `BlueprintsView` + `ImpactAnalyzerView`
-(`e6428a7`), `RuleEngineView` (`e8c7c37`), `TechStacksView` (`8750e78`), `PluginsView` +
-`DecisionLogsView` (`f67076d`).
+- [x] **Complete.** Every view listed in this phase, including all four stretch-goal components,
+      has been converted to the shared UI primitives and independently lint/build/test/Playwright
+      verified. Two prior agent attempts hit an account-level API session limit mid-work (not a
+      code problem); a third session converted eight views (`BlueprintsView` + `ImpactAnalyzerView`
+      `e6428a7`, `RuleEngineView` `e8c7c37`, `TechStacksView` `8750e78`, `PluginsView` +
+      `DecisionLogsView` `f67076d`) on top of the primitives/Header/Sidebar/DashboardView
+      (`2de830b`) and `FeatureManifestsView` (`402ecd4`) from earlier sessions. This (fourth)
+      session finished the two remaining required views and all four stretch goals, one commit per
+      file: `ProjectScaffolderView.tsx` (2072 lines, `7afc023`), `AIPromptsView.tsx` (1382 lines,
+      `98b0292`), `CommandPalette.tsx` (`b138756`), `ProjectAdvisorPanel.tsx` (`535f8f2`),
+      `AIAssistantDrawer.tsx` (`f2ea1e2`), `OrganizationWorkspaceModal.tsx` (`5fd89aa`).
 
 - [x] Shared primitives created: `components/ui/Button.tsx`, `Badge.tsx`, `Card.tsx`, `Input.tsx`
       (plain React + `clsx`/`tailwind-merge`, no new dependency). (`2de830b`)
-- [~] Applied to: Header, Sidebar, DashboardView (`2de830b`), FeatureManifestsView (`402ecd4`),
-      BlueprintsView, ImpactAnalyzerView (`e6428a7`), RuleEngineView (`e8c7c37`), TechStacksView
-      (`8750e78`), PluginsView, DecisionLogsView (`f67076d`).
-      **Not yet applied to**: `ProjectScaffolderView.tsx` (2072 lines — largest view in the app,
-      multi-step wizard with many form sections) and `AIPromptsView.tsx` (1382 lines — provider
-      config forms + custom AI agent tabs), plus the stretch-goal items
-      `OrganizationWorkspaceModal`, `CommandPalette`, `AIAssistantDrawer`, `ProjectAdvisorPanel` —
-      these still use one-off Tailwind class strings. Deliberately left unconverted rather than
-      rushed: both remaining required files are large enough that a rushed conversion without full
-      per-file lint/build/test/Playwright verification risked exactly the kind of half-broken state
-      this phase's process explicitly guards against.
-- [x] Accent-color tightening done on DashboardView (`2de830b`) and on every view converted this
-      session — rainbow per-category/per-type badge colors (purple/cyan/amber/rose used
-      decoratively) collapsed to neutral/brand Badge tones, with emerald/red reserved strictly for
-      real success/error/warning status (validation results, active/inactive state, score deltas).
-      **Not yet audited on** `ProjectScaffolderView` and `AIPromptsView`.
-- [~] Badge/border/box density reduction and spacing-scale consistency: done on every view listed
-      as converted above (Card's single `bg-[#181a20] border-[#2b303d] rounded-lg p-4` replaces the
-      previously-duplicated ad-hoc box styles; nested inner boxes normalized to
-      `bg-[#13151b] border-[#2b303d]`). Still outstanding on `ProjectScaffolderView` and
-      `AIPromptsView`.
+- [x] Applied to every view and the four stretch-goal components listed above. No file in
+      `components/views/` or the standalone modals/panels/drawers still uses raw ad-hoc Tailwind
+      box/pill/button strings for its primary structure.
+- [x] Accent-color tightening done across all converted files — rainbow per-category/per-type
+      badge colors (purple/cyan/amber/rose/indigo/teal used decoratively) collapsed to
+      neutral/brand Badge tones or plain blue accents, with emerald/red/amber reserved strictly for
+      real status (rule engine pass/warn, provider active/configured, connection test
+      success/error, validation pass/warn/fail, offline-mode indicator, env-file active toggle).
+- [x] Badge/border/box density reduction and spacing-scale consistency: done across every file —
+      Card's single `bg-[#181a20] border-[#2b303d] rounded-lg p-4` replaces the previously
+      duplicated ad-hoc box styles; nested inner boxes normalized to `bg-[#13151b]
+      border-[#2b303d]`.
 
-Next step if continuing this phase: convert `ProjectScaffolderView.tsx` and `AIPromptsView.tsx`
-next (in that order, matching the original plan), one commit per file, following the exact same
-pattern as the six views converted this session — read the file fully first, wrap panel/card
-sections in `Card`, replace colored pills with `Badge` (brand/success/warning/danger by real
-semantics only), buttons with `Button`, and raw inputs/selects/textareas with the shared
-`Input`/`Select`/`Textarea`, then lint + build + test + Playwright before each commit. If time
-allows after those two, pick up the stretch-goal items (`OrganizationWorkspaceModal`,
-`CommandPalette`, `AIAssistantDrawer`, `ProjectAdvisorPanel`).
+Verification per file this session: `npm run lint` clean, `npm run build` clean, `npm run test`
+57/57 passing, and a full Playwright pass from a fresh `next start` with `localStorage.clear()` —
+`ProjectScaffolderView` walked all 4 wizard steps and generated a project end-to-end;
+`AIPromptsView` ran a playground evaluation, created a custom AI agent, and exercised the provider
+test-connection flow; `CommandPalette` filtered and navigated via a command; `ProjectAdvisorPanel`
+expanded a score category; `AIAssistantDrawer` opened, showed the custom agent in its role picker,
+and sent/received a chat message; `OrganizationWorkspaceModal` created an organization and a
+workspace end-to-end. Zero console errors across all checks.
 
 ## Phase 5 — Structure & responsiveness
 
@@ -317,6 +310,21 @@ allows after those two, pick up the stretch-goal items (`OrganizationWorkspaceMo
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-14 — **Phase 4 complete**: finished the two remaining required views and all four
+  stretch-goal components, closing out visual design cleanup. `ProjectScaffolderView.tsx` (2072
+  lines, the largest view — 4-step wizard) converted to Card/Badge/Button/Input/Textarea/Select
+  with rainbow per-section decorative colors (purple/cyan/amber/indigo/teal) collapsed to the blue
+  brand accent, keeping emerald/red/amber for genuine status (`7afc023`). `AIPromptsView.tsx`
+  (1382 lines — playground/prompt library/providers/custom agents) converted the same way
+  (`98b0292`). Stretch goals: `CommandPalette` (`b138756`), `ProjectAdvisorPanel` (`535f8f2`,
+  collapsed its six rainbow score-meter colors to one blue accent since they're categories, not
+  status), `AIAssistantDrawer` (`f2ea1e2`), `OrganizationWorkspaceModal` (`5fd89aa`). Lint clean,
+  build clean, Vitest 57/57 passing throughout; each file independently Playwright-verified from a
+  fresh `next start` with `localStorage.clear()` — full wizard walkthrough generating a project,
+  playground execution + custom agent creation + provider test-connection, command palette
+  filter/navigate, advisor panel expand, AI drawer chat round-trip (confirmed the custom agent
+  created in `AIPromptsView` appears in its role picker), and org/workspace CRUD end-to-end. Zero
+  console errors across all checks. Next: Phase 5 (structure & responsiveness).
 - 2026-08-14 — **Phase 3 complete**: bring-your-own AI provider key. `AIProviderConfig` gained
   `apiKey`/`baseUrl`/`isActiveDefault`; new `services/aiProviderRouting.ts` builds the request
   shape/URL/headers per provider (pure functions, 17 new Vitest tests); `app/api/gemini/generate`
