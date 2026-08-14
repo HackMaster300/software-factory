@@ -3,16 +3,9 @@
 import React, { useState } from 'react';
 import {
   Layers,
-  Box,
-  Server,
-  ShieldCheck,
   Cpu,
   ArrowRight,
-  Plus,
   Trash2,
-  Edit2,
-  FileCode2,
-  Network,
   FolderGit2,
   Save,
   CheckCircle2,
@@ -22,6 +15,10 @@ import { Blueprint, ArchitectureStyle } from '../../types/factory';
 import { StorageService } from '../../services/storageService';
 import { TemplateService } from '../../services/templateService';
 import { BlueprintService } from '../../services/blueprintService';
+import { Card } from '../ui/Card';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Select } from '../ui/Input';
 
 function checkCausesCircularDependency(
   projects: Array<{ id: string; references: string[] }>,
@@ -70,7 +67,6 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
   const secProfiles = StorageService.getSecurityProfiles();
   const dockerProfiles = StorageService.getDockerProfiles();
   const cacheProfiles = StorageService.getCacheProfiles();
-  const loggingProfiles = StorageService.getLoggingProfiles();
 
   const selectedProject = blueprint.projects.find((p) => p.id === selectedProjectId);
   const activeTechStack = techStacks.find((s) => s.id === blueprint.techStackId) || techStacks[0];
@@ -153,7 +149,7 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
       blueprint.architectureStyle
     );
 
-    let trimmed = baseProjects.slice(0, count);
+    const trimmed = baseProjects.slice(0, count);
     if (count > baseProjects.length) {
       const isDotnet = activeTechStack.language === 'csharp';
       const prefix = 'Acme.PaymentEngine';
@@ -205,12 +201,10 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#181a20] border border-[#2b303d] rounded-xl p-4">
+      <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-semibold text-[10px]">
-              Blueprint Designer
-            </span>
+            <Badge tone="brand">Blueprint Designer</Badge>
             <span className="text-gray-500">•</span>
             <span className="text-gray-400 font-mono">{blueprint.name}</span>
           </div>
@@ -218,26 +212,23 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="secondary"
             onClick={() =>
               openAIRefactor(`Review the reference graph and profile choices for blueprint '${blueprint.name}' (${blueprint.architectureStyle}). Suggest clean architecture enhancements.`)
             }
-            className="px-3 py-1.5 bg-[#202430] hover:bg-[#282d3d] text-blue-400 border border-blue-500/30 rounded-lg font-medium transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <Cpu className="w-3.5 h-3.5" /> AI Architecture Audit
-          </button>
+          </Button>
 
-          <button
-            onClick={handleSaveBlueprint}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold shadow-md shadow-blue-600/30 transition-colors cursor-pointer flex items-center gap-1.5"
-          >
+          <Button variant="primary" onClick={handleSaveBlueprint}>
             <Save className="w-3.5 h-3.5" /> Save Blueprint
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Technology Stack Selector */}
-      <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+      <Card className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="font-semibold text-gray-200 text-xs">Primary Target Technology Stack</div>
           <span className="text-[11px] text-gray-400 font-mono">Active Stack: <span className="text-blue-400 font-bold">{activeTechStack?.name}</span></span>
@@ -266,10 +257,10 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Architecture Style Selector */}
-      <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+      <Card className="space-y-3">
         <div className="font-semibold text-gray-200 text-xs">Architectural Pattern & Style</div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
@@ -294,7 +285,7 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Main Workspace Split: Left Graph/Tree & Right Inspector */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -340,7 +331,7 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
 
           {activeTab === 'graph' ? (
             /* Visual Layer Graph Diagram */
-            <div className="bg-[#15171d] border border-[#2b303d] rounded-xl p-5 min-h-[380px] flex flex-col justify-between space-y-4">
+            <Card className="min-h-[380px] flex flex-col justify-between space-y-4">
               <div className="text-[11px] text-gray-400 font-mono">
                 Click any project layer to inspect references or edit configuration.
               </div>
@@ -357,28 +348,14 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
                     <div
                       key={proj.id}
                       onClick={() => setSelectedProjectId(proj.id)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      className={`p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         isSelected
-                          ? 'bg-blue-600/20 border-blue-500 shadow-md shadow-blue-500/20'
-                          : 'bg-[#1a1d26] border-[#2c3140] hover:border-gray-500'
+                          ? 'bg-blue-600/15 border-blue-500'
+                          : 'bg-[#181a20] border-[#2b303d] hover:border-gray-600'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div
-                          className={`p-2 rounded-lg font-mono text-xs font-bold ${
-                            proj.type === 'Core'
-                              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                              : proj.type === 'Application'
-                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                              : proj.type === 'Infrastructure'
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                              : proj.type === 'API'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
-                          }`}
-                        >
-                          {proj.type}
-                        </div>
+                        <Badge tone="neutral">{proj.type}</Badge>
                         <div>
                           <div className="font-semibold text-gray-100 text-sm">{proj.name}</div>
                           <div className="text-[11px] text-gray-400">{proj.description}</div>
@@ -397,29 +374,31 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
                           <span className="text-gray-500 italic">None (Pure Core)</span>
                         )}
 
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => handleRemoveModule(proj.id, e)}
-                          className="ml-2 text-gray-500 hover:text-red-400 p-1 rounded hover:bg-red-500/10 cursor-pointer"
                           title="Remove project module"
                           aria-label={`Remove module ${proj.name}`}
+                          className="ml-2 hover:text-red-400"
                         >
                           <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="p-3 rounded-lg bg-[#111318] border border-[#232733] text-[10px] text-gray-400 flex items-center justify-between">
+              <div className="p-3 rounded-lg bg-[#13151b] border border-[#2b303d] text-[10px] text-gray-400 flex items-center justify-between">
                 <span>Domain Driven Design Boundary Rule: Core & Domain entities must have ZERO outbound infrastructure references.</span>
-                <span className="text-emerald-400 font-mono">Enforced</span>
+                <Badge tone="success">Enforced</Badge>
               </div>
-            </div>
+            </Card>
           ) : (
             /* Solution Tree View */
-            <div className="bg-[#15171d] border border-[#2b303d] rounded-xl p-4 font-mono text-xs text-gray-300 space-y-2">
-              <div className="flex items-center gap-2 text-blue-400 font-bold border-b border-[#292d3b] pb-2">
+            <Card className="font-mono text-xs text-gray-300 space-y-2">
+              <div className="flex items-center gap-2 text-blue-400 font-bold border-b border-[#2b303d] pb-2">
                 <FolderGit2 className="w-4 h-4" />
                 <span>Acme.PaymentEngine.sln</span>
               </div>
@@ -433,7 +412,7 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
                       <span className="text-[10px] text-gray-500">[{proj.type}]</span>
                     </div>
 
-                    <div className="pl-5 space-y-1 text-gray-400 border-l border-[#282d3c] ml-1.5">
+                    <div className="pl-5 space-y-1 text-gray-400 border-l border-[#2b303d] ml-1.5">
                       {proj.references.map((refId) => {
                         const refProj = blueprint.projects.find((p) => p.id === refId);
                         return (
@@ -447,13 +426,13 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Right Column: Layer Inspector & Profile Bindings */}
         <div className="space-y-4">
-          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+          <Card className="space-y-3">
             <div className="font-semibold text-gray-200 text-xs flex items-center justify-between">
               <span>Layer Reference Inspector</span>
               {selectedProject && <span className="font-mono text-blue-400">{selectedProject.name}</span>}
@@ -461,7 +440,7 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
 
             {selectedProject ? (
               <div className="space-y-3 text-xs">
-                <div className="p-3 rounded-lg bg-[#13151b] border border-[#272b38] space-y-1">
+                <div className="p-3 rounded-lg bg-[#13151b] border border-[#2b303d] space-y-1">
                   <div className="font-medium text-gray-200">{selectedProject.name}</div>
                   <div className="text-gray-400 text-[11px]">{selectedProject.description}</div>
                 </div>
@@ -480,8 +459,8 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
                             key={otherProj.id}
                             className={`flex items-center justify-between p-2 rounded border font-mono text-xs transition-colors ${
                               isReferenced
-                                ? 'bg-blue-900/30 border-blue-500/40 text-blue-200'
-                                : 'bg-[#1f222e] hover:bg-[#252a38] border-[#2e3444] text-gray-200'
+                                ? 'bg-blue-600/15 border-blue-500/40 text-blue-200'
+                                : 'bg-[#13151b] hover:bg-[#1a1d26] border-[#2b303d] text-gray-200'
                             } ${causesCycle ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
                             <span className="truncate mr-2">{otherProj.name}</span>
@@ -508,74 +487,70 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
             ) : (
               <div className="text-gray-500 text-xs text-center py-4">Select a project layer to inspect references.</div>
             )}
-          </div>
+          </Card>
 
           {/* Profile Bindings */}
-          <div className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3">
+          <Card className="space-y-3">
             <div className="font-semibold text-gray-200 text-xs">Infrastructure Profiles Bindings</div>
 
             <div className="space-y-2.5 text-xs">
               <div>
                 <label className="text-gray-400 block mb-1">Database Profile</label>
-                <select
+                <Select
                   value={blueprint.profiles.databaseProfileId}
                   onChange={(e) => handleProfileChange('databaseProfileId', e.target.value)}
-                  className="w-full bg-[#1e222d] border border-[#2e3444] text-gray-200 rounded p-1.5 focus:outline-none focus:border-blue-500"
                 >
                   {dbProfiles.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} ({p.provider})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="text-gray-400 block mb-1">Security Profile</label>
-                <select
+                <Select
                   value={blueprint.profiles.securityProfileId}
                   onChange={(e) => handleProfileChange('securityProfileId', e.target.value)}
-                  className="w-full bg-[#1e222d] border border-[#2e3444] text-gray-200 rounded p-1.5 focus:outline-none focus:border-blue-500"
                 >
                   {secProfiles.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="text-gray-400 block mb-1">Docker Profile</label>
-                <select
+                <Select
                   value={blueprint.profiles.dockerProfileId}
                   onChange={(e) => handleProfileChange('dockerProfileId', e.target.value)}
-                  className="w-full bg-[#1e222d] border border-[#2e3444] text-gray-200 rounded p-1.5 focus:outline-none focus:border-blue-500"
                 >
                   {dockerProfiles.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="text-gray-400 block mb-1">Cache Profile</label>
-                <select
+                <Select
                   value={blueprint.profiles.cacheProfileId}
                   onChange={(e) => handleProfileChange('cacheProfileId', e.target.value)}
-                  className="w-full bg-[#1e222d] border border-[#2e3444] text-gray-200 rounded p-1.5 focus:outline-none focus:border-blue-500"
                 >
                   {cacheProfiles.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
