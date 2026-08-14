@@ -24,19 +24,28 @@ import {
   ArrowUpRight,
   X,
   UserCog,
+  KeyRound,
+  Star,
+  AlertTriangle,
+  Wifi,
 } from 'lucide-react';
 import { AIProviderConfig, PromptTemplate, AIAgent } from '../../types/factory';
-import { StorageService, useAIAgents } from '../../services/storageService';
-import { aiAgentRepository } from '../../services/repositories';
+import { StorageService, useAIAgents, useAIProviders } from '../../services/storageService';
+import { aiAgentRepository, aiProviderRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
 
 export const AIPromptsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'playground' | 'prompts' | 'providers' | 'agents'>('playground');
 
   // Storage states
-  const [providers, setProviders] = useState<AIProviderConfig[]>(StorageService.getAIProviders());
+  const providers = useAIProviders();
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>(StorageService.getPromptTemplates());
   const customAgents = useAIAgents();
+
+  // Per-provider "Test Connection" inline results
+  const [connectionTests, setConnectionTests] = useState<
+    Record<string, { status: 'testing' | 'success' | 'error'; message: string }>
+  >({});
 
   // Custom AI Agent modal state
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
@@ -100,6 +109,8 @@ export const AIPromptsView: React.FC = () => {
   const [providerModel, setProviderModel] = useState<string>('gemini-3.6-flash');
   const [providerCost, setProviderCost] = useState<string>('$0.00015');
   const [providerLatency, setProviderLatency] = useState<string>('180ms');
+  const [providerApiKey, setProviderApiKey] = useState<string>('');
+  const [providerBaseUrl, setProviderBaseUrl] = useState<string>('');
 
   // Dynamically extract variables from prompt text
   const recognizedVariables = Array.from(
@@ -252,6 +263,8 @@ export const AIPromptsView: React.FC = () => {
     setProviderModel('gemini-3.6-flash');
     setProviderCost('$0.00015');
     setProviderLatency('180ms');
+    setProviderApiKey('');
+    setProviderBaseUrl('');
     setIsProviderModalOpen(true);
   };
 
@@ -262,6 +275,8 @@ export const AIPromptsView: React.FC = () => {
     setProviderModel(pr.model);
     setProviderCost(pr.costPer1k);
     setProviderLatency(pr.latency);
+    setProviderApiKey(pr.apiKey || '');
+    setProviderBaseUrl(pr.baseUrl || '');
     setIsProviderModalOpen(true);
   };
 
@@ -280,6 +295,9 @@ export const AIPromptsView: React.FC = () => {
       status: editingProvider ? editingProvider.status : 'active',
       costPer1k: providerCost.trim() || '$0.001',
       latency: providerLatency.trim() || '200ms',
+      apiKey: providerApiKey.trim() || undefined,
+      baseUrl: providerBaseUrl.trim() || undefined,
+      isActiveDefault: editingProvider ? editingProvider.isActiveDefault : false,
     };
 
     let updated: AIProviderConfig[];
@@ -289,8 +307,7 @@ export const AIPromptsView: React.FC = () => {
       updated = [...providers, newProv];
     }
 
-    setProviders(updated);
-    StorageService.saveAIProviders(updated);
+    aiProviderRepository.saveAIProviders(updated);
     setIsProviderModalOpen(false);
   };
 
@@ -304,8 +321,24 @@ export const AIPromptsView: React.FC = () => {
       }
       return p;
     });
-    setProviders(updated);
-    StorageService.saveAIProviders(updated);
+    aiProviderRepository.saveAIProviders(updated);
+  };
+
+  const handleSetDefaultProvider = (id: string) => {
+    const updated = providers.map((p) => ({ ...p, isActiveDefault: p.id === id }));
+    aiProviderRepository.saveAIProviders(updated);
+  };
+
+  const handleTestConnection = async (provider: AIProviderConfig) => {
+    setConnectionTests((prev) => ({ ...prev, [provider.id]: { status: 'testing', message: 'Testing…' } }));
+    const result = await AIService.testConnection(provider);
+    setConnectionTests((prev) => ({
+      ...prev,
+      [provider.id]: {
+        status: result.success ? 'success' : 'error',
+        message: result.success ? `Connected, responded in ${result.latencyMs}ms` : result.message,
+      },
+    }));
   };
 
   // Save/Edit/Delete Custom AI Agents
@@ -840,53 +873,124 @@ export const AIPromptsView: React.FC = () => {
 
       {/* TAB 3: AI PROVIDERS MANAGEMENT */}
       {activeTab === 'providers' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {providers.map((provider) => (
-            <div
-              key={provider.id}
-              className="bg-[#181a20] border border-[#2b303d] rounded-xl p-4 space-y-3 flex flex-col justify-between hover:border-blue-500/40 transition-all"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-white">{provider.name}</span>
-                  <button
-                    onClick={() => handleToggleProviderStatus(provider.id)}
-                    className={`px-2 py-0.5 rounded font-mono text-[10px] cursor-pointer transition-colors border ${
-                      provider.status === 'active'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : 'bg-gray-800 text-gray-400 border-gray-700'
-                    }`}
-                  >
-                    {provider.status.toUpperCase()}
-                  </button>
-                </div>
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-amber-200">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+            <p className="text-xs leading-relaxed">
+              <span className="font-bold">API keys are stored only in this browser&apos;s localStorage</span> and are
+              sent only to this app&apos;s own <span className="font-mono">/api/ai/generate</span> route, which
+              forwards them to the provider you configure. This is <span className="font-bold">not a secure secret
+              store</span> — do not use it for shared machines or production deployments. Anyone with access to this
+              browser profile can read the stored keys.
+            </p>
+          </div>
 
-                <div className="text-xs text-gray-400 font-mono space-y-1 bg-[#12141a] p-2.5 rounded border border-[#232734]">
-                  <div>
-                    Vendor: <span className="text-gray-200">{provider.provider}</span>
-                  </div>
-                  <div>
-                    Model: <span className="text-purple-400 font-bold">{provider.model}</span>
-                  </div>
-                  <div>
-                    Cost / 1k Tokens: <span className="text-amber-300">{provider.costPer1k}</span>
-                  </div>
-                  <div>
-                    Latency SLA: <span className="text-blue-300">{provider.latency}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
-                <button
-                  onClick={() => handleOpenEditProvider(provider)}
-                  className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {providers.map((provider) => {
+              const test = connectionTests[provider.id];
+              return (
+                <div
+                  key={provider.id}
+                  className={`bg-[#181a20] border rounded-xl p-4 space-y-3 flex flex-col justify-between transition-all ${
+                    provider.isActiveDefault ? 'border-emerald-500/50' : 'border-[#2b303d] hover:border-blue-500/40'
+                  }`}
                 >
-                  <Edit3 className="w-3.5 h-3.5" /> Configure
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-sm text-white flex items-center gap-1.5">
+                        {provider.name}
+                        {provider.isActiveDefault && (
+                          <span
+                            title="Default provider"
+                            className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono flex items-center gap-1"
+                          >
+                            <Star className="w-2.5 h-2.5 fill-current" /> DEFAULT
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        onClick={() => handleToggleProviderStatus(provider.id)}
+                        className={`px-2 py-0.5 rounded font-mono text-[10px] cursor-pointer transition-colors border shrink-0 ${
+                          provider.status === 'active'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            : 'bg-gray-800 text-gray-400 border-gray-700'
+                        }`}
+                      >
+                        {provider.status.toUpperCase()}
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-gray-400 font-mono space-y-1 bg-[#12141a] p-2.5 rounded border border-[#232734]">
+                      <div>
+                        Vendor: <span className="text-gray-200">{provider.provider}</span>
+                      </div>
+                      <div>
+                        Model: <span className="text-purple-400 font-bold">{provider.model}</span>
+                      </div>
+                      <div>
+                        Cost / 1k Tokens: <span className="text-amber-300">{provider.costPer1k}</span>
+                      </div>
+                      <div>
+                        Latency SLA: <span className="text-blue-300">{provider.latency}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <KeyRound className="w-2.5 h-2.5" />
+                        {provider.provider === 'Ollama' ? (
+                          <span>Base URL: <span className="text-gray-200">{provider.baseUrl || 'http://localhost:11434 (default)'}</span></span>
+                        ) : (
+                          <span>API Key: <span className="text-gray-200">{provider.apiKey ? '•••• configured' : 'not set'}</span></span>
+                        )}
+                      </div>
+                    </div>
+
+                    {test && (
+                      <div
+                        role="status"
+                        className={`text-[11px] font-mono px-2.5 py-1.5 rounded border flex items-center gap-1.5 ${
+                          test.status === 'success'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            : test.status === 'error'
+                            ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                            : 'bg-gray-800 text-gray-400 border-gray-700'
+                        }`}
+                      >
+                        {test.status === 'testing' && <Loader2 className="w-3 h-3 animate-spin shrink-0" />}
+                        {test.status === 'success' && <Check className="w-3 h-3 shrink-0" />}
+                        {test.status === 'error' && <X className="w-3 h-3 shrink-0" />}
+                        <span className="break-words">
+                          {test.status === 'success' ? `✓ ${test.message}` : test.message}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-[#262a36]">
+                    {!provider.isActiveDefault && (
+                      <button
+                        onClick={() => handleSetDefaultProvider(provider.id)}
+                        className="px-2.5 py-1 bg-[#222734] hover:bg-emerald-900/40 text-emerald-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] hover:border-emerald-800/50"
+                      >
+                        <Star className="w-3.5 h-3.5" /> Set as Default
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleTestConnection(provider)}
+                      disabled={test?.status === 'testing'}
+                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748] disabled:opacity-50"
+                    >
+                      <Wifi className="w-3.5 h-3.5" /> Test Connection
+                    </button>
+                    <button
+                      onClick={() => handleOpenEditProvider(provider)}
+                      className="px-2.5 py-1 bg-[#222734] hover:bg-[#2b3142] text-gray-300 rounded text-xs cursor-pointer flex items-center gap-1 border border-[#303748]"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Configure
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -1199,6 +1303,57 @@ export const AIPromptsView: React.FC = () => {
                     className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-blue-300 focus:outline-none focus:border-blue-500"
                   />
                 </div>
+              </div>
+
+              {providerVendor === 'Ollama' ? (
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1">Base URL (local Ollama server)</label>
+                  <input
+                    type="text"
+                    placeholder="http://localhost:11434"
+                    value={providerBaseUrl}
+                    onChange={(e) => setProviderBaseUrl(e.target.value)}
+                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Ollama runs locally and needs no API key. Defaults to http://localhost:11434 if left blank.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1">API Key</label>
+                  <input
+                    type="password"
+                    placeholder={providerVendor === 'Azure OpenAI' ? 'Azure OpenAI API key' : 'sk-...'}
+                    value={providerApiKey}
+                    onChange={(e) => setProviderApiKey(e.target.value)}
+                    autoComplete="off"
+                    className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                  />
+                  {providerVendor === 'Azure OpenAI' && (
+                    <div className="mt-2">
+                      <label className="text-[10px] text-gray-400 block mb-1">
+                        Base URL (deployment endpoint, required)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://{resource}.openai.azure.com/openai/deployments/{deployment}"
+                        value={providerBaseUrl}
+                        onChange={(e) => setProviderBaseUrl(e.target.value)}
+                        className="w-full bg-[#12141a] border border-[#2b303d] rounded p-2 text-xs font-mono text-gray-200 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 text-amber-200">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                <p className="text-[10.5px] leading-relaxed">
+                  Stored in <span className="font-bold">this browser&apos;s localStorage only</span> and sent only to
+                  this app&apos;s own <span className="font-mono">/api/ai/generate</span> route. Not a secure secret
+                  store — do not use on shared or production machines.
+                </p>
               </div>
             </div>
 
