@@ -199,18 +199,56 @@ the Scaffolder, which already works well and wasn't something the user asked to 
 
 ## Phase 3 — Bring-your-own AI provider key
 
-- [ ] Extend the AI Providers manager (`AIPromptsView`) so the user can paste an API key per
+- [x] Extend the AI Providers manager (`AIPromptsView`) so the user can paste an API key per
       provider (Gemini, OpenAI, Anthropic, DeepSeek, Azure OpenAI; Ollama = base URL, no key) and
-      mark one active/default.
-- [ ] Store keys in `localStorage` only, with a visible on-screen note that this is a local,
-      single-user setting and not a secure secret store.
-- [ ] Generalize `app/api/gemini/generate/route.ts` into `app/api/ai/generate/route.ts`, accepting
-      `{provider, apiKey, baseUrl?, model, prompt, systemInstruction}` and routing per provider
-      using plain `fetch` (OpenAI-compatible chat-completions shape covers OpenAI/DeepSeek/Azure
-      OpenAI/Ollama; Anthropic's REST shape is a small variant) — no new npm dependency.
-- [ ] "Test connection" action per provider — one real minimal call, inline success/failure.
-- [ ] `AIService`/`AIAssistantDrawer` call whichever provider is active instead of being hardcoded
-      to Gemini.
+      mark one active/default. Added `apiKey`/`baseUrl`/`isActiveDefault` to `AIProviderConfig`
+      (`isActiveDefault` kept deliberately separate from the pre-existing `status` field, which
+      describes connection health/toggle state, not "is this the chosen one"). "Set as Default"
+      button exclusively flips `isActiveDefault` on one provider and off on the rest.
+- [x] Store keys in `localStorage` only, with a visible on-screen note that this is a local,
+      single-user setting and not a secure secret store. Shown both on the Providers tab header
+      and inside the create/edit modal (not a tooltip).
+- [x] Generalize `app/api/gemini/generate/route.ts` into `app/api/ai/generate/route.ts`, accepting
+      `{provider, apiKey, baseUrl?, model, prompt, systemInstruction, role}` and routing per
+      provider using plain `fetch` — no new npm dependency. Gemini keeps `@google/genai` (key now
+      sourced from the request body, falling back to `process.env.GEMINI_API_KEY`, preserving the
+      old simulated-response behavior when neither is set). OpenAI/DeepSeek/Azure OpenAI share the
+      OpenAI-compatible chat-completions shape (`{baseUrl||default}/chat/completions`, `Authorization:
+      Bearer`); Azure OpenAI has no default base URL and errors clearly if one isn't supplied.
+      Anthropic uses the Messages API (`x-api-key`, `anthropic-version: 2023-06-01`). Ollama posts
+      to `{baseUrl||http://localhost:11434}/api/generate` with no key. Pure request-building logic
+      extracted to `services/aiProviderRouting.ts` so it's unit-testable without mocking `fetch`.
+      Non-2xx/network failures return a real `{error: string}` — no silent fallback to a fake
+      response for this route, matching the "real user-provided keys" intent of this phase.
+- [x] "Test connection" action per provider — one real minimal call via
+      `AIService.testConnection`, inline success ("Connected, responded in Xms") or the actual
+      failure message shown next to that provider (no `alert()`).
+- [x] `AIService`/`AIAssistantDrawer` call whichever provider is marked `isActiveDefault` instead
+      of being hardcoded to Gemini; falls back to Gemini-with-no-key (today's simulated response)
+      when nothing is configured yet, so the drawer never goes dead with zero setup.
+- [x] Vitest coverage: `services/aiProviderRouting.test.ts` (17 tests) covering request shape/URL/
+      headers per provider, default-base-URL fallback, custom baseUrl override, Azure's required-
+      baseUrl error, missing-apiKey error, missing-model error, response-text extraction, and
+      error-message extraction. 57/57 tests passing (17 new).
+- [x] Verified: lint clean (zero warnings), build clean, `npm run test` 57/57, and a full
+      Playwright pass from `localStorage.clear()` on a production build: (a) confirmed the
+      password-type API key input, the Ollama base-URL swap, the Azure OpenAI required-baseUrl
+      field, and the visible security note in both the list header and the modal; (b) set OpenAI
+      as default via "Set as Default", reloaded, and confirmed the "DEFAULT" badge persisted;
+      (c) configured Anthropic with an obviously fake key (`sk-test-invalid`) and clicked "Test
+      Connection" — it fired a real request through `/api/ai/generate`, returned HTTP 502, and
+      displayed the genuine underlying error inline ("Request to Anthropic failed: fetch failed") —
+      in this sandboxed environment outbound HTTPS requires a corporate proxy
+      (`HTTP_PROXY`/`HTTPS_PROXY` env vars) that Node's built-in `fetch` doesn't pick up
+      automatically (confirmed `curl` to the same URL succeeds via the proxy), so the actual
+      provider rejection couldn't be observed end-to-end here — what's verified is that the route
+      genuinely attempts the request and surfaces the real failure instead of swallowing it into a
+      canned response; (d) with `localStorage` cleared again (no provider marked default), opened
+      the AI Assistant drawer, sent a message, and confirmed the exact pre-Phase-3 simulated-
+      response + "Offline Mode" badge behavior, zero regression. No new console errors beyond the
+      pre-existing favicon 404 (plus the deliberately-triggered 502 from the Test Connection check
+      above). Commits: `844c58a` (types/route/routing module), `8adb4e9` (AIPromptsView UI),
+      `8111b31` (AIService/drawer wiring).
 
 ## Phase 4 — Visual design cleanup
 
@@ -243,6 +281,22 @@ the Scaffolder, which already works well and wasn't something the user asked to 
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-14 — **Phase 3 complete**: bring-your-own AI provider key. `AIProviderConfig` gained
+  `apiKey`/`baseUrl`/`isActiveDefault`; new `services/aiProviderRouting.ts` builds the request
+  shape/URL/headers per provider (pure functions, 17 new Vitest tests); `app/api/gemini/generate`
+  replaced by `app/api/ai/generate`, routing Gemini through `@google/genai` (env-var fallback kept)
+  and OpenAI/DeepSeek/Azure OpenAI/Anthropic/Ollama through plain `fetch` — no new dependency.
+  `AIPromptsView`'s provider form gained a password-type API key field (or base URL for Ollama), a
+  visible on-screen security note, a "Set as Default" action, and a "Test Connection" button with
+  inline success/failure. `AIService.requestAnalysis` now routes through the default provider,
+  falling back to Gemini-with-no-key (today's simulated response) when none is set; a new
+  `AIService.testConnection` never swallows errors, used solely by the Test Connection button.
+  Vitest 57/57 passing (17 new), lint clean, build clean. Full Playwright pass from
+  `localStorage.clear()` on a production build confirmed the new form fields, default-marking
+  persistence across reload, a real (non-swallowed) failure from Test Connection against a fake
+  Anthropic key, and zero-regression simulated-response behavior in the AI Assistant drawer with
+  no provider configured. Commits: `844c58a`, `8adb4e9`, `8111b31`. Next: Phase 4 (visual design
+  cleanup).
 - 2026-08-13 — **Phase 2a complete**: Organization/Workspace CRUD via a new "Manage Organizations
   & Workspaces" modal off the Header (cascade-deletes Workspaces when their Organization is
   deleted); custom AI Agent persona (`AIAgent` type + repository + `useAIAgents()` + a "Custom AI
