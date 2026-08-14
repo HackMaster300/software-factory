@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Layers, Box, Wand2, ShieldAlert, Server, Bot, FileSpreadsheet, GitCompare, ArrowRight, X } from 'lucide-react';
+import { Input } from './ui/Input';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -54,14 +55,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
       <div className="bg-[#181a20] border border-[#323745] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3 border-b border-[#2b303e] bg-[#1d2028]">
-          <Search className="w-4 h-4 text-blue-400 mr-3 shrink-0" />
-          <input
+        <div className="flex items-center px-4 py-3 border-b border-[#2b303e] bg-[#1d2028] gap-3">
+          <Search className="w-4 h-4 text-blue-400 shrink-0" aria-hidden="true" />
+          <Input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or jump to module..."
-            className="w-full bg-transparent text-gray-100 text-sm focus:outline-none placeholder-gray-500"
+            className="bg-transparent border-none text-sm p-0 focus:ring-0"
             autoFocus
           />
           <button onClick={onClose} aria-label="Close command palette" className="p-1 text-gray-500 hover:text-gray-300 rounded cursor-pointer">
