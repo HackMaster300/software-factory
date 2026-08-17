@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Sparkles,
   X,
@@ -24,6 +24,7 @@ import { useAIAgents, useAIProviders } from '../services/storageService';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
+import { useFocusTrap } from '../hooks/use-focus-trap';
 
 interface AIAssistantDrawerProps {
   isOpen: boolean;
@@ -63,6 +64,9 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
   const [inputPrompt, setInputPrompt] = useState(initialPrompt || '');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -127,7 +131,13 @@ User Request: ${currentPrompt}
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-[#14161c] border-l border-[#2e3342] shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200 text-xs text-gray-200">
+    <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI Architect Assistant"
+      className="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-[#14161c] border-l border-[#2e3342] shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200 text-xs text-gray-200"
+    >
       {/* Drawer Header */}
       <div className="p-3.5 border-b border-[#2e3342] bg-[#1a1d26] flex items-center justify-between">
         <div className="flex items-center gap-2">

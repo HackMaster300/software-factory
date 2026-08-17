@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Layers, Box, Wand2, ShieldAlert, Server, Bot, FileSpreadsheet, GitCompare, ArrowRight, X } from 'lucide-react';
 import { Input } from './ui/Input';
+import { useFocusTrap } from '../hooks/use-focus-trap';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -12,17 +13,16 @@ interface CommandPaletteProps {
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setActiveView }) => {
   const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, isOpen, onClose);
 
   useEffect(() => {
+    // Cmd/Ctrl+K toggles closed while open; the open-from-closed case is
+    // handled by the parent (it owns isOpen). Escape-to-close and Tab
+    // trapping are handled by useFocusTrap above.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k' && isOpen) {
         e.preventDefault();
-        if (isOpen) onClose();
-        else {
-          // Trigger open in parent
-        }
-      }
-      if (e.key === 'Escape' && isOpen) {
         onClose();
       }
     };
@@ -53,7 +53,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
-      <div className="bg-[#181a20] border border-[#323745] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        className="bg-[#181a20] border border-[#323745] w-full max-w-xl rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+      >
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3 border-b border-[#2b303e] bg-[#1d2028] gap-3">
           <Search className="w-4 h-4 text-blue-400 shrink-0" aria-hidden="true" />

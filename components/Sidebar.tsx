@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   LayoutDashboard,
   Layers,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { useFocusTrap } from '../hooks/use-focus-trap';
 
 interface SidebarProps {
   activeView: string;
@@ -45,6 +46,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isO
     onClose();
   };
 
+  const containerRef = useRef<HTMLElement>(null);
+  useFocusTrap(containerRef, isOpen, onClose);
+
   return (
     <>
       {/* Backdrop: only rendered below the lg breakpoint, while the drawer is open */}
@@ -57,6 +61,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isO
       )}
 
       <aside
+        ref={containerRef}
+        role={isOpen ? 'dialog' : undefined}
+        aria-modal={isOpen ? true : undefined}
+        aria-label={isOpen ? 'Navigation menu' : undefined}
         className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out bg-[#121418] border-r border-[#262933] flex flex-col justify-between select-none shrink-0 lg:static lg:inset-auto lg:z-auto lg:w-56 lg:translate-x-0 lg:transition-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}

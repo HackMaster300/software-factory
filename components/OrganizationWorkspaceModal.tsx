@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Building2, FolderGit2, Plus, Edit3, Trash2, X } from 'lucide-react';
 import { Organization, Workspace } from '../types/factory';
 import { useOrganizations, useWorkspaces } from '../services/storageService';
@@ -8,6 +8,7 @@ import { organizationRepository, workspaceRepository } from '../services/reposit
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input, Textarea, Select } from './ui/Input';
+import { useFocusTrap } from '../hooks/use-focus-trap';
 
 interface OrganizationWorkspaceModalProps {
   isOpen: boolean;
@@ -35,6 +36,9 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
   const [wsName, setWsName] = useState('');
   const [wsDescription, setWsDescription] = useState('');
   const [isWsFormOpen, setIsWsFormOpen] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(containerRef, isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -146,7 +150,13 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#181a20] border border-[#2b303d] w-full max-w-3xl rounded-xl shadow-2xl max-h-[85vh] flex flex-col">
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Organizations & Workspaces"
+        className="bg-[#181a20] border border-[#2b303d] w-full max-w-3xl rounded-xl shadow-2xl max-h-[85vh] flex flex-col"
+      >
         <div className="flex items-center justify-between border-b border-[#2b303d] p-4 shrink-0">
           <div className="font-bold text-white text-sm flex items-center gap-2">
             <Building2 className="w-4 h-4 text-blue-400" aria-hidden="true" />
