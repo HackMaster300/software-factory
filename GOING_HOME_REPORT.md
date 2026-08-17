@@ -2,6 +2,47 @@
 
 Autonomous work log. Newest session on top.
 
+## Improvement-mode session — accessibility & keyboard navigation (2026-08-17)
+
+Continued improvement mode after the mobile-picker/test-coverage cycle. This time picked
+accessibility/keyboard-navigation — a design-review dimension not explicitly covered by Phases 4-5
+(which focused on visual density and responsiveness). The dispatched agent hit the account-level
+API session limit right before its own verification pass; picked up from there rather than
+re-dispatching, since the diff was small, coherent, and clearly complete.
+
+- Did:
+  - **Added a shared `hooks/use-focus-trap.ts`** and applied it to every overlay dialog in the app:
+    `CommandPalette`, `AIAssistantDrawer`, `OrganizationWorkspaceModal`, and the mobile Sidebar
+    drawer (`10dbf9a`). While any of these is open: Tab/Shift+Tab now wrap within the dialog's own
+    focusable elements instead of escaping to the page behind it, Escape closes it, focus moves
+    into the dialog on open, and focus returns to the triggering element on close. Each dialog also
+    gained `role="dialog"` / `aria-modal="true"` / a descriptive `aria-label`. Removed
+    `CommandPalette`'s now-redundant manual Escape key handler, superseded by the shared hook.
+- Verification (keyboard-only, via Playwright, not just automated tests — the primary method for
+  this kind of fix):
+  - Command Palette: opened via Ctrl+K, confirmed initial focus lands on the search input,
+    confirmed Shift+Tab from the first focusable element wraps to the last element *still inside
+    the dialog* rather than escaping to the page, confirmed Escape closes it with zero console
+    errors.
+  - Mobile Sidebar drawer (375px width): confirmed `role="dialog"` and that focus moves inside on
+    open, confirmed Escape closes it and restores focus to the exact "Toggle navigation menu"
+    button that opened it — proving the restore-to-trigger behavior genuinely works.
+  - `npm run lint` clean, `npm run build` clean, `npm run test` 134/134 passing (pure behavior-
+    preserving change, no new tests needed — verification was keyboard-driven, not unit tests).
+- Found but not fully resolved — noted honestly rather than silently ignored: when the Command
+  Palette was opened via a Playwright-simulated *click* on its trigger button (as opposed to the
+  Ctrl+K shortcut), focus-on-close landed on `<body>` instead of back on that specific button. The
+  identical hook correctly restored focus to the *exact* trigger button in the Sidebar-drawer test
+  right after, using the same code path — so this looks like a Playwright click/focus timing
+  quirk specific to that one button rather than a real bug in the hook, but it wasn't run to full
+  ground truth (e.g. against a real mouse click in an actual browser). Low severity either way:
+  the core requirement (Tab can't escape the dialog, Escape closes it, focus starts inside on open)
+  is solid and verified; worst case today is one extra Tab press to get back to the search button
+  after closing the palette via a mouse click.
+- Next step if continuing: pick the next improvement-mode item — color-contrast audit (not reached
+  this cycle) or skip-to-main-content link were both still on the original task list, or continue
+  broadening Vitest coverage (e.g. `ruleService.ts`'s remaining untested branches, `AIService`).
+
 ## Improvement-mode session — mobile picker fix + test coverage (2026-08-17)
 
 With the realignment plan (Phases 0-6) complete and no active phase in `PLAN.md`, picked up the
