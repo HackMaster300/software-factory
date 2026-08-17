@@ -208,6 +208,16 @@ export default function SoftwareFactoryPage() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0e1013] text-gray-100 font-sans antialiased select-none">
+      {/* Skip link: invisible until keyboard-focused, jumps straight to the main
+          content landmark so keyboard users don't have to tab through the
+          header/nav on every page load. */}
+      <a
+        href="#main-content"
+        className="fixed top-2 left-2 z-[100] -translate-y-16 focus:translate-y-0 transition-transform duration-150 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+      >
+        Skip to main content
+      </a>
+
       {/* Top Fixed IDE Header */}
       <Header
         activeView={activeView}
@@ -230,7 +240,7 @@ export default function SoftwareFactoryPage() {
         />
 
         {/* Center Main Workspace Content Viewport */}
-        <main className="flex-1 overflow-y-auto bg-[#0f1115] relative">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto bg-[#0f1115] relative focus:outline-none">
           {renderActiveView()}
         </main>
 
