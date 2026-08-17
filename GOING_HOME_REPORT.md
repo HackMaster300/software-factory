@@ -2,6 +2,54 @@
 
 Autonomous work log. Newest session on top.
 
+## Phase 6 complete — realignment plan (Phases 0-6) finished (2026-08-17)
+
+**Detected stack:** Next.js 15 (App Router) / React 19 / TypeScript / Tailwind v4
+**Status:** Complete
+
+A third agent attempt on Phase 6 hit the account-level API session limit mid-audit (last visible
+action: checking ValidationService test coverage). Picked up from there directly rather than
+re-dispatching, since the remaining work was well-scoped.
+
+- Did:
+  - Rescued and verified 6 uncommitted repository test files the interrupted agent had written
+    (`aiProvider`, `decisionLog`, `featureManifest`, `promptTemplate`, `ruleSet`, `template`) —
+    lint/build/test all clean, committed (`457e40c`).
+  - Added `ValidationService` rule coverage (`214a167`), `DecisionService`/`TemplateService`
+    coverage (`9e7ad40`).
+- Bugs found and fixed (triggered by a real user report: "the scores never change no matter the
+  situation"):
+  - **Advisor quality scores saturated to 100% regardless of blueprint configuration.**
+    `AdvisorService.calculateScores` flat-summed every active feature's `impactScores` (10-35 pts
+    per category); any realistically-featured blueprint (10+ features via Smart Dependencies
+    auto-activation) trivially exceeded 100 in every dimension. Fixed with a diminishing-returns
+    aggregation instead of flat addition — default blueprint now shows 97% (varying per dimension)
+    instead of a flat 100% across the board, verified live via Playwright. New
+    `advisorService.test.ts`. (`c84b90b`)
+  - **Seed/default data was a shared mutable reference — could resurrect "deleted" data after a
+    storage reset.** `storageService.getItem()` handed callers the actual module-level default
+    constant by reference on a cold read; `DecisionService.addDecisionLog`/`RuleService.addRule`
+    mutate the array they get back in place (`unshift`) before saving, permanently corrupting the
+    in-memory default for the rest of the session. Caught by a new `decisionService.test.ts`. A
+    first fix attempt (clone on every read) caused a full app crash on cold load — React error
+    #185, infinite update loop — by breaking the referential stability `useSyncExternalStore`
+    needs; caught via Playwright before committing, then fixed correctly (clone only when
+    materializing a fresh default). Verified live: added two decision logs via the real UI, cleared
+    storage, confirmed a genuine empty state with no ghost entries. (`9e7ad40`)
+- Also configured a real user-supplied Gemini API key through the existing Phase 3 bring-your-own-
+  key UI (stored in localStorage only, never touched the repo) and ran Test Connection — the route
+  made a genuine request and surfaced a real failure ("fetch failed"); this sandboxed dev
+  environment has no outbound internet access (same limitation already documented in Phase 3), not
+  a code or key problem.
+- Verification: 98/98 tests passing (41 new this cycle) across 21 test files, lint clean, build
+  clean, multiple live Playwright regression passes.
+- **PLAN.md realignment effort (Phases 0-6) is now complete.** Nothing has been pushed to the
+  remote — that still requires explicit user approval.
+- Next step if continuing: no phases remain in PLAN.md. Future sessions should fall back to general
+  review/improvement mode (skill §2/§2a) — e.g. broaden Vitest coverage to `blueprintService`/
+  `impactService`/`projectService`'s untested branches, or pursue the Phase 5-flagged IA gap (org/
+  workspace picker switching still needs `md`+ width).
+
 ## Phase 5 complete — structure & responsiveness (2026-08-14)
 
 Started Phase 5 from scratch (no prior responsiveness work existed). Loaded the app in Playwright

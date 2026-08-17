@@ -322,10 +322,64 @@ workspace end-to-end. Zero console errors across all checks.
 
 ## Phase 6 — Verification & regression safety
 
-- [ ] Vitest coverage for every repository/service touched in Phase 0, plus the provider-routing
-      logic from Phase 3.
-- [ ] Full lint + build + Playwright pass at the end of *each* phase, not only at the end of the
-      whole plan — commit each phase independently so work stays reversible and reviewable.
+**Complete.** A third agent attempt hit the account-level API session limit mid-audit (its last
+action was checking ValidationService coverage); I picked up from there, added the missing
+repository/service test coverage, and — because the user reported the Advisor panel's quality
+scores "never change no matter the situation" — investigated and fixed two real, previously-
+unknown bugs this phase surfaced along the way.
+
+- [x] Vitest coverage added for every previously-untested repository (`aiProvider`, `decisionLog`,
+      `featureManifest`, `promptTemplate`, `ruleSet`, `template` — rescued from the interrupted
+      agent, independently verified, committed: `457e40c`) and service (`ValidationService` rule
+      coverage `214a167`; `DecisionService`/`TemplateService` `9e7ad40`). `AdvisorService` also
+      gained full coverage as part of fixing the scoring bug below (`c84b90b`).
+- [x] **Bug found & fixed: Advisor quality scores saturated to 100% regardless of blueprint
+      configuration.** `AdvisorService.calculateScores` summed every active feature's
+      `impactScores` (10-35 points per category each) as a flat additive delta; any realistically-
+      featured blueprint (10+ features once Smart Dependencies auto-activates recommendations)
+      trivially exceeded 100 in every dimension, so the displayed score was insensitive to stack,
+      architecture style, or which features were actually enabled — directly contradicting the "no
+      invented/non-functional data" mandate. Fixed by routing every delta through a diminishing-
+      returns helper instead of flat addition. Verified live: the default seeded blueprint now
+      shows 97% (Security 97, Architecture 99, Performance 92, Scalability 98, Maintainability 99,
+      Complexity 83) instead of a flat 100 across every dimension. (`c84b90b`)
+- [x] **Bug found & fixed: default/seed data was a shared mutable reference, corrupting the
+      "genuinely empty" guarantee from Phase 1.** `storageService.ts`'s `getItem()` handed callers
+      the actual module-level default constant (e.g. `initialDecisionLogs`) by reference on a cold
+      read. Several service methods mutate the array they get back in place before saving
+      (`DecisionService.addDecisionLog` does `logs.unshift(...)`, similarly in `RuleService`).
+      Mutating that shared reference permanently corrupted the in-memory default for the rest of
+      the session: once one decision log was added, a later `localStorage.clear()` would resurface
+      that ghost entry instead of a genuinely empty state. Caught by a new
+      `decisionService.test.ts`. First fix attempt (clone on every `getItem` read) caused a full
+      app crash on cold load (React error #185, infinite update loop) by breaking the referential
+      stability the `useSyncExternalStore`-based reactive hooks require — caught immediately via
+      Playwright before committing. Correct fix: only clone when materializing a *fresh* default,
+      never on the memoryCache-hit path. Verified live: added two decision logs through the real
+      UI, cleared storage, confirmed a genuine "0 Architectural Decisions Recorded" with no ghost
+      entries, zero console errors. (`9e7ad40`)
+- [x] Full lint + build + Playwright regression pass performed after every commit this phase (not
+      deferred to the end) — 98/98 tests passing, lint clean, build clean throughout.
+- [x] Configured a real user-supplied Gemini API key through the Phase 3 bring-your-own-key UI
+      (localStorage only, never touched the repo) and exercised Test Connection end-to-end. The
+      route correctly attempted a real request and surfaced a genuine failure ("fetch failed") —
+      this sandboxed dev environment has no outbound internet access, confirmed the same limitation
+      already documented in Phase 3. Not a code or key problem; the important thing verified is
+      that the app makes a real attempt and shows the real error rather than a fake success.
+
+## Realignment plan status: complete (Phases 0-6)
+
+All six phases from the original gap analysis are done: a real repository-pattern architecture
+swap-ready for a future REST API (Phase 0); a genuinely empty starting state with no invented
+history (Phase 1); every entity the original vision asked to create now has real create/edit/delete
+UI (Phase 2); the user can bring their own AI provider key for Gemini/OpenAI/Anthropic/DeepSeek/
+Azure OpenAI/Ollama (Phase 3); every view now shares a consistent, decluttered design system
+(Phase 4); the app is usable at mobile/tablet/desktop breakpoints (Phase 5); and this phase closed
+two real, previously-hidden correctness bugs that directly served the "no invented data, 100% real
+functionality" mandate — a scoring formula that silently ignored configuration, and a shared-
+reference bug that could resurrect deleted data after a storage reset. 98/98 tests passing across
+21 test files, lint clean, build clean. Nothing has been pushed to the remote — that still needs
+explicit approval per the Execution mode section above.
 
 ---
 
@@ -333,6 +387,19 @@ workspace end-to-end. Zero console errors across all checks.
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-17 — **Phase 6 complete — realignment plan (Phases 0-6) finished.** Added missing
+  repository/service test coverage (`457e40c`, `214a167`, `9e7ad40`). Found and fixed two real bugs
+  surfaced by user-reported "scores never change": (1) Advisor quality scores flat-summed feature
+  impact scores and saturated to 100% regardless of configuration — fixed with a diminishing-
+  returns aggregation, default blueprint now genuinely varies (97% instead of flat 100%) (`c84b90b`).
+  (2) `storageService.getItem()` handed out the shared default-seed array by reference; services
+  that mutate-then-save (`unshift`) permanently corrupted the "empty" default for the rest of the
+  session, so a storage reset could resurrect deleted data — fixed to clone only when materializing
+  a fresh default, preserving the referential stability `useSyncExternalStore` needs (a naive
+  clone-every-read first attempt caused a full crash, caught via Playwright before committing)
+  (`9e7ad40`). Also configured a real user-supplied Gemini key via the Phase 3 BYOK UI and confirmed
+  the AI route makes genuine requests (blocked only by this sandbox's lack of internet access, not
+  a bug). 98/98 tests passing, lint/build clean. Nothing pushed — needs explicit approval.
 - 2026-08-14 — **Phase 5 complete**: structure & responsiveness. Playwright-audited every view at
   375x812/768x1024/1440x900 *before* coding, confirming Sidebar (224px) + Advisor panel (320px)
   were both always rendered alongside main content — 544px of fixed chrome on a 375px viewport.
