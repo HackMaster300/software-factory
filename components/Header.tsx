@@ -191,11 +191,13 @@ export const Header: React.FC<HeaderProps> = ({
           <Badge tone="brand" className="normal-case hidden sm:inline-flex">IDE v2.5</Badge>
         </div>
 
-        {/* Org & Workspace Picker: desktop-inline here at md+; below md it
+        {/* Org & Workspace Picker: desktop-inline here at xl+; below xl it
             moves to a dedicated full-width bar under the main header row
             (see orgWorkspacePicker usage below) so it stays reachable and
-            usable without crowding the icon-only mobile header. */}
-        <div className="hidden md:flex items-center gap-2 text-xs">{orgWorkspacePicker}</div>
+            usable without crowding the header — inline picker + breadcrumb
+            title + full action-button labels together needed more room
+            than the 1024-1279px laptop range has. */}
+        <div className="hidden xl:flex items-center gap-2 text-xs">{orgWorkspacePicker}</div>
 
         {/* Manage Organizations & Workspaces: kept reachable below md even
             though the picker itself moves to the row below there, since it's
@@ -212,18 +214,25 @@ export const Header: React.FC<HeaderProps> = ({
           <Settings2 className="w-3.5 h-3.5" aria-hidden="true" />
         </Button>
 
-        {/* Active View Title */}
-        <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400 ml-2">
-          <span className="text-gray-600">/</span>
-          <span className="text-gray-200 font-medium">{viewTitles[activeView] || activeView}</span>
+        {/* Active View Title: truncates with an ellipsis instead of wrapping
+            to multiple lines — an unconstrained span here used to wrap the
+            header to 3 lines and squeeze the search bar at laptop widths
+            (~1024-1366px). Only shown at xl+ where there's reliably room. */}
+        <div className="hidden xl:flex items-center gap-2 text-xs text-gray-400 ml-2 min-w-0">
+          <span className="text-gray-600 shrink-0">/</span>
+          <span className="text-gray-200 font-medium truncate max-w-[220px] 2xl:max-w-xs">{viewTitles[activeView] || activeView}</span>
         </div>
       </div>
 
-      {/* Center Search / Command Palette Bar */}
+      {/* Center Search / Command Palette Bar: flex-1 + min-w-0 with a
+          per-breakpoint max-width (instead of a fixed width) lets this bar
+          compress when the left/right groups need the room, instead of
+          forcing the header into horizontal overflow — a safety valve so
+          exact pixel budgets across breakpoints don't have to be perfect. */}
       <button
         onClick={openCommandPalette}
         aria-label="Open command palette"
-        className="flex items-center gap-3 min-h-11 min-w-11 bg-[#1a1d24] hover:bg-[#222630] border border-[#2e3340] hover:border-gray-600 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer justify-center sm:w-48 md:w-64 lg:w-80 sm:justify-between"
+        className="flex flex-1 min-w-11 items-center gap-3 min-h-11 bg-[#1a1d24] hover:bg-[#222630] border border-[#2e3340] hover:border-gray-600 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded-md text-xs transition-colors cursor-pointer justify-center sm:max-w-40 md:max-w-48 lg:max-w-56 xl:max-w-72 2xl:max-w-80 sm:justify-between mx-2"
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -244,25 +253,25 @@ export const Header: React.FC<HeaderProps> = ({
           {errorCount > 0 ? (
             <span className="flex items-center gap-1 text-red-400 font-medium">
               <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-              <span className="hidden sm:inline">{errorCount} Error{errorCount > 1 ? 's' : ''}</span>
+              <span className="hidden xl:inline">{errorCount} Error{errorCount > 1 ? 's' : ''}</span>
             </span>
           ) : warningCount > 0 ? (
             <span className="flex items-center gap-1 text-amber-400 font-medium">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">{warningCount} Warning{warningCount > 1 ? 's' : ''}</span>
+              <span className="hidden xl:inline">{warningCount} Warning{warningCount > 1 ? 's' : ''}</span>
             </span>
           ) : (
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Valid Architecture</span>
+              <span className="hidden xl:inline">Valid Architecture</span>
             </span>
           )}
 
-          <div className="hidden sm:block w-px h-3 bg-[#2e3340]" />
+          <div className="hidden xl:block w-px h-3 bg-[#2e3340]" />
 
           <div className="flex items-center gap-1 text-blue-400 font-mono">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-            <span>{scores.qualityScore}%<span className="hidden sm:inline"> Quality</span></span>
+            <span>{scores.qualityScore}%<span className="hidden xl:inline"> Quality</span></span>
           </div>
         </button>
 
@@ -274,7 +283,7 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label="New Project"
         >
           <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-          <span className="hidden sm:inline">New Project</span>
+          <span className="hidden xl:inline">New Project</span>
         </Button>
 
         {/* AI Architect Assistant Button */}
@@ -290,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
           }
         >
           <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-          <span className="hidden sm:inline">AI Architect</span>
+          <span className="hidden xl:inline">AI Architect</span>
         </Button>
 
         {/* Reset Data & JSON Backup */}
@@ -326,14 +335,14 @@ export const Header: React.FC<HeaderProps> = ({
       <OrganizationWorkspaceModal isOpen={isOrgModalOpen} onClose={() => setIsOrgModalOpen(false)} />
     </header>
 
-    {/* Org & Workspace Picker (mobile/tablet): the header row above is too
-        cramped below md for the inline picker, but switching the active
+    {/* Org & Workspace Picker (mobile/tablet/laptop): the header row above is
+        too cramped below xl for the inline picker, but switching the active
         org/workspace has to stay reachable at every width — so it moves to
         its own full-width bar directly under the header, matching the
         existing pattern of "same control, different placement per
         breakpoint" already used for Sidebar (drawer below lg) and the
-        Advisor panel (bottom sheet below lg). */}
-    <div className="md:hidden flex items-center gap-2 text-xs px-4 py-2 bg-[#14161b] border-b border-[#2a2e39]">
+        Advisor panel (bottom sheet below xl). */}
+    <div className="xl:hidden flex items-center gap-2 text-xs px-4 py-2 bg-[#14161b] border-b border-[#2a2e39]">
       {orgWorkspacePicker}
     </div>
     </div>

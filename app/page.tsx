@@ -51,7 +51,7 @@ function persistActiveView(view: string): void {
 // activeView above): server snapshot is always "not desktop" (closed), the
 // client re-syncs to the real viewport post-hydration with no mismatch, and
 // stays in sync across resizes via the matchMedia change listener.
-const ADVISOR_DESKTOP_QUERY = '(min-width: 1024px)';
+const ADVISOR_DESKTOP_QUERY = '(min-width: 1280px)';
 
 function getIsDesktopSnapshot(): boolean {
   return window.matchMedia(ADVISOR_DESKTOP_QUERY).matches;
@@ -75,7 +75,8 @@ export default function SoftwareFactoryPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   // Advisor panel: hidden by default below desktop width, visible by default
-  // at desktop width (lg breakpoint, matching Sidebar/Header's convention) —
+  // at desktop width (xl breakpoint — wider than Sidebar's lg, since Sidebar
+  // + Advisor together at lg left the center content column too narrow) —
   // unless the user has explicitly toggled it, in which case that choice
   // wins regardless of viewport.
   const isDesktop = useSyncExternalStore(subscribeIsDesktop, getIsDesktopSnapshot, getIsDesktopServerSnapshot);
@@ -244,22 +245,25 @@ export default function SoftwareFactoryPage() {
           {renderActiveView()}
         </main>
 
-        {/* Right Collapsible Project Advisor Panel: inline sidebar at lg+,
-            a bottom-sheet overlay with a backdrop below lg */}
+        {/* Right Collapsible Project Advisor Panel: inline sidebar at xl+
+            (1280px) — kept as an overlay through the lg range too, since a
+            fixed-width Sidebar (224px) plus this panel (320px) left the
+            center content column too narrow for its own 2-4 column grids
+            between 1024-1279px, causing text/labels to wrap badly there. */}
         {isAdvisorOpen ? (
           <>
             <div
               onClick={() => setIsAdvisorOpen(false)}
               aria-hidden="true"
-              className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+              className="fixed inset-0 z-30 bg-black/60 xl:hidden"
             />
-            <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center lg:static lg:z-auto lg:block">
-              <div className="relative flex w-full lg:w-auto">
+            <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center xl:static xl:z-auto xl:block">
+              <div className="relative flex w-full xl:w-auto">
                 <button
                   onClick={() => setIsAdvisorOpen(false)}
                   title="Collapse Advisor Panel"
                   aria-label="Collapse Advisor Panel"
-                  className="absolute right-2 top-2 z-20 min-w-11 min-h-11 inline-flex items-center justify-center rounded-full bg-[#1e222d] border border-[#2e3444] text-gray-400 hover:text-white cursor-pointer shadow-md lg:right-auto lg:left-[-12px] lg:top-4 lg:min-w-0 lg:min-h-0 lg:p-1"
+                  className="absolute right-2 top-2 z-20 min-w-11 min-h-11 inline-flex items-center justify-center rounded-full bg-[#1e222d] border border-[#2e3444] text-gray-400 hover:text-white cursor-pointer shadow-md xl:right-auto xl:left-[-12px] xl:top-4 xl:min-w-0 xl:min-h-0 xl:p-1"
                 >
                   <PanelRightClose className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
@@ -275,7 +279,7 @@ export default function SoftwareFactoryPage() {
             onClick={() => setIsAdvisorOpen(true)}
             title="Expand Advisor Panel"
             aria-label="Expand Advisor Panel"
-            className="fixed bottom-4 right-4 z-30 min-w-11 min-h-11 lg:absolute lg:top-3 lg:right-3 lg:bottom-auto lg:min-w-0 lg:min-h-0 p-2 rounded-lg bg-[#1a1d24] border border-[#2e3340] text-gray-400 hover:text-blue-400 cursor-pointer shadow-lg flex items-center justify-center gap-1.5 text-xs font-medium"
+            className="fixed bottom-4 right-4 z-30 min-w-11 min-h-11 xl:absolute xl:top-3 xl:right-3 xl:bottom-auto xl:min-w-0 xl:min-h-0 p-2 rounded-lg bg-[#1a1d24] border border-[#2e3340] text-gray-400 hover:text-blue-400 cursor-pointer shadow-lg flex items-center justify-center gap-1.5 text-xs font-medium"
           >
             <PanelRightOpen className="w-4 h-4 text-blue-400" aria-hidden="true" />
             <span className="hidden xl:inline">Advisor ({selectedBlueprint.name.split(' ')[0]})</span>

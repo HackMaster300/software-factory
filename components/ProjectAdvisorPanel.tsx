@@ -43,7 +43,7 @@ export const ProjectAdvisorPanel: React.FC<ProjectAdvisorPanelProps> = ({ bluepr
   ];
 
   return (
-    <aside className="w-full lg:w-80 max-h-[75vh] lg:max-h-none lg:h-full bg-[#121418] border-t lg:border-t-0 border-l-0 lg:border-l border-[#262933] rounded-t-2xl lg:rounded-none flex flex-col overflow-y-auto select-none shrink-0 text-xs text-gray-200">
+    <aside className="w-full xl:w-80 max-h-[75vh] xl:max-h-none xl:h-full bg-[#121418] border-t xl:border-t-0 border-l-0 xl:border-l border-[#262933] rounded-t-2xl xl:rounded-none flex flex-col overflow-y-auto select-none shrink-0 text-xs text-gray-200">
       {/* Advisor Header */}
       <div className="p-3.5 border-b border-[#262933] bg-[#16181f] flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
