@@ -3,6 +3,18 @@ import { featureManifestRepository } from './repositories/featureManifest.reposi
 import { techStackRepository } from './repositories/techStack.repository';
 import { FeatureService } from './featureService';
 
+/**
+ * Applies a gain/penalty with diminishing returns as the score nears its 0-100 bound,
+ * instead of a flat sum. A blueprint with many well-scored features would otherwise
+ * saturate every dimension to 100 regardless of which stack/architecture is chosen
+ * (10+ active features each contributing 10-35 points per category trivially exceeds
+ * 100 on their own) — making the score insensitive to real configuration differences.
+ */
+function applyDelta(current: number, delta: number): number {
+  if (delta === 0) return current;
+  return delta > 0 ? current + delta * (1 - current / 100) : current + delta * (current / 100);
+}
+
 export class AdvisorService {
   static calculateScores(blueprint: Blueprint): AdvisorScores {
     const allFeatures = featureManifestRepository.getFeatureManifests();
@@ -32,43 +44,43 @@ export class AdvisorService {
     if (selectedStack) {
       const lang = selectedStack.language;
       if (lang === 'rust') {
-        performanceScore += 25;
-        securityScore += 15;
-        scalabilityScore += 20;
+        performanceScore = applyDelta(performanceScore, 25);
+        securityScore = applyDelta(securityScore, 15);
+        scalabilityScore = applyDelta(scalabilityScore, 20);
         rationaleMap.Performance.reasons.push('Rust Tokio/Axum zero-cost abstractions deliver sub-millisecond API execution (+25 performance)');
         rationaleMap.Security.reasons.push('Rust compile-time memory safety eliminates null pointers and data races (+15 security)');
       } else if (lang === 'go') {
-        performanceScore += 20;
-        scalabilityScore += 20;
-        maintainabilityScore += 10;
+        performanceScore = applyDelta(performanceScore, 20);
+        scalabilityScore = applyDelta(scalabilityScore, 20);
+        maintainabilityScore = applyDelta(maintainabilityScore, 10);
         rationaleMap.Performance.reasons.push('Go goroutines and fast compile times maximize throughput (+20 performance)');
         rationaleMap.Scalability.reasons.push('Low footprint container runtime allows dense pod packing (+20 scalability)');
       } else if (lang === 'java') {
-        architectureScore += 20;
-        securityScore += 15;
-        maintainabilityScore += 15;
+        architectureScore = applyDelta(architectureScore, 20);
+        securityScore = applyDelta(securityScore, 15);
+        maintainabilityScore = applyDelta(maintainabilityScore, 15);
         rationaleMap.Architecture.reasons.push('Java Spring Boot enterprise Ecosystem provides battle-tested DI & modularity (+20 architecture)');
         rationaleMap.Security.reasons.push('Spring Security delivers production RBAC and OAuth2 integration (+15 security)');
       } else if (lang === 'typescript') {
-        maintainabilityScore += 20;
-        architectureScore += 15;
+        maintainabilityScore = applyDelta(maintainabilityScore, 20);
+        architectureScore = applyDelta(architectureScore, 15);
         rationaleMap.Maintainability.reasons.push('Full-stack TypeScript enables shared DTO types between backend and frontend (+20 maintainability)');
       } else if (lang === 'python') {
-        maintainabilityScore += 15;
-        performanceScore += 10;
+        maintainabilityScore = applyDelta(maintainabilityScore, 15);
+        performanceScore = applyDelta(performanceScore, 10);
         rationaleMap.Maintainability.reasons.push('FastAPI Pydantic v2 offers fast development velocity and AI pipeline readiness (+15 maintainability)');
       } else if (lang === 'csharp') {
-        architectureScore += 20;
-        performanceScore += 15;
-        maintainabilityScore += 15;
+        architectureScore = applyDelta(architectureScore, 20);
+        performanceScore = applyDelta(performanceScore, 15);
+        maintainabilityScore = applyDelta(maintainabilityScore, 15);
         rationaleMap.Architecture.reasons.push('.NET 9 ASP.NET Core native Dependency Injection and C# 13 features (+20 architecture)');
       } else if (lang === 'kotlin') {
-        architectureScore += 15;
-        maintainabilityScore += 15;
+        architectureScore = applyDelta(architectureScore, 15);
+        maintainabilityScore = applyDelta(maintainabilityScore, 15);
         rationaleMap.Architecture.reasons.push('Kotlin Coroutines deliver non-blocking async execution without callback complexity (+15 architecture)');
       } else if (lang === 'dart') {
-        maintainabilityScore += 20;
-        scalabilityScore += 10;
+        maintainabilityScore = applyDelta(maintainabilityScore, 20);
+        scalabilityScore = applyDelta(scalabilityScore, 10);
         rationaleMap.Maintainability.reasons.push('Flutter cross-platform Dart runtime unifies Mobile, Web, and Desktop UI codebases (+20 maintainability)');
       }
     }
@@ -76,24 +88,24 @@ export class AdvisorService {
     // Architecture Style impact
     const archStyle = blueprint.architectureStyle;
     if (archStyle === 'CleanArchitecture') {
-      architectureScore += 20;
-      maintainabilityScore += 20;
+      architectureScore = applyDelta(architectureScore, 20);
+      maintainabilityScore = applyDelta(maintainabilityScore, 20);
       rationaleMap.Architecture.reasons.push('Clean Architecture enforces strict Domain isolation and Dependency Inversion (+20 architecture)');
     } else if (archStyle === 'Hexagonal') {
-      architectureScore += 20;
-      maintainabilityScore += 15;
+      architectureScore = applyDelta(architectureScore, 20);
+      maintainabilityScore = applyDelta(maintainabilityScore, 15);
       rationaleMap.Architecture.reasons.push('Hexagonal Ports & Adapters isolate core business domain from HTTP and DB drivers (+20 architecture)');
     } else if (archStyle === 'Microservices') {
-      scalabilityScore += 25;
-      complexityScore += 20;
+      scalabilityScore = applyDelta(scalabilityScore, 25);
+      complexityScore = applyDelta(complexityScore, 20);
       rationaleMap.Scalability.reasons.push('Microservices allow independent deployment and horizontal node scaling (+25 scalability)');
     } else if (archStyle === 'CQRS') {
-      architectureScore += 25;
-      performanceScore += 15;
+      architectureScore = applyDelta(architectureScore, 25);
+      performanceScore = applyDelta(performanceScore, 15);
       rationaleMap.Architecture.reasons.push('CQRS decouples read queries from transactional write commands (+25 architecture)');
     } else if (archStyle === 'ModularMonolith') {
-      maintainabilityScore += 25;
-      complexityScore -= 10;
+      maintainabilityScore = applyDelta(maintainabilityScore, 25);
+      complexityScore = applyDelta(complexityScore, -10);
       rationaleMap.Maintainability.reasons.push('Modular Monolith delivers clean boundaries without distributed network complexity (+25 maintainability)');
     }
 
@@ -101,12 +113,12 @@ export class AdvisorService {
     for (const feat of activeFeatures) {
       const scores = feat.impactScores;
       if (scores) {
-        securityScore += scores.security || 0;
-        architectureScore += scores.architecture || 0;
-        performanceScore += scores.performance || 0;
-        scalabilityScore += scores.scalability || 0;
-        maintainabilityScore += scores.maintainability || 0;
-        complexityScore += scores.complexity || 0;
+        securityScore = applyDelta(securityScore, scores.security || 0);
+        architectureScore = applyDelta(architectureScore, scores.architecture || 0);
+        performanceScore = applyDelta(performanceScore, scores.performance || 0);
+        scalabilityScore = applyDelta(scalabilityScore, scores.scalability || 0);
+        maintainabilityScore = applyDelta(maintainabilityScore, scores.maintainability || 0);
+        complexityScore = applyDelta(complexityScore, scores.complexity || 0);
       }
 
       if (feat.id === 'feat-jwt-auth') {
@@ -135,25 +147,26 @@ export class AdvisorService {
     // Deduce penalties for disabled recommended features
     for (const disabled of disabledRecommendedFeatures) {
       if (disabled.id === 'feat-healthchecks') {
-        securityScore -= 10;
-        architectureScore -= 15;
+        securityScore = applyDelta(securityScore, -10);
+        architectureScore = applyDelta(architectureScore, -15);
         rationaleMap.Architecture.reasons.push('WARNING: Health checks disabled despite Docker containerization (-15 architecture)');
         rationaleMap.Architecture.recommendations.push('Re-enable Health Checks & Diagnostics to ensure container health probe accuracy.');
       }
       if (disabled.id === 'feat-env-vars') {
-        securityScore -= 20;
+        securityScore = applyDelta(securityScore, -20);
         rationaleMap.Security.reasons.push('WARNING: Environment variables feature disabled, risking hardcoded config files (-20 security)');
         rationaleMap.Security.recommendations.push('Re-enable Environment Variables Config Provider to comply with Twelve-Factor config isolation.');
       }
     }
 
-    // Clamp scores 0-100
-    securityScore = Math.min(100, Math.max(0, securityScore));
-    architectureScore = Math.min(100, Math.max(0, architectureScore));
-    performanceScore = Math.min(100, Math.max(0, performanceScore));
-    scalabilityScore = Math.min(100, Math.max(0, scalabilityScore));
-    maintainabilityScore = Math.min(100, Math.max(0, maintainabilityScore));
-    complexityScore = Math.min(100, Math.max(0, complexityScore));
+    // Round and clamp 0-100 (the diminishing-returns math above keeps every dimension inside
+    // this range already, mathematically, but the clamp stays as a defensive final guard).
+    securityScore = Math.min(100, Math.max(0, Math.round(securityScore)));
+    architectureScore = Math.min(100, Math.max(0, Math.round(architectureScore)));
+    performanceScore = Math.min(100, Math.max(0, Math.round(performanceScore)));
+    scalabilityScore = Math.min(100, Math.max(0, Math.round(scalabilityScore)));
+    maintainabilityScore = Math.min(100, Math.max(0, Math.round(maintainabilityScore)));
+    complexityScore = Math.min(100, Math.max(0, Math.round(complexityScore)));
 
     // Calculate Overall Quality Score (weighted average)
     const qualityScore = Math.round(
