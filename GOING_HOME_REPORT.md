@@ -2,6 +2,72 @@
 
 Autonomous work log. Newest session on top.
 
+## Improvement-mode session — skip link + color-contrast audit (2026-08-17)
+
+Picked up the two accessibility items explicitly flagged as not-yet-done at the end of the prior
+session's report entry: a skip-to-main-content link, and a WCAG AA color-contrast audit.
+
+- Did:
+  - **Skip-to-main-content link** (`app/page.tsx`, `bd49ffa`). Added an `<a href="#main-content">`
+    as the very first element in the page tree, before the Header — `fixed top-2 left-2
+    -translate-y-16 focus:translate-y-0` so it's fully off-screen until keyboard-focused, then
+    slides into view. Gave the `<main>` landmark `id="main-content"` and `tabIndex={-1}` (needed
+    so the anchor jump can actually move DOM focus onto a non-interactive element, not just scroll
+    to it).
+  - **WCAG AA color-contrast audit** (`components/ui/Input.tsx`,
+    `components/views/DecisionLogsView.tsx`, `components/views/FeatureManifestsView.tsx`,
+    `components/views/PluginsView.tsx`, `4f95489`). Rather than guessing from Tailwind class names,
+    audited the live app in a real browser: injected a `getComputedStyle` + WCAG relative-luminance
+    contrast-ratio walker (handles the app's oklch-based Tailwind v4 palette by resolving computed
+    colors through a `<canvas>` fill, not by assuming v3 hex values) that scans every leaf text
+    node, resolves its effective background by walking up through ancestors for the first non-
+    transparent `background-color`, and flags anything under 4.5:1 (or 3:1 for large/bold text).
+    Ran it across the Dashboard, all 9 other main views (Blueprints, Feature Manifests,
+    Scaffolding Wizard, Architecture Rules, Tech Stacks, AI & Prompts, Plugins, Decision Logs,
+    Impact Analyzer), the expanded Project Advisor panel, the Command Palette, AI Assistant
+    Drawer, Org/Workspace modal, and the mobile Sidebar drawer at 375px — zero automated
+    violations found in any of them; this app's dark-IDE theme already keeps body/label text at
+    gray-400 or lighter against its custom dark surface colors, which clears AA with comfortable
+    margin (6.3-9.9:1 measured on badges, ghost buttons, and default UI text sampled by hand).
+    Also hand-checked disabled buttons/badges and placeholder text specifically since the task
+    called them out and leaf-text-only DOM walking can't see `::placeholder` pseudo-elements:
+    - **Genuine failure found and fixed**: `placeholder:text-gray-500` (shared
+      `Input`/`Textarea`/`Select` base classes) and three ad-hoc `placeholder-gray-500` search
+      bars that didn't go through the shared component (Decision Logs, Feature Manifests,
+      Plugins) measured **3.6-3.8:1** against their actual dark backgrounds (`#13151b`,
+      `#181a20`) — below the 4.5:1 AA threshold for normal text, verified against the real
+      resolved oklch→RGB value (`rgb(106,114,130)`), not an assumed hex. Bumped to `gray-400`
+      (`rgb(153,161,175)`) in all four spots; re-measured at **6.3-7.0:1**, comfortably passing,
+      confirmed live via `getComputedStyle(input, '::placeholder')` after the fix and visually
+      via screenshot — still reads as muted relative to the `gray-200` input text, no loss of
+      hierarchy.
+    - **Checked, left alone**: disabled button text (`Button.tsx`'s `disabled:text-gray-500` /
+      `disabled:text-gray-600` variants) measured 2.5-3.4:1 depending on variant — genuinely below
+      AA, but WCAG 1.4.3 explicitly exempts inactive/disabled UI components from the contrast
+      requirement, and this task's own instructions said to fix only genuine AA failures without a
+      wholesale redesign. Left as-is rather than blur the enabled/disabled visual distinction for
+      a control that carries no compliance obligation.
+- Verification:
+  - `npm run lint` — clean.
+  - `rm -rf .next && npm run build` — clean production build, no errors.
+  - `npm run test` — 134/134 passing across 23 files, no regression from the prior session's
+    count.
+  - Playwright, live against `next dev` (port 3001 — 3000 was already in use by a stale process,
+    which was also cleaned up): confirmed one Tab press reveals and focuses the skip link
+    (`rect.top: 8`, fully in-viewport) and is fully off-screen (`rect.top: -56`, `rect.bottom <=
+    0`) when not focused; confirmed Enter on the focused skip link moves `document.activeElement`
+    to `<main id="main-content">`; confirmed the placeholder-color fix actually renders
+    (`getComputedStyle(input, '::placeholder').color` resolves to `rgb(153,161,175)` post-fix, not
+    just present in source); re-ran the full-page contrast scan after the fix on Decision Logs to
+    confirm zero regressions.
+- Found but needs your approval: none — both changes are small, reversible, no new dependency.
+- Blocked on: nothing.
+- Next step if continuing: no further concrete follow-ups remain from the explicit accessibility
+  punch list. Fall back to general review/improvement mode (skill §2/§2a) — candidates noted by
+  prior sessions: deeper interaction-level review of `ProjectScaffolderView.tsx` /
+  `AIPromptsView.tsx` beyond Playwright smoke passes, or the `initialAIProviders`
+  `costPer1k`/`latency` placeholder-numbers note from Phase 1.
+
 ## Improvement-mode session — accessibility & keyboard navigation (2026-08-17)
 
 Continued improvement mode after the mobile-picker/test-coverage cycle. This time picked
