@@ -2,6 +2,37 @@
 
 Autonomous work log. Newest session on top.
 
+## Friendlier AI provider error messages (2026-08-17)
+
+User hit a `502 (Bad Gateway)` from `/api/ai/generate` while testing their own Gemini API key.
+Diagnosed via the dev server log: `getaddrinfo ENOTFOUND generativelanguage.googleapis.com` —
+this sandbox has no outbound internet access, so the real API call fails at DNS resolution, not
+a code bug. Confirmed the app already degrades gracefully (no crash — `AIService.testConnection`
+surfaces the failure as a readable status message), but the message itself was the generic,
+unhelpful Node string `"fetch failed"`, identical to what a genuinely-bad API key or model id
+would also produce — impossible to tell apart without reading server logs. Commit `b9ae20c`.
+
+- Did:
+  - Added `isNetworkError()` and `friendlyProviderErrorMessage()` to `aiProviderRouting.ts`.
+    Detects the network-failure class via Node fetch's nested `err.cause.code` (`ENOTFOUND`,
+    `ECONNREFUSED`, `ETIMEDOUT`, `EAI_AGAIN`, `ECONNRESET`) or the bare `"fetch failed"` message,
+    and produces `"Could not reach {provider} — check your network/internet connection..."`
+    instead. A genuine provider-side rejection (bad key, bad model, rate limit) keeps its real
+    message, just consistently prefixed with the provider name.
+  - Wired into both error paths in `app/api/ai/generate/route.ts`: the Gemini SDK call and the
+    generic fetch-based path shared by OpenAI/Anthropic/DeepSeek/Azure OpenAI/Ollama.
+  - Added 6 new unit tests in `aiProviderRouting.test.ts` covering both functions.
+  - Verified: `npm run lint` clean, `npm run test` 148/148 passing (up from 142), `npm run build`
+    clean (stopped the dev server first this time before `rm -rf .next`, to avoid repeating the
+    500 I caused earlier this session by deleting `.next` while `next dev` was still using it).
+  - Also flagged to the user directly (not fixed, out of scope of this report's ask): the
+    Gemini model id they're using, `gemma-4-26b-a4b-it`, doesn't match any real model listed at
+    ai.google.dev/gemma — worth double-checking once they test with real internet access,
+    otherwise they'll swap a DNS error for a "model not found" error from Google's API.
+- Playwright MCP status: still unavailable as of this entry (see prior entry) — this cycle's
+  verification was lint/test/build only, no visual check was needed since this was a pure
+  server-side/error-message change with no UI markup touched.
+
 ## Responsive layout fix — laptop-width breakage (2026-08-17)
 
 User-reported directly: "o design não se ajusta bem à tela" (the design doesn't adapt well to
