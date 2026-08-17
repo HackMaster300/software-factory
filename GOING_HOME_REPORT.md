@@ -2,6 +2,45 @@
 
 Autonomous work log. Newest session on top.
 
+## Responsive layout fix — laptop-width breakage (2026-08-17)
+
+User-reported directly: "o design não se ajusta bem à tela" (the design doesn't adapt well to
+the screen). Investigated live in the browser across viewport widths and found two real,
+distinct responsive bugs, both in the 1024-1366px laptop range — commit `94a4470`.
+
+- Did:
+  - **Header title wrap**: `Header.tsx`'s active-view breadcrumb span had no width limit, so it
+    wrapped to 2-3 lines at laptop widths, growing header height and squeezing/hiding the
+    search bar. Fixed with `truncate` + `max-w-[220px]`, and moved it (plus the inline
+    org/workspace picker and full action-button text labels) behind `xl` (1280px) instead of
+    `lg`/`md`, so the header only shows what reliably fits below that.
+  - **Search bar as an overflow safety valve**: changed the command-palette search button from a
+    fixed per-breakpoint width to `flex-1 min-w-11` with per-breakpoint `max-w-*`, so it
+    compresses under pressure instead of forcing the header into horizontal overflow if a
+    breakpoint budget is ever slightly off in the future.
+  - **Squeezed main content column**: `Sidebar` (224px) and `ProjectAdvisorPanel` (320px) both
+    went static/inline at the same `lg` (1024px) breakpoint, leaving as little as ~480px for
+    actual page content — confirmed visually wrapping card titles and grid labels badly (e.g.
+    "Setting Change Compatibility & Impact Radar" wrapped 3 lines). Moved the Advisor panel's
+    static-inline breakpoint from `lg` to `xl` (1280px) in `app/page.tsx` and
+    `ProjectAdvisorPanel.tsx`; below that it now uses its existing togglable bottom-sheet-overlay
+    behavior (already built for mobile) rather than permanently docking. Updated the matching
+    `ADVISOR_DESKTOP_QUERY` matchMedia string from 1024px to 1280px so the default-open-on-
+    desktop logic stays in sync.
+  - Verified: `npm run lint` clean, `npm run test` 142/142 passing, `npm run build` clean, and a
+    `curl` sanity check confirming the server-rendered HTML actually contains the new Tailwind
+    classes (`xl:flex`, `flex-1 min-w-11 ... max-w-72`, etc.).
+- **Known gap, honestly flagged**: could not complete a live Playwright visual re-verification
+  this cycle. While fixing an unrelated dev-server hang, a large backlog of orphaned `node.exe`
+  processes (dozens, accumulated over this long session's many `npm test`/`build`/`dev` runs)
+  was cleared with `Stop-Process`, which also killed the Playwright MCP server's process — it
+  did not reconnect automatically and is unavailable as of this entry. The fix itself is backed
+  by lint/test/build passing and a source-to-rendered-HTML class check, but the actual visual
+  layout at 1024/1366/1920px has not been screenshotted post-fix. **Next step if continuing**:
+  once Playwright reconnects (may need the user to restart the MCP server/session), re-run the
+  same viewport walk (1024, 1366, 1920, 768, 375) done earlier this cycle to confirm the header
+  no longer overflows and the main content column no longer squeezes between 1024-1279px.
+
 ## Improvement-mode session — AIService test coverage (2026-08-17)
 
 Closed the last remaining explicitly-flagged coverage gap: `services/aiService.ts` had no
