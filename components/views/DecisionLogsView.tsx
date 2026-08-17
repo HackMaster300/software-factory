@@ -117,7 +117,7 @@ export const DecisionLogsView: React.FC<DecisionLogsViewProps> = ({ openAIRefact
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search decision logs by keyword, author, or reason..."
-              className="w-full bg-transparent text-gray-100 focus:outline-none text-xs placeholder-gray-500"
+              className="w-full bg-transparent text-gray-100 focus:outline-none text-xs placeholder-gray-400"
             />
           </div>
 

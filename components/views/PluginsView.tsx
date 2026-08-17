@@ -109,7 +109,7 @@ export const PluginsView: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search plugins by name or category..."
-            className="w-full bg-transparent text-gray-100 focus:outline-none text-xs placeholder-gray-500"
+            className="w-full bg-transparent text-gray-100 focus:outline-none text-xs placeholder-gray-400"
           />
         </div>
       )}
