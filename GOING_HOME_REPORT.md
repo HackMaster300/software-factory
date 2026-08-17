@@ -2,6 +2,34 @@
 
 Autonomous work log. Newest session on top.
 
+## Improvement-mode session — AIService test coverage (2026-08-17)
+
+Closed the last remaining explicitly-flagged coverage gap: `services/aiService.ts` had no
+dedicated test file (the other service files under `services/` all do).
+
+- Did:
+  - Added `services/aiService.test.ts` (`a8de3ea`), mocking `global.fetch` — no real network
+    calls. Covers `requestAnalysis` (routes to Google Gemini with no key when no provider is
+    marked active; routes to whichever provider has `isActiveDefault: true`, forwarding its
+    key/model/baseUrl and the caller's `role`; falls back to the canned `Fallback Analysis` with
+    `isSimulated: true` both when `fetch` throws and when the response body carries an `error`
+    field on an otherwise-ok HTTP status) and `testConnection` (honest success/failure reporting:
+    real non-simulated response → success; server had to return a simulated fallback → reported
+    as failure with an explanatory message, not a false positive; non-ok HTTP → surfaces the
+    server's error message; `fetch` rejecting outright → never throws, returns a failure result).
+  - Verified: `npm run lint` clean, `npm run test` now 142/142 passing (up from 134 — 8 new
+    tests), no regressions to the existing suite.
+- Remaining coverage note: `services/mockSeedData.ts` and `services/storageService.ts` still have
+  no dedicated test file, but both are exercised indirectly and extensively by every other test
+  file's `beforeEach(() => window.localStorage.clear())` + repository round-trips — a standalone
+  test file for either would mostly duplicate existing coverage rather than close a real gap.
+- Next step if continuing: no explicitly-flagged accessibility/testing items remain open. Good
+  candidates for the next cycle: a genuine new feature/UX improvement (per the skill's
+  improvement-mode mandate — e.g. search/filter across the Blueprints or Decision Logs views,
+  keyboard shortcuts beyond the existing Command Palette, or a loading/error-state pass on the
+  AI Assistant drawer for slow/failed provider responses), or a fresh architecture/design review
+  pass now that a full review-mode cycle hasn't been done in several sessions.
+
 ## Improvement-mode session — skip link + color-contrast audit (2026-08-17)
 
 Picked up the two accessibility items explicitly flagged as not-yet-done at the end of the prior
