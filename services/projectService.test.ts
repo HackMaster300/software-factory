@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ProjectService } from './projectService';
+import type { Project, Blueprint } from '../types/factory';
 
 // Access the private static sanitizer directly — it's the exact regression guard
 // for the Zip Slip fix (CWE-22) made earlier: node names from user-editable module
@@ -23,5 +24,154 @@ describe('ProjectService.sanitizeZipEntryName (Zip Slip regression guard)', () =
   it('never returns an empty string', () => {
     expect(sanitize('..')).not.toBe('');
     expect(sanitize('')).not.toBe('');
+  });
+});
+
+const baseBlueprint: Blueprint = {
+  id: 'bp-project-test',
+  name: 'Project Test Blueprint',
+  description: '',
+  architectureStyle: 'CleanArchitecture',
+  techStackId: 'stack-dotnet9',
+  projects: [],
+  featureIds: [],
+  disabledAutoFeatures: [],
+  ruleSetId: 'ruleset-clean-arch',
+  profiles: {
+    securityProfileId: 'sec-prof-jwt',
+    databaseProfileId: 'db-prof-pg',
+    dockerProfileId: 'docker-prof-prod',
+    cacheProfileId: 'cache-prof-redis',
+    loggingProfileId: 'log-prof-opentelemetry',
+  },
+};
+
+const makeProject = (id: string, name: string): Project => ({
+  id,
+  name,
+  slug: name.toLowerCase().replace(/\s+/g, '-'),
+  description: '',
+  organizationId: 'org-1',
+  workspaceId: 'ws-1',
+  templateId: 'tmpl-1',
+  blueprint: baseBlueprint,
+  status: 'draft',
+  createdAt: '2026-01-01',
+  updatedAt: '2026-01-01',
+  customConfig: {},
+});
+
+describe('ProjectService CRUD', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('starts genuinely empty', () => {
+    expect(ProjectService.getProjects()).toEqual([]);
+  });
+
+  it('saveProject creates a new project when its id is not already present', () => {
+    ProjectService.saveProject(makeProject('proj-a', 'Project A'));
+    expect(ProjectService.getProjects()).toHaveLength(1);
+    expect(ProjectService.getProjectById('proj-a')?.name).toBe('Project A');
+  });
+
+  it('saveProject updates in place rather than duplicating when the id already exists', () => {
+    ProjectService.saveProject(makeProject('proj-a', 'Project A'));
+    const updated = { ...makeProject('proj-a', 'Project A'), name: 'Project A Renamed' };
+    ProjectService.saveProject(updated);
+
+    const all = ProjectService.getProjects();
+    expect(all).toHaveLength(1);
+    expect(all[0].name).toBe('Project A Renamed');
+  });
+
+  it('getProjectById returns undefined for an id that does not exist', () => {
+    expect(ProjectService.getProjectById('does-not-exist')).toBeUndefined();
+  });
+});
+
+describe('ProjectService.getEnvPresetsForStack', () => {
+  it('returns C#-specific env vars for the csharp language', () => {
+    const vars = ProjectService.getEnvPresetsForStack('stack-dotnet9', 'csharp');
+    expect(vars.some((v) => v.key === 'ASPNETCORE_ENVIRONMENT')).toBe(true);
+  });
+
+  it('returns Node/TypeScript-specific env vars for the typescript language', () => {
+    const vars = ProjectService.getEnvPresetsForStack('stack-nextjs', 'typescript');
+    expect(vars.some((v) => v.key === 'NODE_ENV')).toBe(true);
+    expect(vars.some((v) => v.key === 'ASPNETCORE_ENVIRONMENT')).toBe(false);
+  });
+
+  it('returns Python-specific env vars for the python language', () => {
+    const vars = ProjectService.getEnvPresetsForStack('stack-python-fastapi', 'python');
+    expect(vars.some((v) => v.key === 'FASTAPI_ENV')).toBe(true);
+  });
+
+  it('returns a generic fallback preset for an unrecognized language', () => {
+    const vars = ProjectService.getEnvPresetsForStack('stack-does-not-exist', 'cobol');
+    expect(vars.some((v) => v.key === 'PORT')).toBe(true);
+    expect(vars.some((v) => v.key === 'DATABASE_URL')).toBe(true);
+  });
+});
+
+describe('ProjectService.generateSolutionPreview', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('builds a solution tree with root files, a src folder, and a .vscode folder', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'p-core', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'p-api', name: 'App.Api', type: 'API', references: ['p-core'], description: '' },
+      ],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+
+    expect(preview.solutionName).toBe('Acme.Test.sln');
+    expect(preview.solutionTree.some((n) => n.name === 'src')).toBe(true);
+    expect(preview.solutionTree.some((n) => n.name === '.vscode')).toBe(true);
+    expect(preview.solutionTree.some((n) => n.name === 'README.md')).toBe(true);
+    expect(preview.projectReferencesCount).toBe(1);
+  });
+
+  it('adds .env / .env.example when useEnvFile is true, and appsettings.json instead when false', () => {
+    const blueprint: Blueprint = { ...baseBlueprint, projects: [] };
+
+    const withEnv = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test', true);
+    const withoutEnv = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test', false);
+
+    expect(withEnv.solutionTree.some((n) => n.name === '.env')).toBe(true);
+    expect(withEnv.solutionTree.some((n) => n.name === '.env.example')).toBe(true);
+    expect(withoutEnv.solutionTree.some((n) => n.name === '.env')).toBe(false);
+    expect(withoutEnv.solutionTree.some((n) => n.name === 'appsettings.json')).toBe(true);
+    // The env-file variant has 2 more root files than the appsettings-only variant.
+    expect(withEnv.estimatedFileCount).toBeGreaterThan(withoutEnv.estimatedFileCount);
+  });
+
+  it('collects package dependencies from both blueprint module packages and active feature-generated packages', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'p-infra', name: 'App.Infrastructure', type: 'Infrastructure', references: [], description: '', packages: [{ name: 'Serilog', version: '3.0.0' }] },
+      ],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    expect(preview.allPackages.some((p) => p.name === 'Serilog')).toBe(true);
+    expect(preview.packageDependenciesCount).toBe(preview.allPackages.length);
+  });
+
+  it('uses custom env vars over the language defaults when provided', () => {
+    const blueprint: Blueprint = { ...baseBlueprint, projects: [] };
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test', true, [
+      { key: 'CUSTOM_FLAG', value: 'on', description: 'A custom test flag' },
+    ]);
+    const envFile = preview.solutionTree.find((n) => n.name === '.env');
+    expect(envFile?.contentSnippet).toContain('CUSTOM_FLAG');
+    expect(envFile?.contentSnippet).not.toContain('DATABASE_URL');
   });
 });
