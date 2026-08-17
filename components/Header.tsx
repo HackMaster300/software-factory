@@ -124,8 +124,55 @@ export const Header: React.FC<HeaderProps> = ({
     impact: 'Compatibility & Setting Change Analyzer',
   };
 
+  const orgWorkspacePicker = (
+    <>
+      <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340] flex-1 min-w-0 md:flex-none">
+        <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+        {orgs.length > 0 ? (
+          <select
+            value={selectedOrgId}
+            onChange={(e) => setSelectedOrgId(e.target.value)}
+            aria-label="Active organization"
+            className="bg-transparent text-gray-200 focus:outline-none cursor-pointer min-w-0 w-full"
+          >
+            {orgs.map((o) => (
+              <option key={o.id} value={o.id} className="bg-[#1c1f26] text-gray-200">
+                {o.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-gray-500 italic truncate">No organization yet</span>
+        )}
+      </div>
+
+      <ChevronRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+
+      <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340] flex-1 min-w-0 md:flex-none">
+        <FolderGit2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+        {scopedWorkspaces.length > 0 ? (
+          <select
+            value={selectedWsId}
+            onChange={(e) => setSelectedWsId(e.target.value)}
+            aria-label="Active workspace"
+            className="bg-transparent text-gray-200 focus:outline-none cursor-pointer min-w-0 w-full"
+          >
+            {scopedWorkspaces.map((w) => (
+              <option key={w.id} value={w.id} className="bg-[#1c1f26] text-gray-200">
+                {w.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-gray-500 italic truncate">No workspace yet</span>
+        )}
+      </div>
+    </>
+  );
+
   return (
-    <header className="h-14 bg-[#14161b] border-b border-[#2a2e39] flex items-center justify-between px-4 text-sm text-gray-200 select-none z-30 sticky top-0">
+    <div className="sticky top-0 z-30">
+    <header className="h-14 bg-[#14161b] border-b border-[#2a2e39] flex items-center justify-between px-4 text-sm text-gray-200 select-none">
       {/* Left branding & Workspace selector */}
       <div className="flex items-center gap-3">
         <button
@@ -144,52 +191,16 @@ export const Header: React.FC<HeaderProps> = ({
           <Badge tone="brand" className="normal-case hidden sm:inline-flex">IDE v2.5</Badge>
         </div>
 
-        {/* Org & Workspace Picker */}
-        <div className="hidden md:flex items-center gap-2 text-xs">
-          <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340]">
-            <Building2 className="w-3.5 h-3.5 text-gray-400" />
-            {orgs.length > 0 ? (
-              <select
-                value={selectedOrgId}
-                onChange={(e) => setSelectedOrgId(e.target.value)}
-                className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
-              >
-                {orgs.map((o) => (
-                  <option key={o.id} value={o.id} className="bg-[#1c1f26] text-gray-200">
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-gray-500 italic">No organization yet</span>
-            )}
-          </div>
-
-          <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-
-          <div className="flex items-center gap-1.5 text-gray-400 bg-[#1c1f26] px-2.5 py-1 rounded border border-[#2e3340]">
-            <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
-            {scopedWorkspaces.length > 0 ? (
-              <select
-                value={selectedWsId}
-                onChange={(e) => setSelectedWsId(e.target.value)}
-                className="bg-transparent text-gray-200 focus:outline-none cursor-pointer"
-              >
-                {scopedWorkspaces.map((w) => (
-                  <option key={w.id} value={w.id} className="bg-[#1c1f26] text-gray-200">
-                    {w.name}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-gray-500 italic">No workspace yet</span>
-            )}
-          </div>
-        </div>
+        {/* Org & Workspace Picker: desktop-inline here at md+; below md it
+            moves to a dedicated full-width bar under the main header row
+            (see orgWorkspacePicker usage below) so it stays reachable and
+            usable without crowding the icon-only mobile header. */}
+        <div className="hidden md:flex items-center gap-2 text-xs">{orgWorkspacePicker}</div>
 
         {/* Manage Organizations & Workspaces: kept reachable below md even
-            though the picker itself is hidden there, since it's the only
-            way to reach the create/edit/delete modal for either entity. */}
+            though the picker itself moves to the row below there, since it's
+            the only way to reach the create/edit/delete modal for either
+            entity. */}
         <Button
           variant="ghost"
           size="icon"
@@ -314,5 +325,17 @@ export const Header: React.FC<HeaderProps> = ({
 
       <OrganizationWorkspaceModal isOpen={isOrgModalOpen} onClose={() => setIsOrgModalOpen(false)} />
     </header>
+
+    {/* Org & Workspace Picker (mobile/tablet): the header row above is too
+        cramped below md for the inline picker, but switching the active
+        org/workspace has to stay reachable at every width — so it moves to
+        its own full-width bar directly under the header, matching the
+        existing pattern of "same control, different placement per
+        breakpoint" already used for Sidebar (drawer below lg) and the
+        Advisor panel (bottom sheet below lg). */}
+    <div className="md:hidden flex items-center gap-2 text-xs px-4 py-2 bg-[#14161b] border-b border-[#2a2e39]">
+      {orgWorkspacePicker}
+    </div>
+    </div>
   );
 };
