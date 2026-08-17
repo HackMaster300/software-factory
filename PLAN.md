@@ -308,11 +308,14 @@ workspace end-to-end. Zero console errors across all checks.
       "Manage Organizations & Workspaces" gear button (the only way to open
       `OrganizationWorkspaceModal`) was nested inside the same `hidden md:flex` wrapper as the
       org/workspace pickers, making it unreachable below 768px; pulled it out so it's always
-      visible — `3da0ad9`. Known remaining gap (explicitly flagged, not silently left): the
-      org/workspace `<select>` pickers themselves are still `hidden md:flex` from Phase 2a, so
-      switching the active org/workspace (as opposed to creating/editing/deleting one) still
-      requires `md`+ width — fixing that means an information-architecture change, out of scope
-      for a layout-only Tailwind-classes pass.
+      visible — `3da0ad9`. **Resolved (2026-08-17, `9583293`, post-Phase-6 improvement-mode
+      session):** the org/workspace `<select>` pickers are now reachable and usable below `md`
+      width too — the picker markup was extracted into a shared fragment rendered inline in the
+      header at `md`+ (unchanged) and in a new full-width bar directly under the header below
+      `md`, matching the existing per-breakpoint-placement pattern already used for the Sidebar
+      drawer and Advisor bottom sheet. Verified via Playwright at 375x812 (created and switched
+      between two organizations/workspaces from the new mobile bar), 768x1024, and 1440x900 (zero
+      regression, header height and desktop layout unchanged).
 - [x] Playwright verification at all 3 breakpoints (375x812, 768x1024, 1440x900) after every one of
       the 5 commits above, plus a final sweep loading all 10 views individually at 375x812 and the
       largest/most complex view (`ProjectScaffolderView`) at 768x1024 — zero horizontal overflow,
@@ -387,6 +390,12 @@ explicit approval per the Execution mode section above.
 
 (Newest entry on top. One line per phase milestone, with commit hash.)
 
+- 2026-08-17 — **Post-Phase-6 improvement mode**: fixed the org/workspace picker mobile
+  reachability gap flagged in Phase 5 (`9583293`) — pickers now render in a dedicated full-width
+  bar below the header at <`md` widths, verified via Playwright at 375x812/768x1024/1440x900 with
+  zero regression. Extended Vitest coverage to `blueprintService`, `impactService`, and
+  `projectService`'s remaining untested methods (`ad07250`) — 134/134 tests passing across 23
+  files (36 new), no new bugs found. Lint clean, build clean throughout.
 - 2026-08-17 — **Phase 6 complete — realignment plan (Phases 0-6) finished.** Added missing
   repository/service test coverage (`457e40c`, `214a167`, `9e7ad40`). Found and fixed two real bugs
   surfaced by user-reported "scores never change": (1) Advisor quality scores flat-summed feature

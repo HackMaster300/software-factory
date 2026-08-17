@@ -2,6 +2,77 @@
 
 Autonomous work log. Newest session on top.
 
+## Improvement-mode session — mobile picker fix + test coverage (2026-08-17)
+
+With the realignment plan (Phases 0-6) complete and no active phase in `PLAN.md`, picked up the
+two concrete follow-ups it left open: the Phase-5-flagged org/workspace picker mobile gap, and
+extending Vitest coverage to the remaining untested services.
+
+- Did:
+  - **Fixed the org/workspace picker mobile reachability gap** (`components/Header.tsx`,
+    `9583293`). Phase 5 had already pulled the "Manage Organizations & Workspaces" gear button out
+    of the `hidden md:flex` wrapper so the CRUD modal was reachable below 768px, but the `<select>`
+    pickers themselves stayed `md`+-only — so a user could create/edit/delete orgs and workspaces
+    on mobile but never actually switch the active one. Extracted the picker markup (org select +
+    chevron + workspace select) into a shared `orgWorkspacePicker` JSX fragment and render it
+    twice: inline in the header row at `md`+ (byte-for-byte the same as before), and in a new
+    full-width bar directly under the header, `md:hidden`, below `md`. This matches the existing
+    "same control, different placement per breakpoint" pattern already established by the Sidebar
+    (off-canvas drawer below `lg`) and Advisor panel (bottom sheet below `lg`) — no new visual
+    language invented. Both instances read/write the same `selectedOrgId`/`selectedWsId` state, so
+    they always stay in sync regardless of which one the user interacts with.
+  - **Extended Vitest coverage to the three remaining untested services**
+    (`services/blueprintService.test.ts` new, `services/impactService.test.ts` new,
+    `services/projectService.test.ts` extended; `ad07250`). Read each file in full before writing
+    tests, per instruction. `blueprintService.ts` (509 lines) got the most thorough coverage:
+    every tech-stack/architecture-style branch of `getProjectsForTechStackAndArchStyle`
+    (Hexagonal/Microservices/CQRS variants where they exist, confirmed single-fixed-layout stacks
+    ignore architecture style entirely, unknown-stack-id fallback to the .NET default), and
+    `suggestPackagesFromDescription`'s keyword-driven per-language branching (csharp/typescript/
+    python/java/go) including `targetModuleId` resolution against a caller-supplied projects list.
+    `impactService.ts` (98 lines) got a deliberately light smoke test, per its own description as
+    a pure canned-copy generator — same-provider no-op, Docker-vs-generic feature-toggle
+    branching, Added/Removed/Modified action correctness. `projectService.ts` already had Zip Slip
+    sanitizer coverage from an earlier session; added `saveProject` create-vs-update-in-place,
+    `getProjectById`, `getEnvPresetsForStack`'s per-language branches, and
+    `generateSolutionPreview`'s env-file/appsettings branching and package aggregation from both
+    blueprint-module packages and active-feature-generated packages.
+  - Stayed alert for the class of bug the prior session found (shared mutable default-seed
+    references) while writing these tests — none of the three files touch `StorageService`
+    defaults in a way that could reproduce it (`blueprintService`/`impactService` are pure
+    functions with no storage access at all; `projectService`'s `saveProject` already goes through
+    the same repository `getProjects()`/`saveProjects()` round-trip already covered by
+    `project.repository.test.ts`). No new bugs found in this pass.
+- Verification:
+  - `npm run lint` — clean, zero warnings, after both the Header change and the new test files.
+  - `npm run build` — clean after `rm -rf .next`.
+  - `npm run test` — 134/134 passing across 23 files (36 net new), confirmed via an isolated run
+    with no concurrent dev server/build (an earlier run done while a `next start` + `next build`
+    were both active concurrently showed spurious `vitest-pool` worker-fork crashes purely from
+    resource contention on this machine — not a real issue; re-ran in isolation for a clean
+    signal).
+  - **Playwright, from `localStorage.clear()`, against a production build**: at 375x812, opened
+    the org/workspace management modal (still reachable via the gear button per Phase 5), created
+    an organization and a workspace, and confirmed the new mobile picker bar under the header
+    showed working `<select>` controls (not just static "No organization/workspace yet" text);
+    created a second organization and switched the active org directly from the mobile bar's
+    select (confirmed via `document.querySelectorAll` that both the hidden desktop select and the
+    visible mobile select share the same value, proving one shared state, not two independently
+    stale copies); confirmed zero horizontal overflow (`scrollWidth === clientWidth`) and zero
+    console errors at 375x812 both on first load and after a `localStorage.clear()` + reload
+    cycle. At 768x1024, confirmed the desktop inline picker becomes the visible one and the mobile
+    bar's copy is `offsetParent === null` (i.e., genuinely hidden, not just visually overlapping),
+    zero overflow. At 1440x900, confirmed the mobile bar stays hidden, header height is unchanged
+    at 56px (`h-14`), and zero overflow — full desktop-layout regression check passed.
+- Found but needs your approval: none — both changes were local, reversible, no new dependency.
+- Blocked on: nothing.
+- Next step if continuing: no further concrete follow-ups remain from prior sessions. Fall back to
+  general review/improvement mode (skill §2/§2a) — e.g. a deeper pass over the largest untested UI
+  surfaces (`ProjectScaffolderView.tsx`, `AIPromptsView.tsx`) for interaction-level bugs beyond
+  what Playwright smoke passes have already covered, or revisiting the `initialAIProviders`
+  `costPer1k`/`latency` placeholder-numbers note flagged (and deliberately left alone) back in
+  Phase 1.
+
 ## Phase 6 complete — realignment plan (Phases 0-6) finished (2026-08-17)
 
 **Detected stack:** Next.js 15 (App Router) / React 19 / TypeScript / Tailwind v4
