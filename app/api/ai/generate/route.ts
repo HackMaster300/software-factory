@@ -5,6 +5,7 @@ import {
   buildProviderRequest,
   extractProviderErrorMessage,
   extractResponseText,
+  friendlyProviderErrorMessage,
 } from '../../../../services/aiProviderRouting';
 
 const ALLOWED_PROVIDERS: AIProviderName[] = [
@@ -162,8 +163,7 @@ export async function POST(req: NextRequest) {
         const result = await callGemini(resolvedKey, model as string | undefined, prompt, resolvedSystemInstruction);
         return NextResponse.json(result);
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        return NextResponse.json({ error: `Gemini request failed: ${message}` }, { status: 502 });
+        return NextResponse.json({ error: friendlyProviderErrorMessage(err, 'Gemini') }, { status: 502 });
       }
     }
 
@@ -189,9 +189,8 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify(built.body),
       });
     } catch (networkErr) {
-      const message = networkErr instanceof Error ? networkErr.message : String(networkErr);
       return NextResponse.json(
-        { error: `Request to ${typedProvider} failed: ${message}` },
+        { error: friendlyProviderErrorMessage(networkErr, typedProvider) },
         { status: 502 }
       );
     }

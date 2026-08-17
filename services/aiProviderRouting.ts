@@ -139,3 +139,28 @@ export function extractProviderErrorMessage(json: any, status: number, statusTex
     `HTTP ${status}`
   );
 }
+
+const NETWORK_ERROR_CODES = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNRESET']);
+
+/**
+ * Node's fetch collapses every low-level connection failure (DNS lookup
+ * failed, connection refused, timed out...) into the same generic
+ * "fetch failed" Error, with the actual reason nested in `.cause.code`.
+ * Detects that class of failure so callers can show "can't reach the
+ * network" instead of a cryptic "fetch failed" — distinct from a request
+ * that reached the provider and got rejected (bad key, bad model, etc).
+ */
+export function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const code = (err as Error & { cause?: { code?: string } }).cause?.code;
+  return (code !== undefined && NETWORK_ERROR_CODES.has(code)) || err.message === 'fetch failed';
+}
+
+/** Wraps a caught provider-request error into a message that tells network failures apart from provider-side rejections. */
+export function friendlyProviderErrorMessage(err: unknown, providerName: string): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (isNetworkError(err)) {
+    return `Could not reach ${providerName} — check your network/internet connection (no outbound access from a sandboxed environment counts as this too).`;
+  }
+  return `${providerName} request failed: ${message}`;
+}

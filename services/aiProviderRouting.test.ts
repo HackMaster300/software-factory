@@ -3,6 +3,8 @@ import {
   buildProviderRequest,
   extractResponseText,
   extractProviderErrorMessage,
+  isNetworkError,
+  friendlyProviderErrorMessage,
   DEFAULT_BASE_URLS,
 } from './aiProviderRouting';
 
@@ -201,5 +203,42 @@ describe('extractProviderErrorMessage', () => {
   it('falls back to statusText, then a generic HTTP status message', () => {
     expect(extractProviderErrorMessage({}, 500, 'Internal Server Error')).toBe('Internal Server Error');
     expect(extractProviderErrorMessage(null, 503, '')).toBe('HTTP 503');
+  });
+});
+
+describe('isNetworkError', () => {
+  it('recognizes a Node fetch failure carrying a DNS-lookup cause code (e.g. sandboxed/offline environments)', () => {
+    const err = new Error('fetch failed');
+    (err as Error & { cause?: unknown }).cause = { code: 'ENOTFOUND' };
+    expect(isNetworkError(err)).toBe(true);
+  });
+
+  it('recognizes the bare "fetch failed" message even without a structured cause', () => {
+    expect(isNetworkError(new Error('fetch failed'))).toBe(true);
+  });
+
+  it('does not flag a provider-side rejection (bad key/model) as a network error', () => {
+    expect(isNetworkError(new Error('404 Not Found: model not found'))).toBe(false);
+  });
+
+  it('returns false for non-Error values', () => {
+    expect(isNetworkError('some string')).toBe(false);
+    expect(isNetworkError(undefined)).toBe(false);
+  });
+});
+
+describe('friendlyProviderErrorMessage', () => {
+  it('produces a "could not reach" message for network failures, naming the provider', () => {
+    const err = new Error('fetch failed');
+    (err as Error & { cause?: unknown }).cause = { code: 'ENOTFOUND' };
+    expect(friendlyProviderErrorMessage(err, 'Gemini')).toBe(
+      'Could not reach Gemini — check your network/internet connection (no outbound access from a sandboxed environment counts as this too).'
+    );
+  });
+
+  it('preserves the underlying message for a non-network provider-side error', () => {
+    expect(friendlyProviderErrorMessage(new Error('Invalid API key'), 'OpenAI')).toBe(
+      'OpenAI request failed: Invalid API key'
+    );
   });
 });
