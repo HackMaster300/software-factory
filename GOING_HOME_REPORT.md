@@ -29,10 +29,39 @@ Autonomous work log. Newest session on top.
   markup-only fix, no new test file), `npm run build` clean (stopped the dev server via
   `taskkill` on the PID bound to port 3000 before deleting `.next`, same precaution as last
   session).
-- Next step if continuing: move into improvement-mode feature work — no other explicitly-flagged
-  gaps remain open. Good candidates per the last two entries' suggestions: search/filter across
-  Blueprints or Decision Logs views, keyboard shortcuts beyond the Command Palette, or a
-  loading/error-state pass on the AI Assistant drawer for slow/failed provider responses.
+- Moved into improvement mode. Checked the two remaining candidates from the last entry before
+  building anything new:
+  - **Search/filter across Blueprints/Decision Logs** — already done. `DecisionLogsView.tsx` and
+    `FeatureManifestsView.tsx` both already have a working search box (and category pills on
+    Features); `BlueprintsView.tsx` isn't a list at all, it's a single-blueprint editor, so a
+    search box doesn't apply there. Stale suggestion from an earlier session, correcting the
+    record here so it doesn't get re-suggested.
+  - **AI Assistant drawer loading/error states** — already adequate. `AIService.requestAnalysis`
+    never rejects (verified in `aiService.test.ts` from the 2026-08-17 coverage cycle); it always
+    resolves to either a real response or a simulated fallback, and the drawer already shows a
+    `Loader2` spinner while awaiting and an "Offline Mode" badge on simulated responses. No real
+    gap to close.
+  - **New features/improvements added:** implemented the third candidate instead — **Command
+    Palette keyboard navigation** (`components/CommandPalette.tsx`, `19bc6cd`). The palette's own
+    footer advertised "↑↓ navigate / ↵ select" as working shortcuts, but the list was mouse-only;
+    arrow keys and Enter did nothing. Added `highlightedIndex` state wired to ArrowUp/ArrowDown/
+    Enter on the search input (reset to 0 on every query change so it always points at a valid
+    filtered result), matching highlight styling to the existing hover treatment, and proper
+    `combobox`/`listbox`/`option` ARIA wiring (`aria-activedescendant`, `aria-selected`) so
+    keyboard and screen-reader users track the same selection. This closes a real UI-promises-
+    something-it-doesn't-deliver gap, not a cosmetic addition.
+- Verified: `npm run lint` clean, `npm run test` 148/148 passing, `npm run build` clean. Also
+  functionally verified via Playwright (no component-test library like React Testing Library is
+  installed in this repo, and adding one wasn't warranted for a single component): opened the
+  palette, pressed ArrowDown twice, confirmed the 3rd item ("Browse Feature Manifests") visually
+  highlighted, pressed Enter, confirmed it navigated to the Feature Manifests view; separately
+  typed "rule" to filter to a single match and confirmed Enter navigated to the Rule Engine view.
+- Next step if continuing: no explicitly-flagged gaps remain open (both stale suggestions above
+  are now corrected). Next candidates worth a fresh look: pagination or virtualization if any list
+  view grows large (currently all lists are small, so this is speculative — verify actual data
+  volumes first), or a fresh architecture/design review pass since the last full review-mode cycle
+  was several sessions ago (2026-08-17's accessibility/test-coverage entries were narrowly scoped,
+  not a full sweep).
 
 ## Friendlier AI provider error messages (2026-08-17)
 
