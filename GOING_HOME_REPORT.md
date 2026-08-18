@@ -2,6 +2,38 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-19
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+- Playwright MCP reconnected fine this cycle (started `npm run dev`, `browser_navigate` worked
+  immediately — no reconnect steps needed, unlike the disconnect flagged 2026-08-17).
+- Completed the pending visual re-verification from the last entry: walked the responsive fix
+  (commit `94a4470`) at 1024/1366/1920/768/375px via Playwright screenshots. All five looked
+  correct — no header wrap, no squeezed main content column.
+- **Design/UX findings fixed:**
+  - **New bug found during that walk, not the one being re-verified**: at 375px the `<header>`
+    overflowed horizontally (`scrollWidth` 498px vs 375px viewport — confirmed programmatically,
+    not just visually) because the export/import/reset icon trio and the validation-status pill
+    were unconditionally rendered with no width budget left once the always-on elements
+    (hamburger, logo, org-manage gear, search bar, `+New Project`, `AI Architect`) filled the row.
+    Fixed in `components/Header.tsx` (`a660693`) by hiding both groups below `md` (768px).
+  - First attempt hid them below `sm` (640px), which fixed 375px but created a **new** overflow
+    window at exactly 640-679px (up to 29px) since reintroducing that content right at `sm` still
+    didn't leave room — caught by sweeping `header.scrollWidth` vs `clientWidth` programmatically
+    across 320-1920px in Playwright rather than eyeballing a few fixed breakpoints, and moved the
+    threshold to `md` instead. Re-swept the same range afterward: zero overflow anywhere
+    320-1920px.
+- Verified: `npm run lint` clean, `npm run test` 148/148 passing (no change in count — this was a
+  markup-only fix, no new test file), `npm run build` clean (stopped the dev server via
+  `taskkill` on the PID bound to port 3000 before deleting `.next`, same precaution as last
+  session).
+- Next step if continuing: move into improvement-mode feature work — no other explicitly-flagged
+  gaps remain open. Good candidates per the last two entries' suggestions: search/filter across
+  Blueprints or Decision Logs views, keyboard shortcuts beyond the Command Palette, or a
+  loading/error-state pass on the AI Assistant drawer for slow/failed provider responses.
+
 ## Friendlier AI provider error messages (2026-08-17)
 
 User hit a `502 (Bad Gateway)` from `/api/ai/generate` while testing their own Gemini API key.
