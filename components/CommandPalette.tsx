@@ -13,6 +13,7 @@ interface CommandPaletteProps {
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setActiveView }) => {
   const [query, setQuery] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   useFocusTrap(containerRef, isOpen, onClose);
 
@@ -51,6 +52,29 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
     onClose();
   };
 
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    setHighlightedIndex(0);
+  };
+
+  // The footer already advertises ↑↓/↵ as working shortcuts (line ~111
+  // below); this is what actually implements them — previously the list
+  // was mouse-only and pressing arrow keys or Enter did nothing.
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (filtered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const target = filtered[highlightedIndex];
+      if (target) handleSelect(target.id);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
       <div
@@ -66,9 +90,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
           <Input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            onKeyDown={handleInputKeyDown}
             placeholder="Type a command or jump to module..."
             className="bg-transparent border-none text-sm p-0 focus:ring-0"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="command-palette-listbox"
+            aria-activedescendant={filtered[highlightedIndex] ? `command-option-${filtered[highlightedIndex].id}` : undefined}
             autoFocus
           />
           <button onClick={onClose} aria-label="Close command palette" className="min-w-11 min-h-11 inline-flex items-center justify-center text-gray-500 hover:text-gray-300 rounded cursor-pointer">
@@ -77,26 +106,41 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
         </div>
 
         {/* Command Options List */}
-        <div className="max-h-80 overflow-y-auto p-2 divide-y divide-[#242834]">
+        <div id="command-palette-listbox" role="listbox" aria-label="Commands" className="max-h-80 overflow-y-auto p-2 divide-y divide-[#242834]">
           {filtered.length > 0 ? (
-            filtered.map((cmd) => {
+            filtered.map((cmd, i) => {
               const Icon = cmd.icon;
+              const isHighlighted = i === highlightedIndex;
               return (
                 <button
                   key={cmd.id}
+                  id={`command-option-${cmd.id}`}
+                  role="option"
+                  aria-selected={isHighlighted}
                   onClick={() => handleSelect(cmd.id)}
-                  className="w-full flex items-center justify-between p-2.5 rounded-lg text-left text-xs text-gray-300 hover:text-white hover:bg-[#252a36] transition-colors cursor-pointer group"
+                  onMouseEnter={() => setHighlightedIndex(i)}
+                  className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left text-xs transition-colors cursor-pointer group ${
+                    isHighlighted ? 'bg-[#252a36] text-white' : 'text-gray-300 hover:text-white hover:bg-[#252a36]'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded bg-[#2a2f3d] text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <div
+                      className={`p-1.5 rounded transition-colors ${
+                        isHighlighted ? 'bg-blue-600 text-white' : 'bg-[#2a2f3d] text-blue-400 group-hover:bg-blue-600 group-hover:text-white'
+                      }`}
+                    >
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-medium text-gray-200 group-hover:text-white">{cmd.title}</div>
+                      <div className={`font-medium ${isHighlighted ? 'text-white' : 'text-gray-200 group-hover:text-white'}`}>{cmd.title}</div>
                       <div className="text-[10px] text-gray-400">{cmd.category}</div>
                     </div>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ArrowRight
+                    className={`w-3.5 h-3.5 transition-opacity ${
+                      isHighlighted ? 'text-blue-400 opacity-100' : 'text-gray-600 opacity-0 group-hover:text-blue-400 group-hover:opacity-100'
+                    }`}
+                  />
                 </button>
               );
             })
