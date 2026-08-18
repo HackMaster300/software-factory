@@ -245,10 +245,14 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right Action Items & Validation Badge */}
       <div className="flex items-center gap-2.5">
-        {/* Real-time Validation Status Pill */}
+        {/* Real-time Validation Status Pill: hidden below sm — same reasoning
+            as the export/import/reset trio below. The Quality Index is
+            already shown on the dashboard's stat cards and Architecture
+            Rules is reachable via the sidebar, so this is safe to drop
+            first when the header can't fit everything at phone widths. */}
         <button
           onClick={() => setActiveView('rules')}
-          className="flex items-center gap-2 px-2.5 py-1 min-h-11 sm:min-h-0 rounded-md text-xs border bg-[#1a1d24] hover:bg-[#222630] transition-colors cursor-pointer"
+          className="hidden md:flex items-center gap-2 px-2.5 py-1 min-h-11 sm:min-h-0 rounded-md text-xs border bg-[#1a1d24] hover:bg-[#222630] transition-colors cursor-pointer"
         >
           {errorCount > 0 ? (
             <span className="flex items-center gap-1 text-red-400 font-medium">
@@ -302,8 +306,15 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden xl:inline">AI Architect</span>
         </Button>
 
-        {/* Reset Data & JSON Backup */}
-        <div className="flex items-center gap-1 pl-2 border-l border-[#2b303c]">
+        {/* Reset Data & JSON Backup: hidden below sm — at phone widths (~375px)
+            these three icon buttons plus everything else in the header no
+            longer fit and force horizontal overflow (measured: 498px of
+            content in a 375px header). Export/import/reset are power-user
+            backup actions, not core navigation, so they're the first thing
+            to drop; they reappear once there's room at md (768px)+ — sm
+            (640px) still overflowed in testing, since reintroducing this
+            content there left no room for the rest of the header. */}
+        <div className="hidden md:flex items-center gap-1 pl-2 border-l border-[#2b303c]">
           <Button
             variant="ghost"
             size="icon"
