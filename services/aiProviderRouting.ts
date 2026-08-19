@@ -30,6 +30,40 @@ export const DEFAULT_BASE_URLS: Partial<Record<AIProviderName, string>> = {
 
 const stripTrailingSlash = (url: string) => url.replace(/\/+$/, '');
 
+// Cloud-metadata endpoints have no legitimate use as an AI provider baseUrl —
+// unlike a private/localhost address (a real, supported Ollama/Azure setup),
+// there's no case where a user genuinely wants their request routed here.
+// Blocking exactly this narrow set stops the classic SSRF-to-cloud-credentials
+// attack without breaking self-hosted Ollama/Azure endpoints on a LAN.
+const BLOCKED_BASE_URL_HOSTS = new Set([
+  '169.254.169.254',
+  'metadata.google.internal',
+  'metadata.internal',
+  'fd00:ec2::254',
+  '[fd00:ec2::254]',
+]);
+
+/**
+ * Validates a user-supplied baseUrl before it's used as a server-side fetch
+ * target. Returns an error message if the URL is malformed, uses a
+ * non-HTTP(S) scheme, or points at a known cloud-metadata endpoint.
+ */
+function validateBaseUrl(raw: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return `"${raw}" is not a valid URL.`;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return `baseUrl must use http:// or https://, got "${parsed.protocol}".`;
+  }
+  if (BLOCKED_BASE_URL_HOSTS.has(parsed.hostname.toLowerCase())) {
+    return 'baseUrl may not point at a cloud metadata endpoint.';
+  }
+  return null;
+}
+
 /**
  * Builds the {url, headers, body} for a non-Gemini provider using plain fetch — no SDK.
  * Gemini is handled separately in the route handler via @google/genai.
@@ -48,6 +82,13 @@ export function buildProviderRequest(
     return {
       error: `No API key configured for ${provider}. Add one in AI Providers before sending requests.`,
     };
+  }
+
+  if (baseUrl && baseUrl.trim()) {
+    const validationError = validateBaseUrl(baseUrl.trim());
+    if (validationError) {
+      return { error: validationError };
+    }
   }
 
   switch (provider) {

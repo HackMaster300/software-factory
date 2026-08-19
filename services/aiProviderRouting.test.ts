@@ -163,6 +163,67 @@ describe('buildProviderRequest', () => {
     if (!('error' in result)) return;
     expect(result.error).toMatch(/model must be configured/i);
   });
+
+  it('rejects a baseUrl pointing at the AWS/cloud metadata endpoint (SSRF)', () => {
+    const result = buildProviderRequest({
+      ...baseConfig,
+      provider: 'OpenAI',
+      apiKey: 'sk-test',
+      baseUrl: 'http://169.254.169.254/latest/meta-data/',
+    });
+
+    expect('error' in result).toBe(true);
+    if (!('error' in result)) return;
+    expect(result.error).toMatch(/metadata endpoint/i);
+  });
+
+  it('rejects a baseUrl pointing at the GCP metadata hostname (SSRF), for Ollama too', () => {
+    const result = buildProviderRequest({
+      ...baseConfig,
+      provider: 'Ollama',
+      baseUrl: 'http://metadata.google.internal/computeMetadata/v1/',
+    });
+
+    expect('error' in result).toBe(true);
+    if (!('error' in result)) return;
+    expect(result.error).toMatch(/metadata endpoint/i);
+  });
+
+  it('rejects a non-HTTP(S) baseUrl scheme', () => {
+    const result = buildProviderRequest({
+      ...baseConfig,
+      provider: 'OpenAI',
+      apiKey: 'sk-test',
+      baseUrl: 'file:///etc/passwd',
+    });
+
+    expect('error' in result).toBe(true);
+    if (!('error' in result)) return;
+    expect(result.error).toMatch(/http:\/\/ or https:\/\//);
+  });
+
+  it('rejects a malformed baseUrl', () => {
+    const result = buildProviderRequest({
+      ...baseConfig,
+      provider: 'OpenAI',
+      apiKey: 'sk-test',
+      baseUrl: 'not a url',
+    });
+
+    expect('error' in result).toBe(true);
+    if (!('error' in result)) return;
+    expect(result.error).toMatch(/not a valid URL/);
+  });
+
+  it('still allows a private-LAN baseUrl (legitimate self-hosted Ollama/Azure use)', () => {
+    const result = buildProviderRequest({
+      ...baseConfig,
+      provider: 'Ollama',
+      baseUrl: 'http://192.168.1.50:11434',
+    });
+
+    expect('error' in result).toBe(false);
+  });
 });
 
 describe('extractResponseText', () => {
