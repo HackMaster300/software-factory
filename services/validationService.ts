@@ -16,21 +16,28 @@ export class ValidationService {
         if (!rule.isEnabled) continue;
 
         if (rule.id === 'rule-1') {
-          // Domain Cannot Reference Infrastructure
-          const coreProj = blueprint.projects.find((p) => p.type === 'Core');
-          const infraProj = blueprint.projects.find((p) => p.type === 'Infrastructure');
-          if (coreProj && infraProj && coreProj.references.includes(infraProj.id)) {
-            messages.push({
-              id: 'val-rule-1',
-              type: 'error',
-              code: 'ARCH_RULE_001',
-              title: 'Architecture Boundary Violation: Domain references Infrastructure',
-              description: `Project '${coreProj.name}' directly references '${infraProj.name}'. Domain logic must not depend on database or external infrastructure.`,
-              affectedComponent: `${coreProj.name}.csproj`,
-              autoFixAvailable: true,
-              ruleId: rule.id,
-              consequenceIfIgnored: 'Breaches Clean Architecture principles, makes unit testing impossible without live database connections.',
-            });
+          // Domain Cannot Reference Infrastructure. Checks every Core project against every
+          // Infrastructure project it references — a single-pair `.find()` here used to miss
+          // real violations in any blueprint with more than one Core or Infrastructure project
+          // (Hexagonal/Microservices/CQRS styles routinely produce multiple of each).
+          const coreProjects = blueprint.projects.filter((p) => p.type === 'Core');
+          const infraProjects = blueprint.projects.filter((p) => p.type === 'Infrastructure');
+          for (const coreProj of coreProjects) {
+            for (const infraProj of infraProjects) {
+              if (coreProj.references.includes(infraProj.id)) {
+                messages.push({
+                  id: `val-rule-1-${coreProj.id}-${infraProj.id}`,
+                  type: 'error',
+                  code: 'ARCH_RULE_001',
+                  title: 'Architecture Boundary Violation: Domain references Infrastructure',
+                  description: `Project '${coreProj.name}' directly references '${infraProj.name}'. Domain logic must not depend on database or external infrastructure.`,
+                  affectedComponent: `${coreProj.name}.csproj`,
+                  autoFixAvailable: true,
+                  ruleId: rule.id,
+                  consequenceIfIgnored: 'Breaches Clean Architecture principles, makes unit testing impossible without live database connections.',
+                });
+              }
+            }
           }
         }
 
@@ -91,7 +98,7 @@ export class ValidationService {
     // 4. Security Profile Checks
     const secProfiles = profileRepository.getSecurityProfiles();
     const activeSecProf = secProfiles.find((p) => p.id === blueprint.profiles.securityProfileId);
-    if (activeSecProf && activeSecProf.tokenLifetimeMinutes > 120) {
+    if (activeSecProf && activeSecProf.tokenLifetimeMinutes > 60) {
       messages.push({
         id: 'val-sec-1',
         type: 'warning',

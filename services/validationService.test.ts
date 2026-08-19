@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ValidationService } from './validationService';
+import { profileRepository } from './repositories/profile.repository';
 import type { Blueprint } from '../types/factory';
 
 const baseBlueprint: Blueprint = {
@@ -58,6 +59,36 @@ describe('ValidationService.validateBlueprint', () => {
     expect(messages.some((m) => m.code === 'ARCH_RULE_001')).toBe(false);
   });
 
+  it('flags a boundary violation from a second Core project even when the first Core project is clean', () => {
+    const messages = ValidationService.validateBlueprint({
+      ...baseBlueprint,
+      projects: [
+        { id: 'core1', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'core2', name: 'App.Domain', type: 'Core', references: ['infra'], description: '' },
+        { id: 'infra', name: 'App.Infrastructure', type: 'Infrastructure', references: [], description: '' },
+      ],
+    });
+    const violations = messages.filter((m) => m.code === 'ARCH_RULE_001');
+    expect(violations).toHaveLength(1);
+    expect(violations[0].affectedComponent).toContain('App.Domain');
+  });
+
+  it('flags every Core→Infrastructure violation pair, not just the first', () => {
+    const messages = ValidationService.validateBlueprint({
+      ...baseBlueprint,
+      projects: [
+        { id: 'core1', name: 'App.Core', type: 'Core', references: ['infra1'], description: '' },
+        { id: 'core2', name: 'App.Domain', type: 'Core', references: ['infra2'], description: '' },
+        { id: 'infra1', name: 'App.Infrastructure', type: 'Infrastructure', references: [], description: '' },
+        { id: 'infra2', name: 'App.Persistence', type: 'Infrastructure', references: [], description: '' },
+      ],
+    });
+    const violations = messages.filter((m) => m.code === 'ARCH_RULE_001');
+    expect(violations).toHaveLength(2);
+    const ids = violations.map((v) => v.id);
+    expect(new Set(ids).size).toBe(2); // distinct ids — no duplicate React keys
+  });
+
   it('requires Health Checks whenever Docker is active (Smart Dependencies auto-activates it by default, so this explicitly disables it to prove the rule fires)', () => {
     const messages = ValidationService.validateBlueprint({
       ...baseBlueprint,
@@ -100,5 +131,21 @@ describe('ValidationService.validateBlueprint', () => {
       featureIds: ['feat-docker', 'feat-healthchecks', 'feat-postgres-ef'],
     });
     expect(messages.some((m) => m.code === 'DB_PROVIDER_MISMATCH')).toBe(false);
+  });
+
+  it('warns about JWT token lifetime above the 60-minute policy the warning message itself states', () => {
+    // Regression test: the warning text has always said "<= 60 minutes", but the threshold that
+    // triggered it was `> 120` — so a 90-minute lifetime (already over the stated policy)
+    // silently passed with no warning at all.
+    const secProfiles = profileRepository.getSecurityProfiles();
+    profileRepository.saveSecurityProfiles(
+      secProfiles.map((p) => (p.id === 'sec-prof-jwt' ? { ...p, tokenLifetimeMinutes: 90 } : p))
+    );
+
+    const messages = ValidationService.validateBlueprint({
+      ...baseBlueprint,
+      featureIds: ['feat-docker', 'feat-healthchecks', 'feat-postgres-ef'],
+    });
+    expect(messages.some((m) => m.code === 'SEC_JWT_EXPIRE_HIGH' && m.type === 'warning')).toBe(true);
   });
 });
