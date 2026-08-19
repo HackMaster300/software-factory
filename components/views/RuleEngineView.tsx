@@ -11,6 +11,7 @@ import {
   Power,
   Trash2,
   Edit3,
+  Copy,
   Download,
   Search,
   Wrench,
@@ -151,6 +152,21 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
         const updatedActiveSet = updatedSets.find((rs) => rs.id === activeRuleSet.id) || updatedSets[0];
         setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
       }
+    }
+  };
+
+  const handleDuplicateRule = (rule: Rule) => {
+    const copy: Rule = {
+      ...rule,
+      id: `rule-custom-${Date.now()}`,
+      name: `${rule.name} (Copy)`,
+    };
+    RuleService.addRule(activeRuleSet.id, copy);
+    const updatedSets = RuleService.getRuleSets();
+    setRuleSets(updatedSets);
+    if (blueprint) {
+      const updatedActiveSet = updatedSets.find((rs) => rs.id === activeRuleSet.id) || updatedSets[0];
+      setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
     }
   };
 
@@ -565,6 +581,17 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
                 >
                   <Power className="w-3.5 h-3.5" />
                   <span>{rule.isEnabled ? 'Enabled' : 'Disabled'}</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDuplicateRule(rule)}
+                  title="Duplicate Rule"
+                  aria-label={`Duplicate rule ${rule.name}`}
+                  className="border border-[#2b303d]"
+                >
+                  <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                 </Button>
 
                 <Button

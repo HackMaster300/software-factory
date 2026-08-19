@@ -19,6 +19,7 @@ import {
   Sparkles,
   Edit3,
   Trash2,
+  Copy,
   X,
 } from 'lucide-react';
 import { FeatureManifest, FeatureCategory, FeatureQuestion, GeneratedFile, Blueprint } from '../../types/factory';
@@ -125,6 +126,17 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
     if (selectedFeatureId === feat.id) {
       setSelectedFeatureId(updated[0]?.id || '');
     }
+  };
+
+  const handleDuplicateFeature = (feat: FeatureManifest) => {
+    const copy: FeatureManifest = {
+      ...feat,
+      id: `feat-custom-${Date.now()}`,
+      name: `${feat.name} (Copy)`,
+      tags: [...feat.tags],
+    };
+    featureManifestRepository.saveFeatureManifests([...features, copy]);
+    setSelectedFeatureId(copy.id);
   };
 
   const toggleListValue = (key: keyof FeatureManifest, value: string) => {
@@ -375,6 +387,15 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDuplicateFeature(selectedFeature)}
+                    aria-label={`Duplicate feature manifest ${selectedFeature.name}`}
+                    title="Duplicate"
+                  >
+                    <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
