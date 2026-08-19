@@ -257,7 +257,7 @@ export interface AIProviderConfig {
   id: string;
   name: string;
   model: string;
-  provider: 'Google Gemini' | 'OpenAI' | 'Anthropic' | 'DeepSeek' | 'Azure OpenAI' | 'Ollama';
+  provider: 'Google Gemini' | 'OpenAI' | 'Anthropic' | 'DeepSeek' | 'Azure OpenAI' | 'Ollama' | 'OpenRouter';
   status: 'active' | 'configured' | 'offline';
   costPer1k: string;
   latency: string;

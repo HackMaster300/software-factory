@@ -26,6 +26,7 @@ export const DEFAULT_BASE_URLS: Partial<Record<AIProviderName, string>> = {
   OpenAI: 'https://api.openai.com/v1',
   DeepSeek: 'https://api.deepseek.com/v1',
   Ollama: 'http://localhost:11434',
+  OpenRouter: 'https://openrouter.ai/api/v1',
 };
 
 const stripTrailingSlash = (url: string) => url.replace(/\/+$/, '');
@@ -94,6 +95,7 @@ export function buildProviderRequest(
   switch (provider) {
     case 'OpenAI':
     case 'DeepSeek':
+    case 'OpenRouter':
     case 'Azure OpenAI': {
       const base = (baseUrl && baseUrl.trim()) || DEFAULT_BASE_URLS[provider];
       if (!base) {
@@ -159,6 +161,7 @@ export function extractResponseText(provider: AIProviderName, json: any): string
   switch (provider) {
     case 'OpenAI':
     case 'DeepSeek':
+    case 'OpenRouter':
     case 'Azure OpenAI':
       return json?.choices?.[0]?.message?.content || '';
     case 'Anthropic':

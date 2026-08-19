@@ -1092,8 +1092,8 @@ export const initialDecisionLogs: DecisionLogItem[] = [];
 export const initialAIProviders: AIProviderConfig[] = [
   {
     id: 'ai-gemini',
-    name: 'Google Gemini 3.6 Flash',
-    model: 'gemini-3.6-flash',
+    name: 'Google Gemini 2.5 Flash',
+    model: 'gemini-2.5-flash',
     provider: 'Google Gemini',
     status: 'active',
     costPer1k: '$0.00015',

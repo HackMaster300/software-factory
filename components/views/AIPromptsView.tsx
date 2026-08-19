@@ -33,10 +33,41 @@ import { AIProviderConfig, PromptTemplate, AIAgent } from '../../types/factory';
 import { StorageService, useAIAgents, useAIProviders } from '../../services/storageService';
 import { aiAgentRepository, aiProviderRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
+import { DEFAULT_BASE_URLS } from '../../services/aiProviderRouting';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
+
+const MODEL_ID_PLACEHOLDERS: Record<string, string> = {
+  'Google Gemini': 'gemini-2.5-flash',
+  OpenAI: 'gpt-4o-mini',
+  OpenRouter: 'google/gemma-3-27b-it:free',
+  Anthropic: 'claude-sonnet-5',
+  DeepSeek: 'deepseek-chat',
+  'Azure OpenAI': 'your-deployment-name',
+  Ollama: 'llama3.1',
+};
+
+/**
+ * One-click starting points for the most common OpenAI-compatible gateways
+ * beyond the built-in vendor list — everything here reuses the generic
+ * 'OpenAI' vendor request path (chat/completions + Bearer auth) with a
+ * custom baseUrl, since that's exactly what these gateways speak too. Only
+ * the API key needs to be filled in after applying a preset.
+ */
+const PROVIDER_PRESETS: Array<{
+  label: string;
+  name: string;
+  vendor: 'OpenAI' | 'OpenRouter';
+  baseUrl: string;
+  model: string;
+}> = [
+  { label: 'OpenRouter (free Gemma)', name: 'OpenRouter Gemma 3 27B (free)', vendor: 'OpenRouter', baseUrl: '', model: 'google/gemma-3-27b-it:free' },
+  { label: 'Mistral (Devstral)', name: 'Mistral Devstral (Agentic Coding)', vendor: 'OpenAI', baseUrl: 'https://api.mistral.ai/v1', model: 'devstral-2512' },
+  { label: 'Mistral (Codestral)', name: 'Mistral Codestral (Pure Code)', vendor: 'OpenAI', baseUrl: 'https://api.mistral.ai/v1', model: 'codestral-2508' },
+  { label: 'opencode.ai Zen (free)', name: 'opencode.ai Big Pickle (free)', vendor: 'OpenAI', baseUrl: 'https://opencode.ai/zen/v1', model: 'big-pickle' },
+];
 
 export const AIPromptsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'playground' | 'prompts' | 'providers' | 'agents'>('playground');
@@ -109,8 +140,8 @@ export const AIPromptsView: React.FC = () => {
   const [isProviderModalOpen, setIsProviderModalOpen] = useState<boolean>(false);
   const [editingProvider, setEditingProvider] = useState<AIProviderConfig | null>(null);
   const [providerName, setProviderName] = useState<string>('');
-  const [providerVendor, setProviderVendor] = useState<'Google Gemini' | 'OpenAI' | 'Anthropic' | 'DeepSeek' | 'Azure OpenAI' | 'Ollama'>('Google Gemini');
-  const [providerModel, setProviderModel] = useState<string>('gemini-3.6-flash');
+  const [providerVendor, setProviderVendor] = useState<'Google Gemini' | 'OpenAI' | 'Anthropic' | 'DeepSeek' | 'Azure OpenAI' | 'Ollama' | 'OpenRouter'>('Google Gemini');
+  const [providerModel, setProviderModel] = useState<string>('gemini-2.5-flash');
   const [providerCost, setProviderCost] = useState<string>('$0.00015');
   const [providerLatency, setProviderLatency] = useState<string>('180ms');
   const [providerApiKey, setProviderApiKey] = useState<string>('');
@@ -273,11 +304,23 @@ export const AIPromptsView: React.FC = () => {
     setEditingProvider(null);
     setProviderName('');
     setProviderVendor('Google Gemini');
-    setProviderModel('gemini-3.6-flash');
+    setProviderModel('gemini-2.5-flash');
     setProviderCost('$0.00015');
     setProviderLatency('180ms');
     setProviderApiKey('');
     setProviderBaseUrl('');
+    setIsProviderModalOpen(true);
+  };
+
+  const handleApplyPreset = (preset: (typeof PROVIDER_PRESETS)[number]) => {
+    setEditingProvider(null);
+    setProviderName(preset.name);
+    setProviderVendor(preset.vendor);
+    setProviderModel(preset.model);
+    setProviderCost('$0.0000');
+    setProviderLatency('250ms');
+    setProviderApiKey('');
+    setProviderBaseUrl(preset.baseUrl);
     setIsProviderModalOpen(true);
   };
 
@@ -846,6 +889,27 @@ export const AIPromptsView: React.FC = () => {
             </p>
           </div>
 
+          <div className="space-y-1.5">
+            <div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">
+              Quick Add: Free / OpenAI-Compatible Gateways
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {PROVIDER_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => handleApplyPreset(preset)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium bg-[#181a20] hover:bg-[#1f232d] text-gray-300 hover:text-white border border-[#2b303d] hover:border-blue-500/40 cursor-pointer transition-colors"
+                >
+                  <Plus className="w-3 h-3 text-blue-400" aria-hidden="true" />
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-500">
+              Prefills name, vendor, base URL, and model — you only need to paste an API key and save.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {providers.map((provider) => {
               const test = connectionTests[provider.id];
@@ -897,6 +961,11 @@ export const AIPromptsView: React.FC = () => {
                           <span>API Key: <span className="text-gray-200">{provider.apiKey ? '•••• configured' : 'not set'}</span></span>
                         )}
                       </div>
+                      {provider.provider !== 'Ollama' && provider.baseUrl && (
+                        <div className="truncate" title={provider.baseUrl}>
+                          Base URL: <span className="text-gray-200 font-mono">{provider.baseUrl}</span>
+                        </div>
+                      )}
                     </div>
 
                     {test && (
@@ -1150,7 +1219,7 @@ export const AIPromptsView: React.FC = () => {
                 <label className="text-[10px] text-gray-400 block mb-1">Provider Display Name</label>
                 <Input
                   type="text"
-                  placeholder="Google Gemini 3.6 Flash"
+                  placeholder="Google Gemini 2.5 Flash"
                   value={providerName}
                   onChange={(e) => setProviderName(e.target.value)}
                 />
@@ -1161,7 +1230,8 @@ export const AIPromptsView: React.FC = () => {
                   <label className="text-[10px] text-gray-400 block mb-1">Vendor Family</label>
                   <Select value={providerVendor} onChange={(e) => setProviderVendor(e.target.value as any)}>
                     <option value="Google Gemini">Google Gemini</option>
-                    <option value="OpenAI">OpenAI</option>
+                    <option value="OpenAI">OpenAI (or any OpenAI-compatible API)</option>
+                    <option value="OpenRouter">OpenRouter</option>
                     <option value="Anthropic">Anthropic</option>
                     <option value="DeepSeek">DeepSeek</option>
                     <option value="Azure OpenAI">Azure OpenAI</option>
@@ -1173,7 +1243,7 @@ export const AIPromptsView: React.FC = () => {
                   <label className="text-[10px] text-gray-400 block mb-1">Model ID</label>
                   <Input
                     type="text"
-                    placeholder="gemini-3.6-flash"
+                    placeholder={MODEL_ID_PLACEHOLDERS[providerVendor] || 'model-id'}
                     value={providerModel}
                     onChange={(e) => setProviderModel(e.target.value)}
                     className="font-mono"
@@ -1238,6 +1308,21 @@ export const AIPromptsView: React.FC = () => {
                       <Input
                         type="text"
                         placeholder="https://{resource}.openai.azure.com/openai/deployments/{deployment}"
+                        value={providerBaseUrl}
+                        onChange={(e) => setProviderBaseUrl(e.target.value)}
+                        className="font-mono"
+                      />
+                    </div>
+                  )}
+                  {(providerVendor === 'OpenAI' || providerVendor === 'DeepSeek' || providerVendor === 'OpenRouter') && (
+                    <div className="mt-2">
+                      <label className="text-[10px] text-gray-400 block mb-1">
+                        Base URL (optional override — set this to point at OpenRouter, Mistral,
+                        opencode.ai&apos;s Zen gateway, or any other OpenAI-compatible endpoint)
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={DEFAULT_BASE_URLS[providerVendor] || 'https://your-endpoint.example.com/v1'}
                         value={providerBaseUrl}
                         onChange={(e) => setProviderBaseUrl(e.target.value)}
                         className="font-mono"

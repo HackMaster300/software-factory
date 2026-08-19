@@ -49,6 +49,19 @@ describe('buildProviderRequest', () => {
     expect(result.headers.Authorization).toBe('Bearer ds-key');
   });
 
+  it('builds an OpenRouter request against its own default base URL', () => {
+    const result = buildProviderRequest({
+      ...baseConfig,
+      provider: 'OpenRouter',
+      apiKey: 'or-key',
+    });
+
+    expect('error' in result).toBe(false);
+    if ('error' in result) return;
+    expect(result.url).toBe(`${DEFAULT_BASE_URLS.OpenRouter}/chat/completions`);
+    expect(result.headers.Authorization).toBe('Bearer or-key');
+  });
+
   it('lets a custom baseUrl override the OpenAI default and strips trailing slashes', () => {
     const result = buildProviderRequest({
       ...baseConfig,
@@ -232,6 +245,7 @@ describe('extractResponseText', () => {
     expect(extractResponseText('OpenAI', json)).toBe('Hello there');
     expect(extractResponseText('DeepSeek', json)).toBe('Hello there');
     expect(extractResponseText('Azure OpenAI', json)).toBe('Hello there');
+    expect(extractResponseText('OpenRouter', json)).toBe('Hello there');
   });
 
   it('extracts Anthropic-shaped content block text', () => {

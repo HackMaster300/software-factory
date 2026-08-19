@@ -15,6 +15,7 @@ const ALLOWED_PROVIDERS: AIProviderName[] = [
   'DeepSeek',
   'Azure OpenAI',
   'Ollama',
+  'OpenRouter',
 ];
 
 // Must both be real, released model ids — an invalid primary silently doubles
