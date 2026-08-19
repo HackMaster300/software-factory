@@ -2,6 +2,53 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-19 (cycle 2: code review sweep)
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+Dispatched a background code-review subagent over the seven view components not yet reviewed
+this session (ProjectScaffolderView, ImpactAnalyzerView, PluginsView, RuleEngineView,
+TechStacksView, AIPromptsView, DashboardView) — read-only, no modifications. It found 5 real bugs
+and 2 minor issues; PluginsView and DashboardView came back clean. Fixed all of them:
+
+- **`RuleEngineView.tsx` (`0b1617e`)**: `handleToggleRule`/`handleDeleteRule`/`handleSaveRule` all
+  recomputed the validation report against `updatedSets[0]` (the *first* Rule Set) instead of the
+  currently active one. Once a user created a second Rule Set and switched to it, toggling/
+  editing/deleting a rule showed a validation report for the wrong rule set entirely. Fixed to
+  look up the active set by id. Verified live: created a second rule set, added and toggled a
+  rule, confirmed correct state and zero console errors.
+- **`TechStacksView.tsx` (`0b1617e`)**: `handleDeleteStack` had no minimum-count guard, unlike the
+  equivalent for rule sets. Deleting the last tech stack leaves an empty array, which crashes
+  `activeTechStack.language` access in `BlueprintsView`/`ProjectScaffolderView`. Added the same
+  "at least one must remain" guard already used elsewhere.
+- **`AIPromptsView.tsx` (`f3946c8`)**: the Prompt Template modal and the AI Playground's execution
+  shared one `promptRole` state — opening/editing the modal's Role field silently changed what
+  role the *next Playground run* sent, without even saving. Split into a dedicated
+  `templateFormRole` for the modal; Playground execution now uses a fixed role matching its own
+  static "Role: System" label. Also wrapped `handleRunPlayground` and `handleTestConnection` in
+  try/catch/finally — neither had error handling, so a thrown rejection would leave the
+  loading/testing UI stuck forever with no error shown.
+- **`ImpactAnalyzerView.tsx` (`d556f67`)**: the "Container & Orchestration" What-If selector was
+  fully wired to state but never affected any simulated score or the AI prompt — every sibling
+  selector on the same panel did, making this one look broken by omission. Wired it into the
+  scalability/complexity score deltas and the AI simulation prompt; also added a floor of 0 to
+  score clamps that only had a ceiling.
+- **`ProjectScaffolderView.tsx` (`d556f67`)**: removed a dead always-no-op ternary in
+  `handleAddCustomModule` that looked like it was meant to append a `.csproj` extension to custom
+  module names but didn't (both branches returned the same string). Left it as a plain `.trim()`
+  rather than making it "work" — project names are stored without extensions everywhere else in
+  the app (`BlueprintsView`'s Solution Tree appends `.csproj` only at render time), so a real
+  append here would have produced a doubled `.csproj.csproj` there.
+- Verified: `npm run lint` clean, `npm run test` 148/148 passing, `npm run build` clean (stopped
+  dev server via `taskkill` on the port-3000 PID before deleting `.next`, same precaution as
+  every prior cycle this session).
+- Next step if continuing: `PluginsView.tsx` and `DashboardView.tsx` came back clean from the
+  review, no action needed there. Good next candidates: run a similar review pass over
+  `components/` root-level files (Sidebar, ProjectAdvisorPanel, OrganizationWorkspaceModal, etc.)
+  which haven't been covered by this session's view-focused sweep, or move back into pure
+  improvement mode (new feature) since the review backlog for `components/views/` is now clear.
+
 ## Session — 2026-08-19
 
 **Detected stack:** Next.js (App Router)
