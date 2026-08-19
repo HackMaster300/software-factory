@@ -2,6 +2,53 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-19 (cycle 4: business-logic services review)
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+Dispatched a third background code-review subagent over the 11 `services/*.ts` business-logic
+files not yet reviewed this session. Found and fixed 4 real bugs (one high-severity data-loss bug)
+plus one cosmetic issue; `advisorService.ts`, `blueprintService.ts` (beyond the cosmetic item),
+`decisionService.ts`, `projectService.ts` (beyond the cosmetic item), `templateService.ts`, and
+`aiService.ts` came back clean.
+
+- **Fixed a real data-loss bug (`6a9b547`, HIGH severity)**: `storageService.ts`'s `getItem()`
+  silently reset **any** array-backed localStorage store back to full seed data the moment its
+  length dropped below the original seed count — which is exactly what a single legitimate user
+  deletion does (delete one of N seeded tech stacks/rule sets/features/templates/etc). The very
+  next read resurrected everything just deleted, no error, no warning. This has been present since
+  the app's initial commit — not something introduced this session, just never caught before.
+  Removed the reseed-on-shrink branch entirely (a genuinely corrupted/malformed value is already
+  handled by the catch block; an intentional full reset already has its own explicit "Reset to
+  Factory Seed Data" button). Added `services/storageService.test.ts` (didn't exist before) with 4
+  tests covering seeding, shrink-persists, shrink-to-one, and corrupted-JSON recovery.
+- **Fixed an incomplete architecture-boundary check (`69b9e1e`)**: `validationService.ts`'s rule-1
+  check (Core cannot reference Infrastructure) used a single `.find()` per project type, so any
+  blueprint with more than one Core or Infrastructure project — which Hexagonal/Microservices/CQRS
+  styles routinely produce — only ever checked the first pair, silently missing real violations
+  elsewhere. `ruleService.ts`'s separate validation engine already did this correctly; this file's
+  shallower version is the one actually wired into the main validation flow shown to the user. Now
+  iterates every Core×Infrastructure pair. Also fixed the JWT-lifetime warning threshold (`> 120`)
+  to match what its own message text has always said (`<= 60 minutes` is the stated policy) — a
+  90-minute lifetime, already over the stated policy, previously passed with zero warning.
+- **Fixed duplicate Smart-Dependency warnings (`4a7521f`)**: `featureService.ts`'s
+  `resolveBlueprintFeatures` pushed a duplicate `disabledRecommendedFeatures` entry either when its
+  multi-pass resolution loop re-scanned an already-active feature, or when two different active
+  features recommended the same disabled feature — both consumers of this list
+  (`FeatureManifestsView`, `ValidationService`) treat `.id` as unique, so either path caused
+  duplicate React keys / duplicate user-facing warnings for one underlying fact. Deduped globally
+  by the disabled feature's id. Also fixed a cosmetic GUID-padding bug in `projectService.ts`'s
+  generated `.sln` preview (10th+ project got a malformed GUID) while in the same area.
+- Verified: `npm run lint` clean, `npm run test` 162/162 passing (8 new), `npm run build` clean.
+- Next step if continuing: the reviewed-and-clean list above (`advisorService`, `blueprintService`,
+  `decisionService`, `projectService`, `templateService`, `aiService`) plus everything from cycles
+  2-3 means the entire codebase (`components/`, `app/`, `hooks/`, `lib/`, `services/`) has now had
+  at least one review pass this session. Good next move: shift fully into improvement mode (new
+  feature/UX work), since there's no known outstanding review backlog left.
+- Per explicit user instruction earlier this session, this and all subsequent commits omit the
+  "Co-Authored-By" trailer.
+
 ## User-directed: OpenRouter + generic OpenAI-compatible provider support (2026-08-19)
 
 User shared their actual VS Code custom-model config (Google Gemini, OpenRouter, a generic
