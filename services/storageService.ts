@@ -173,7 +173,7 @@ const memoryCache: Record<string, { raw: string | null; parsed: any }> = {};
 // before saving. Handing out that singleton directly means such a mutation permanently corrupts
 // the "empty/default" seed for the rest of the session -- so a later reset-to-empty (or a fresh
 // call that falls back to defaultValue again) resurfaces stale leftover data instead of a genuine
-// empty state. Cloning only in the two branches that materialize a *fresh* default (never in the
+// empty state. Cloning only in the branch that materializes a *fresh* default (never in the
 // memoryCache-hit branch) fixes that while preserving the referential stability the
 // useSyncExternalStore-based hooks in this file require -- returning a new object on every call
 // there would make React think the store changes on every render (infinite update loop).
@@ -196,13 +196,6 @@ function getItem<T>(key: string, defaultValue: T): T {
       return memoryCache[key].parsed as T;
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(defaultValue) && Array.isArray(parsed) && parsed.length < defaultValue.length) {
-      const seeded = clone(defaultValue);
-      const serialized = JSON.stringify(seeded);
-      localStorage.setItem(key, serialized);
-      memoryCache[key] = { raw: serialized, parsed: seeded };
-      return seeded;
-    }
     memoryCache[key] = { raw, parsed };
     return parsed as T;
   } catch (err) {
