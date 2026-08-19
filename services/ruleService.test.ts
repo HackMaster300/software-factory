@@ -43,4 +43,27 @@ describe('RuleService.createRuleSet / deleteRuleSet (Phase 2b — Rule Set as a 
     RuleService.deleteRuleSet(lastId);
     expect(RuleService.getRuleSets().map((rs) => rs.id)).toContain(lastId);
   });
+
+  it('duplicates a rule set including all of its rules, under fresh ids for both', () => {
+    const source = RuleService.getRuleSets()[0];
+    expect(source.rules.length).toBeGreaterThan(0);
+
+    const copy = RuleService.duplicateRuleSet(source.id);
+
+    expect(copy).toBeDefined();
+    expect(copy!.id).not.toBe(source.id);
+    expect(copy!.name).toBe(`${source.name} (Copy)`);
+    expect(copy!.rules).toHaveLength(source.rules.length);
+    expect(copy!.rules.map((r) => r.id)).not.toEqual(source.rules.map((r) => r.id));
+    expect(copy!.rules.map((r) => r.name)).toEqual(source.rules.map((r) => r.name));
+
+    const persisted = RuleService.getRuleSets();
+    expect(persisted.some((rs) => rs.id === copy!.id)).toBe(true);
+    // Editing the copy's rules must never mutate the source set's rules (distinct objects).
+    expect(persisted.find((rs) => rs.id === source.id)!.rules).toEqual(source.rules);
+  });
+
+  it('returns undefined when duplicating a non-existent rule set id', () => {
+    expect(RuleService.duplicateRuleSet('does-not-exist')).toBeUndefined();
+  });
 });

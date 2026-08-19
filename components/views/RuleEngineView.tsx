@@ -312,6 +312,13 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
     handleSwitchRuleSet(created.id);
   };
 
+  const handleDuplicateRuleSet = (ruleSetId: string) => {
+    const copy = RuleService.duplicateRuleSet(ruleSetId);
+    if (!copy) return;
+    setRuleSets(RuleService.getRuleSets());
+    handleSwitchRuleSet(copy.id);
+  };
+
   const handleDeleteRuleSet = (ruleSetId: string) => {
     if (ruleSets.length <= 1) {
       alert('At least one Rule Set must remain.');
@@ -403,6 +410,16 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <Button onClick={handleOpenCreateRuleSet}>
             <Plus className="w-3.5 h-3.5" aria-hidden="true" /> New Rule Set
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDuplicateRuleSet(activeRuleSet.id)}
+            aria-label={`Duplicate rule set ${activeRuleSet.name}`}
+            title="Duplicate Rule Set"
+            className="border border-[#2b303d]"
+          >
+            <Copy className="w-3.5 h-3.5" aria-hidden="true" />
           </Button>
           {ruleSets.length > 1 && (
             <Button

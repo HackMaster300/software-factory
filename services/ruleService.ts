@@ -55,6 +55,29 @@ export class RuleService {
     return newRuleSet;
   }
 
+  /**
+   * Duplicates a Rule Set including all of its rules, under new ids for both the set and
+   * every rule it contains (kept distinct from the source so editing a copy's rule never
+   * mutates the same object the original set still references).
+   */
+  static duplicateRuleSet(ruleSetId: string): RuleSet | undefined {
+    const ruleSets = this.getRuleSets();
+    const source = ruleSets.find((rs) => rs.id === ruleSetId);
+    if (!source) return undefined;
+
+    const copy: RuleSet = {
+      id: `ruleset-custom-${Date.now()}`,
+      name: `${source.name} (Copy)`,
+      description: source.description,
+      rules: source.rules.map((rule, idx) => ({
+        ...rule,
+        id: `rule-custom-${Date.now()}-${idx}`,
+      })),
+    };
+    ruleSetRepository.saveRuleSets([...ruleSets, copy]);
+    return copy;
+  }
+
   static deleteRuleSet(ruleSetId: string): void {
     const ruleSets = this.getRuleSets();
     if (ruleSets.length <= 1) return;
