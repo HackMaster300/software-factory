@@ -2,6 +2,50 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-19 (cycle 3: security-focused review)
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+Dispatched a second background code-review subagent, this time over the root-level components not
+yet reviewed (`Sidebar.tsx`, `ProjectAdvisorPanel.tsx`, `OrganizationWorkspaceModal.tsx`), the
+`app/` route files, `hooks/use-focus-trap.ts`, and — most importantly — `app/api/ai/generate/
+route.ts`, the one server-side surface in this otherwise fully client-side app. Sidebar, Advisor
+Panel, Org/Workspace Modal, the focus-trap hook, and the layout/page/error boundary files all came
+back clean. The API route did not:
+
+- **Fixed a real SSRF vulnerability (`7c6e0d0`)**: `buildProviderRequest()` in
+  `services/aiProviderRouting.ts` took the client-supplied `baseUrl` (used to let users point
+  Azure OpenAI/OpenAI/DeepSeek/Ollama at a custom endpoint) and passed it straight into a
+  server-side `fetch` with zero validation. A malicious client could set `baseUrl` to
+  `169.254.169.254` or `metadata.google.internal` and the server would fetch it and reflect the
+  response back to the client — the classic SSRF-to-cloud-credentials pattern. Added
+  `validateBaseUrl()`: rejects malformed URLs and non-http(s) schemes, and blocks a small explicit
+  deny-list of cloud-metadata hosts. Deliberately did **not** block private/LAN addresses (e.g.
+  `http://192.168.1.50:11434`) — that's the real, supported way to reach a self-hosted Ollama or
+  Azure deployment, and over-blocking would have broken that legitimate use case while adding no
+  protection against the actual attack. Added 5 unit tests (both blocked and still-allowed cases).
+- **Fixed a silently-broken Gemini model id (`2b51f60`)**: `GEMINI_PRIMARY_MODEL` was
+  `'gemini-3.6-flash'` — not a real released model. Every Gemini request was failing over to the
+  fallback model after eating the primary call's full latency and a logged warning, on literally
+  every request, invisibly, since the fallback masked it completely. Fixed both model ids to real
+  ones (`gemini-2.5-flash` primary, `gemini-2.0-flash` fallback).
+- **Fixed a minor info-disclosure (`2b51f60`, same commit)**: the route's outer catch-all echoed
+  raw `err.message` straight back to the client for any uncaught exception, unlike provider errors
+  which already go through a sanitizing helper. Now returns a generic message; full detail still
+  goes to the server log.
+- Verified: `npm run lint` clean, `npm run test` 153/153 passing (5 new), `npm run build` clean.
+  The SSRF/model-id fixes are pure-function/config changes with existing unit-test infrastructure
+  (`aiProviderRouting.test.ts` already documents itself as network-call-free and safe to unit
+  test), so this cycle verified via tests rather than a live Playwright pass — there's no UI
+  surface for a server route to click through.
+- Next step if continuing: the full component/route review backlog from this session is now
+  clear (Header, CommandPalette, all `components/views/*`, all `components/*` root files, `app/`,
+  `hooks/`, `lib/`, and the API route have all been reviewed and any real findings fixed). Good
+  next move: shift fully into improvement mode (new feature/UX work) since there's no known
+  remaining review backlog, or do a final pass over `services/*.ts` business-logic files
+  specifically (not yet swept this session) if more review time is available.
+
 ## Session — 2026-08-19 (cycle 2: code review sweep)
 
 **Detected stack:** Next.js (App Router)
