@@ -47,6 +47,24 @@ describe('FeatureService.resolveBlueprintFeatures (Smart Dependencies)', () => {
     expect(activeFeatureIds).not.toContain('feat-env-vars');
     expect(disabledRecommendedFeatures.some((f) => f.id === 'feat-env-vars')).toBe(true);
   });
+
+  it('reports a disabled recommended feature only once, even when multiple active features recommend it or multiple resolution passes re-scan the same active feature', () => {
+    // feat-docker and at least one other seeded feature both recommend feat-env-vars/
+    // feat-healthchecks; feat-docker's own recommendations also force a 2nd resolution pass
+    // (feat-docker-compose depends back on feat-docker). Every consumer downstream
+    // (FeatureManifestsView, ValidationService) treats `disabledRecommendedFeatures[].id` as
+    // unique, so a duplicate here means a duplicate React key / duplicate validation message.
+    const blueprintWithDisabled: Blueprint = {
+      ...baseBlueprint,
+      featureIds: ['feat-docker', 'feat-docker-compose'],
+      disabledAutoFeatures: ['feat-env-vars', 'feat-healthchecks'],
+    };
+
+    const { disabledRecommendedFeatures } = FeatureService.resolveBlueprintFeatures(blueprintWithDisabled);
+
+    const ids = disabledRecommendedFeatures.map((f) => f.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
 });
 
 describe('FeatureService.saveFeature (Phase 2b — Feature Manifest create/edit builder)', () => {

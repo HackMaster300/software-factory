@@ -37,6 +37,13 @@ export class FeatureService {
 
     const autoActivatedFeatures: Array<{ id: string; reason: string }> = [];
     const disabledRecommendedFeatures: Array<{ id: string; reason: string }> = [];
+    // Tracks recIds already recorded. Keyed by recId alone (not by which active feature
+    // recommended it) because every consumer of disabledRecommendedFeatures treats `id` as
+    // unique — FeatureManifestsView keys a list on `d.id` and ValidationService derives a
+    // message id from it — so two different reasons for disabling the same feature would
+    // still collide downstream even if this only deduped per (featId, recId) pair. Keeping
+    // the first reason encountered is enough; the point is flagging *that* it's disabled.
+    const seenDisabledIds = new Set<string>();
 
     let changed = true;
     let passes = 0;
@@ -66,10 +73,13 @@ export class FeatureService {
         for (const recId of feat.recommendedDependencies || []) {
           if (disabledSet.has(recId)) {
             // User explicitly disabled this recommended feature!
-            disabledRecommendedFeatures.push({
-              id: recId,
-              reason: `Recommended by '${feat.name}' but explicitly disabled by architect`,
-            });
+            if (!seenDisabledIds.has(recId)) {
+              seenDisabledIds.add(recId);
+              disabledRecommendedFeatures.push({
+                id: recId,
+                reason: `Recommended by '${feat.name}' but explicitly disabled by architect`,
+              });
+            }
           } else if (!activeSet.has(recId)) {
             // Auto-activate recommended feature
             activeSet.add(recId);
