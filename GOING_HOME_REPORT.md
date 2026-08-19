@@ -2,6 +2,48 @@
 
 Autonomous work log. Newest session on top.
 
+## User-directed: OpenRouter + generic OpenAI-compatible provider support (2026-08-19)
+
+User shared their actual VS Code custom-model config (Google Gemini, OpenRouter, a generic
+"Custom Endpoint" vendor used for both Mistral's direct API and opencode.ai's Zen gateway) and
+asked for the app to work the same way — paste an API key for one of these and it should just
+work, refining further from there.
+
+- **New features/improvements added (`d2e30c9`):**
+  - Added `'OpenRouter'` as its own vendor end-to-end (`types/factory.ts`, `aiProviderRouting.ts`,
+    the API route's allow-list) — it speaks the same OpenAI-compatible chat/completions shape
+    already implemented for OpenAI/DeepSeek/Azure OpenAI, so it reuses that code path with its own
+    default base URL.
+  - Exposed the **Base URL override field** for OpenAI/DeepSeek/OpenRouter in the AI Providers
+    modal — this was already fully supported server-side (`buildProviderRequest` always honored a
+    custom `baseUrl` for these vendors) but had no UI control to set it, which is what actually
+    blocked pointing this app at Mistral's API or opencode.ai's Zen gateway before this change.
+    Both are plain OpenAI-compatible endpoints, so no new provider-specific code was needed for
+    them — just a way to type in their base URL.
+  - Added a **Quick Add preset row** in the AI Providers tab (OpenRouter free Gemma, Mistral
+    Devstral, Mistral Codestral, opencode.ai Zen free tier) that prefills name/vendor/base URL/
+    model in one click, mirroring the exact models from the user's shared config — only the API
+    key needs pasting afterward. Verified live via Playwright: applied two different presets,
+    confirmed the form prefilled correctly, saved one, confirmed it persisted with correct vendor/
+    model/base URL on its card, zero console errors.
+- **Bonus fix while in this code**: found `'gemini-3.6-flash'` (not a real Gemini model id — same
+  invalid id fixed in the API route's server constants in the prior review cycle) still hardcoded
+  as the default/placeholder value in three spots in this view, plus in the seed data
+  (`services/mockSeedData.ts`). Fixed all four to `gemini-2.5-flash`.
+- Added unit tests for the new OpenRouter request-building and response-extraction paths.
+- Verified: `npm run lint` clean, `npm run test` 154/154 passing, `npm run build` clean, plus the
+  live Playwright pass described above.
+- Per explicit user instruction, this commit and all subsequent ones this session omit the
+  "Co-Authored-By" trailer.
+- Next step if continuing: the user's config also lists several more Mistral models
+  (`mistral-large-2512`, `labs-leanstral-2603`, `mistral-medium-2508/2505`, `mistral-small-2506`)
+  and opencode.ai models (`deepseek-v4-flash-free`, `mimo-v2.5-free`, `north-mini-code-free`,
+  `nemotron-3-ultra-free`) not yet added as their own Quick Add preset buttons — only one
+  representative preset per gateway was added to keep the row from growing unwieldy. The
+  mechanism (vendor `OpenAI`/`OpenRouter` + custom base URL + arbitrary model id, all editable in
+  the modal) already supports every model in their list without further code changes — adding more
+  presets, if wanted, is purely a `PROVIDER_PRESETS` array edit in `AIPromptsView.tsx`.
+
 ## Session — 2026-08-19 (cycle 3: security-focused review)
 
 **Detected stack:** Next.js (App Router)
