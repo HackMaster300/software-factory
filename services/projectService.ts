@@ -207,7 +207,7 @@ export class ProjectService {
     const generateSlnContent = (): string => {
       let slnText = `Microsoft Visual Studio Solution File, Format Version 12.00\n# Visual Studio Version 17\nVisualStudioVersion = 17.0.31903.59\nMinimumVisualStudioVersion = 10.0.40219.1\n`;
       blueprint.projects.forEach((proj, idx) => {
-        const guid = `{00000000-0000-0000-0000-00000000000${idx + 1}}`;
+        const guid = `{00000000-0000-0000-0000-${String(idx + 1).padStart(12, '0')}}`;
         slnText += `Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "${proj.name}", "src\\${proj.name}\\${proj.name}.csproj", "${guid}"\nEndProject\n`;
       });
       slnText += `Global\n\tGlobalSection(SolutionConfigurationPlatforms) = preSolution\n\t\tDebug|Any CPU = Debug|Any CPU\n\t\tRelease|Any CPU = Release|Any CPU\n\tEndGlobalSection\nEndGlobal\n`;
