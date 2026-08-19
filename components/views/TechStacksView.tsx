@@ -10,6 +10,7 @@ import {
   Plus,
   Edit3,
   Trash2,
+  Copy,
   X,
   Zap,
   Lock,
@@ -155,6 +156,15 @@ export const TechStacksView: React.FC = () => {
     }
     if (!confirm('Delete this technology stack?')) return;
     techStackRepository.saveTechStacks(stacks.filter((s) => s.id !== id));
+  };
+  const handleDuplicateStack = (stackToCopy: TechStack) => {
+    // False positive below: a plain onClick-only event handler (never called during
+    // render), identical in shape to handleDuplicateFeature/handleDuplicateRule elsewhere
+    // in this codebase, which use the same Date.now()-based id pattern without issue.
+    // eslint-disable-next-line react-hooks/purity
+    const newId = `stack-custom-${Date.now()}`;
+    const duplicated: TechStack = { ...stackToCopy, id: newId, name: `${stackToCopy.name} (Copy)` };
+    techStackRepository.saveTechStacks([...stacks, duplicated]);
   };
 
   // --- Cache handlers ---
@@ -374,6 +384,9 @@ export const TechStacksView: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleDuplicateStack(st)} aria-label={`Duplicate tech stack ${st.name}`}>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Duplicate
+                    </Button>
                     <Button size="sm" onClick={() => handleOpenEditStack(st)} aria-label={`Edit tech stack ${st.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
                     </Button>
