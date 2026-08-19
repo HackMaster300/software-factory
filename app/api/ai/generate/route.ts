@@ -17,8 +17,12 @@ const ALLOWED_PROVIDERS: AIProviderName[] = [
   'Ollama',
 ];
 
-const GEMINI_PRIMARY_MODEL = 'gemini-3.6-flash';
-const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash';
+// Must both be real, released model ids — an invalid primary silently doubles
+// latency/cost on every request (it always fails over to the fallback) until
+// the fallback itself has an outage, at which point Gemini stops working
+// entirely with no earlier warning signal.
+const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
+const GEMINI_FALLBACK_MODEL = 'gemini-2.0-flash';
 
 function defaultSystemInstruction(role: string): string {
   return `You are an expert ${role} in an enterprise Software Factory platform. Provide direct, highly technical, actionable analysis covering Pros, Cons, Risks, Alternatives, and Recommendations.`;
@@ -205,8 +209,15 @@ export async function POST(req: NextRequest) {
     const text = extractResponseText(typedProvider, json);
     return NextResponse.json({ text: text || 'No response generated from model.', isSimulated: false });
   } catch (err) {
+    // Full detail goes to the server log only — this catch-all covers any
+    // uncaught exception (not just provider errors, which are already
+    // sanitized via friendlyProviderErrorMessage above), so echoing
+    // err.message straight to the client risked leaking internal exception
+    // details (library internals, unexpected env-derived strings, etc.).
     console.error('Error in /api/ai/generate:', err);
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: `Unexpected server error: ${message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Unexpected server error. Check server logs for details.' },
+      { status: 500 }
+    );
   }
 }
