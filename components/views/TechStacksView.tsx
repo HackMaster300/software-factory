@@ -149,6 +149,10 @@ export const TechStacksView: React.FC = () => {
     setIsStackModalOpen(false);
   };
   const handleDeleteStack = (id: string) => {
+    if (stacks.length <= 1) {
+      alert('At least one Technology Stack must remain.');
+      return;
+    }
     if (!confirm('Delete this technology stack?')) return;
     techStackRepository.saveTechStacks(stacks.filter((s) => s.id !== id));
   };

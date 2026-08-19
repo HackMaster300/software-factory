@@ -137,7 +137,8 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
     const updatedSets = RuleService.getRuleSets();
     setRuleSets(updatedSets);
     if (blueprint) {
-      setValidationReport(RuleService.validateBlueprint(blueprint, updatedSets[0]));
+      const updatedActiveSet = updatedSets.find((rs) => rs.id === activeRuleSet.id) || updatedSets[0];
+      setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
     }
   };
 
@@ -147,7 +148,8 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
       const updatedSets = RuleService.getRuleSets();
       setRuleSets(updatedSets);
       if (blueprint) {
-        setValidationReport(RuleService.validateBlueprint(blueprint, updatedSets[0]));
+        const updatedActiveSet = updatedSets.find((rs) => rs.id === activeRuleSet.id) || updatedSets[0];
+        setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
       }
     }
   };
@@ -212,7 +214,8 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
     setIsRuleModalOpen(false);
 
     if (blueprint) {
-      setValidationReport(RuleService.validateBlueprint(blueprint, updatedSets[0]));
+      const updatedActiveSet = updatedSets.find((rs) => rs.id === activeRuleSet.id) || updatedSets[0];
+      setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
     }
   };
 
