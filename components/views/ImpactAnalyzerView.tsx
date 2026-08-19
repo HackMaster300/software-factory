@@ -34,12 +34,20 @@ export const ImpactAnalyzerView: React.FC<ImpactAnalyzerViewProps> = ({ blueprin
   const isSimMicroservices = simTargetStyle === 'Microservices';
   const isSimCockroach = simDatabaseProvider === 'CockroachDB';
   const isSimMTLS = simAuthMechanism.includes('mTLS');
+  const isSimK8sMesh = simContainerStrategy.includes('K8s');
+  const isSimManagedFargate = simContainerStrategy === 'AWS ECS Fargate';
 
-  const simSecurityScore = Math.min(100, currentScores.securityScore + (isSimMTLS ? 8 : -4));
-  const simArchScore = Math.min(100, currentScores.architectureScore + (isSimMicroservices ? 10 : 2));
+  const simSecurityScore = Math.min(100, Math.max(0, currentScores.securityScore + (isSimMTLS ? 8 : -4)));
+  const simArchScore = Math.min(100, Math.max(0, currentScores.architectureScore + (isSimMicroservices ? 10 : 2)));
   const simPerfScore = Math.max(50, currentScores.performanceScore + (isSimMicroservices ? -6 : 8));
-  const simScalabilityScore = Math.min(100, currentScores.scalabilityScore + (isSimCockroach ? 12 : 5));
-  const simComplexityScore = Math.min(100, currentScores.complexityScore + (isSimMicroservices ? 15 : 0));
+  const simScalabilityScore = Math.min(
+    100,
+    Math.max(0, currentScores.scalabilityScore + (isSimCockroach ? 12 : 5) + (isSimK8sMesh ? 6 : isSimManagedFargate ? 4 : -8))
+  );
+  const simComplexityScore = Math.min(
+    100,
+    Math.max(0, currentScores.complexityScore + (isSimMicroservices ? 15 : 0) + (isSimK8sMesh ? 10 : isSimManagedFargate ? 4 : -10))
+  );
 
   const simQualityScore = Math.round(
     (simSecurityScore + simArchScore + simPerfScore + simScalabilityScore) / 4
@@ -63,7 +71,7 @@ export const ImpactAnalyzerView: React.FC<ImpactAnalyzerViewProps> = ({ blueprin
           variant="secondary"
           onClick={() =>
             openAIRefactor(
-              `Simulate impact of changing blueprint architecture from '${blueprint.architectureStyle}' to '${simTargetStyle}' with Database '${simDatabaseProvider}' and Auth '${simAuthMechanism}'. Analyze refactoring cost, breaking risks, and team impact.`
+              `Simulate impact of changing blueprint architecture from '${blueprint.architectureStyle}' to '${simTargetStyle}' with Database '${simDatabaseProvider}', Auth '${simAuthMechanism}', and Container Orchestration '${simContainerStrategy}'. Analyze refactoring cost, breaking risks, and team impact.`
             )
           }
           className="shrink-0"

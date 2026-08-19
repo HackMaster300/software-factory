@@ -421,11 +421,10 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
 
   const handleAddCustomModule = () => {
     if (!newModuleName.trim()) return;
-    const isDotnet = activeTechStack.language === 'csharp';
-    const ext = isDotnet ? '.csproj' : '';
-    const nameWithExt = newModuleName.trim().endsWith(ext) || !isDotnet
-      ? newModuleName.trim()
-      : `${newModuleName.trim()}`;
+    // Module names are stored without a file extension everywhere in this
+    // app (BlueprintsView's Solution Tree appends ".csproj" itself only at
+    // render time), so no extension normalization belongs here.
+    const nameWithExt = newModuleName.trim();
 
     const uniqueSuffix = editableBlueprint.projects.length + 1;
     const initialRefs = newModuleReferences.length > 0
