@@ -19,6 +19,7 @@ import {
   UserCog,
 } from 'lucide-react';
 import { AIService } from '../services/aiService';
+import { getVendorDisplayLabel } from '../services/aiProviderRouting';
 import { Blueprint } from '../types/factory';
 import { useAIAgents, useAIProviders } from '../services/storageService';
 import { Button } from './ui/Button';
@@ -147,7 +148,7 @@ User Request: ${currentPrompt}
           <div>
             <div className="font-semibold text-white text-xs">AI Architect Assistant</div>
             <div className="text-[10px] text-gray-400 font-mono">
-              {activeProvider ? `${activeProvider.name} (${activeProvider.provider})` : 'Server-Side Gemini • Simulated until a provider key is configured'}
+              {activeProvider ? `${activeProvider.name} (${getVendorDisplayLabel(activeProvider)})` : 'Server-Side Gemini • Simulated until a provider key is configured'}
             </div>
           </div>
         </div>

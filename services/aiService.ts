@@ -43,6 +43,7 @@ export class AIService {
           apiKey: active?.apiKey,
           baseUrl: active?.baseUrl,
           model: active?.model,
+          providerLabel: active?.name,
         }),
       });
 
@@ -90,6 +91,7 @@ export class AIService {
           apiKey: provider.apiKey,
           baseUrl: provider.baseUrl,
           model: provider.model,
+          providerLabel: provider.name,
         }),
       });
 

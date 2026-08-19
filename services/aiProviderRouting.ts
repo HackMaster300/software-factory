@@ -31,6 +31,23 @@ export const DEFAULT_BASE_URLS: Partial<Record<AIProviderName, string>> = {
 
 const stripTrailingSlash = (url: string) => url.replace(/\/+$/, '');
 
+// Known OpenAI-compatible gateway hostnames, for a friendlier vendor label than the generic
+// "OpenAI" bucket they're all technically stored/routed under — a provider named "Mistral
+// Devstral" showing "Vendor: OpenAI" (or "(OpenAI)" in the AI Assistant drawer header) is
+// exactly the confusion this exists to avoid.
+const KNOWN_COMPATIBLE_HOSTS: Array<{ match: string; label: string }> = [
+  { match: 'mistral.ai', label: 'Mistral (OpenAI-Compatible)' },
+  { match: 'opencode.ai', label: 'opencode.ai (OpenAI-Compatible)' },
+  { match: 'openrouter.ai', label: 'OpenRouter (OpenAI-Compatible)' },
+];
+
+/** User-facing vendor label for a configured provider — see KNOWN_COMPATIBLE_HOSTS above. */
+export function getVendorDisplayLabel(provider: AIProviderConfig): string {
+  if (provider.provider !== 'OpenAI' || !provider.baseUrl) return provider.provider;
+  const known = KNOWN_COMPATIBLE_HOSTS.find((h) => provider.baseUrl!.includes(h.match));
+  return known?.label || 'OpenAI-Compatible (custom endpoint)';
+}
+
 // Cloud-metadata endpoints have no legitimate use as an AI provider baseUrl —
 // unlike a private/localhost address (a real, supported Ollama/Azure setup),
 // there's no case where a user genuinely wants their request routed here.

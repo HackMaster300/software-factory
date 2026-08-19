@@ -33,7 +33,7 @@ import { AIProviderConfig, PromptTemplate, AIAgent } from '../../types/factory';
 import { StorageService, useAIAgents, useAIProviders } from '../../services/storageService';
 import { aiAgentRepository, aiProviderRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
-import { DEFAULT_BASE_URLS } from '../../services/aiProviderRouting';
+import { DEFAULT_BASE_URLS, getVendorDisplayLabel } from '../../services/aiProviderRouting';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -942,7 +942,7 @@ export const AIPromptsView: React.FC = () => {
 
                     <div className="text-xs text-gray-400 font-mono space-y-1 bg-[#13151b] p-2.5 rounded border border-[#2b303d]">
                       <div>
-                        Vendor: <span className="text-gray-200">{provider.provider}</span>
+                        Vendor: <span className="text-gray-200">{getVendorDisplayLabel(provider)}</span>
                       </div>
                       <div>
                         Model: <span className="text-gray-200 font-bold">{provider.model}</span>
@@ -1230,7 +1230,7 @@ export const AIPromptsView: React.FC = () => {
                   <label className="text-[10px] text-gray-400 block mb-1">Vendor Family</label>
                   <Select value={providerVendor} onChange={(e) => setProviderVendor(e.target.value as any)}>
                     <option value="Google Gemini">Google Gemini</option>
-                    <option value="OpenAI">OpenAI (or any OpenAI-compatible API)</option>
+                    <option value="OpenAI">OpenAI-Compatible (OpenAI, Mistral, opencode.ai, etc.)</option>
                     <option value="OpenRouter">OpenRouter</option>
                     <option value="Anthropic">Anthropic</option>
                     <option value="DeepSeek">DeepSeek</option>

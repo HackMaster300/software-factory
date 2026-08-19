@@ -5,6 +5,7 @@ import {
   extractProviderErrorMessage,
   isNetworkError,
   friendlyProviderErrorMessage,
+  getVendorDisplayLabel,
   DEFAULT_BASE_URLS,
 } from './aiProviderRouting';
 
@@ -315,5 +316,76 @@ describe('friendlyProviderErrorMessage', () => {
     expect(friendlyProviderErrorMessage(new Error('Invalid API key'), 'OpenAI')).toBe(
       'OpenAI request failed: Invalid API key'
     );
+  });
+});
+
+describe('getVendorDisplayLabel', () => {
+  it('shows "Mistral" instead of "OpenAI" for a provider configured via the OpenAI-compatible vendor with a Mistral baseUrl', () => {
+    const label = getVendorDisplayLabel({
+      id: 'p1',
+      name: 'Mistral Devstral',
+      provider: 'OpenAI',
+      model: 'devstral-2512',
+      status: 'active',
+      costPer1k: '$0',
+      latency: '250ms',
+      baseUrl: 'https://api.mistral.ai/v1',
+    });
+    expect(label).toContain('Mistral');
+    expect(label).not.toBe('OpenAI');
+  });
+
+  it('shows "opencode.ai" for the opencode.ai Zen gateway baseUrl', () => {
+    const label = getVendorDisplayLabel({
+      id: 'p2',
+      name: 'opencode.ai Big Pickle',
+      provider: 'OpenAI',
+      model: 'big-pickle',
+      status: 'active',
+      costPer1k: '$0',
+      latency: '250ms',
+      baseUrl: 'https://opencode.ai/zen/v1',
+    });
+    expect(label).toContain('opencode.ai');
+  });
+
+  it('falls back to a generic "OpenAI-Compatible" label for an unrecognized custom endpoint', () => {
+    const label = getVendorDisplayLabel({
+      id: 'p3',
+      name: 'My Custom Gateway',
+      provider: 'OpenAI',
+      model: 'some-model',
+      status: 'active',
+      costPer1k: '$0',
+      latency: '250ms',
+      baseUrl: 'https://my-own-proxy.example.com/v1',
+    });
+    expect(label).toBe('OpenAI-Compatible (custom endpoint)');
+  });
+
+  it('shows plain "OpenAI" for the real OpenAI API (no baseUrl override)', () => {
+    const label = getVendorDisplayLabel({
+      id: 'p4',
+      name: 'OpenAI GPT-4o',
+      provider: 'OpenAI',
+      model: 'gpt-4o',
+      status: 'active',
+      costPer1k: '$0',
+      latency: '250ms',
+    });
+    expect(label).toBe('OpenAI');
+  });
+
+  it('passes through non-OpenAI vendors unchanged (e.g. Anthropic, Ollama, OpenRouter)', () => {
+    const anthropic = getVendorDisplayLabel({
+      id: 'p5',
+      name: 'Claude',
+      provider: 'Anthropic',
+      model: 'claude-sonnet-5',
+      status: 'active',
+      costPer1k: '$0',
+      latency: '250ms',
+    });
+    expect(anthropic).toBe('Anthropic');
   });
 });
