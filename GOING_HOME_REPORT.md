@@ -2,6 +2,42 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-19 (cycle 5: improvement mode — Duplicate action)
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+Housekeeping first: found `services/projectService.ts`'s GUID-padding fix from the previous cycle
+was described in that commit message but the file itself never got `git add`-ed (`1b5cd44`) —
+staged and committed it properly this cycle. Also hit one flaky `vitest` worker timeout on a
+routine re-run (`Timeout waiting for worker to respond`, no assertion failures) — retried once and
+it passed clean, not a real regression.
+
+With the full review backlog clear (cycles 2-4 covered `components/`, `app/`, `hooks/`, `lib/`,
+`services/`), moved into improvement mode per the skill's mandate.
+
+- **New feature added: Duplicate action (`453df79`)** — neither the Feature Manifest Library nor
+  the Rule Engine had any way to start a new entry from an existing one, only Edit-in-place and
+  Delete. Added a Duplicate button (Copy icon) to both:
+  - `FeatureManifestsView.tsx`: duplicates the full manifest (dependencies, questions, generated
+    files, impact scores, etc.) under a new id and `<name> (Copy)`, selects it immediately.
+  - `RuleEngineView.tsx`: same for individual rules in the active Rule Set, reusing
+    `RuleService.addRule` and this session's earlier active-rule-set-aware validation fix so the
+    new rule's effect shows up immediately in the validation report.
+  - Verified live via Playwright: duplicated one of each, confirmed the "(Copy)" entry appears and
+    auto-selects, zero console errors.
+- Verified: `npm run lint` clean, `npm run test` 162/162 passing (unchanged — reuses existing,
+  already-tested service methods, no new service-layer logic to test), `npm run build` clean.
+- Per explicit user instruction earlier this session, this and all subsequent commits omit the
+  "Co-Authored-By" trailer.
+- Next step if continuing: same Duplicate pattern would fit Tech Stacks, Templates, and Rule Sets
+  themselves (currently only individual rules within a set can be duplicated, not a whole set) —
+  natural next candidates if continuing this feature thread. Otherwise, other improvement-mode
+  ideas from earlier entries remain open: dark/light theme (larger effort — many hardcoded hex
+  colors throughout, not CSS-variable-based, so scope this carefully before starting), or an
+  "Undo delete" toast now that the storage-layer data-loss bug is fixed (deletions finally persist
+  correctly, which makes an undo affordance more valuable than it would have been before that fix).
+
 ## Session — 2026-08-19 (cycle 4: business-logic services review)
 
 **Detected stack:** Next.js (App Router)
