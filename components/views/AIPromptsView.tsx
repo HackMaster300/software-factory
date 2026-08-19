@@ -1294,10 +1294,19 @@ export const AIPromptsView: React.FC = () => {
                   <label className="text-[10px] text-gray-400 block mb-1">API Key</label>
                   <Input
                     type="password"
+                    name="sf-ai-provider-secret"
                     placeholder={providerVendor === 'Azure OpenAI' ? 'Azure OpenAI API key' : 'sk-...'}
                     value={providerApiKey}
                     onChange={(e) => setProviderApiKey(e.target.value)}
-                    autoComplete="off"
+                    // A plain `type="password"` input sitting right after a URL-like text
+                    // input reads to Chrome/Edge's credential manager as a login form, and
+                    // it will silently autofill an unrelated saved password (and the paired
+                    // saved "site" into the Base URL field) — observed live during testing.
+                    // autoComplete="off" alone does not reliably stop this; "new-password"
+                    // plus a non-generic `name` is the documented working combination.
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     className="font-mono"
                   />
                   {providerVendor === 'Azure OpenAI' && (
@@ -1307,6 +1316,10 @@ export const AIPromptsView: React.FC = () => {
                       </label>
                       <Input
                         type="text"
+                        name="sf-ai-provider-base-url"
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
                         placeholder="https://{resource}.openai.azure.com/openai/deployments/{deployment}"
                         value={providerBaseUrl}
                         onChange={(e) => setProviderBaseUrl(e.target.value)}
@@ -1322,6 +1335,10 @@ export const AIPromptsView: React.FC = () => {
                       </label>
                       <Input
                         type="text"
+                        name="sf-ai-provider-base-url"
+                        autoComplete="off"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
                         placeholder={DEFAULT_BASE_URLS[providerVendor] || 'https://your-endpoint.example.com/v1'}
                         value={providerBaseUrl}
                         onChange={(e) => setProviderBaseUrl(e.target.value)}
