@@ -101,7 +101,7 @@ export const AIPromptsView: React.FC = () => {
   const [isPromptModalOpen, setIsPromptModalOpen] = useState<boolean>(false);
   const [editingPrompt, setEditingPrompt] = useState<PromptTemplate | null>(null);
   const [promptName, setPromptName] = useState<string>('');
-  const [promptRole, setPromptRole] = useState<'System' | 'Developer' | 'User'>('System');
+  const [templateFormRole, setTemplateFormRole] = useState<'System' | 'Developer' | 'User'>('System');
   const [promptCategory, setPromptCategory] = useState<string>('Architecture');
   const [promptBody, setPromptBody] = useState<string>('');
   const [promptVersion, setPromptVersion] = useState<string>('1.0.0');
@@ -146,34 +146,43 @@ export const AIPromptsView: React.FC = () => {
     const finalSystem = getInterpolatedPrompt(systemInstruction);
 
     const selectedProv = providers.find((p) => p.id === selectedProviderId);
-    const role = promptRole === 'System' ? 'Software Architect' : promptRole;
+    // Fixed to match the "Role: System" label shown next to the System
+    // Persona editor above — this used to read the Prompt Template modal's
+    // `promptRole` field instead, so opening/changing that unrelated modal's
+    // Role dropdown silently changed what role the next Playground
+    // execution sent, even without saving the template.
+    const role = 'Software Architect';
 
-    const res = await AIService.requestAnalysis(finalPrompt, role, finalSystem);
+    try {
+      const res = await AIService.requestAnalysis(finalPrompt, role, finalSystem);
 
-    const endTime = performance.now();
-    const duration = Math.round(endTime - startTime);
+      const endTime = performance.now();
+      const duration = Math.round(endTime - startTime);
 
-    const inTokens = Math.round((finalPrompt.length + finalSystem.length) / 4);
-    const outTokens = Math.round(res.text.length / 4);
+      const inTokens = Math.round((finalPrompt.length + finalSystem.length) / 4);
+      const outTokens = Math.round(res.text.length / 4);
 
-    let costNum = 0.00015;
-    if (selectedProv?.costPer1k) {
-      const parsedCost = parseFloat(selectedProv.costPer1k.replace('$', ''));
-      if (!isNaN(parsedCost)) costNum = parsedCost;
+      let costNum = 0.00015;
+      if (selectedProv?.costPer1k) {
+        const parsedCost = parseFloat(selectedProv.costPer1k.replace('$', ''));
+        if (!isNaN(parsedCost)) costNum = parsedCost;
+      }
+
+      const totalCost = (((inTokens + outTokens) / 1000) * costNum).toFixed(5);
+
+      setExecutionOutput(res.text);
+      setExecMetrics({
+        latencyMs: duration,
+        inputTokens: inTokens,
+        outputTokens: outTokens,
+        estimatedCost: `$${totalCost}`,
+        qualityScore: Math.min(99, 88 + Math.floor(Math.random() * 11)),
+      });
+    } catch (err) {
+      setExecutionOutput(`Execution failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsExecuting(false);
     }
-
-    const totalCost = (((inTokens + outTokens) / 1000) * costNum).toFixed(5);
-
-    setExecutionOutput(res.text);
-    setExecMetrics({
-      latencyMs: duration,
-      inputTokens: inTokens,
-      outputTokens: outTokens,
-      estimatedCost: `$${totalCost}`,
-      qualityScore: Math.min(99, 88 + Math.floor(Math.random() * 11)),
-    });
-
-    setIsExecuting(false);
   };
 
   const handleCopyOutput = () => {
@@ -200,7 +209,7 @@ export const AIPromptsView: React.FC = () => {
   const handleOpenAddPrompt = () => {
     setEditingPrompt(null);
     setPromptName('');
-    setPromptRole('System');
+    setTemplateFormRole('System');
     setPromptCategory('Architecture');
     setPromptBody('');
     setPromptVersion('1.0.0');
@@ -210,7 +219,7 @@ export const AIPromptsView: React.FC = () => {
   const handleOpenEditPrompt = (pt: PromptTemplate) => {
     setEditingPrompt(pt);
     setPromptName(pt.name);
-    setPromptRole(pt.role);
+    setTemplateFormRole(pt.role);
     setPromptCategory(pt.category);
     setPromptBody(pt.prompt);
     setPromptVersion(pt.version);
@@ -232,7 +241,7 @@ export const AIPromptsView: React.FC = () => {
     const newTemplate: PromptTemplate = {
       id,
       name: promptName.trim(),
-      role: promptRole,
+      role: templateFormRole,
       category: promptCategory.trim() || 'Architecture',
       prompt: promptBody.trim(),
       variables,
@@ -335,14 +344,21 @@ export const AIPromptsView: React.FC = () => {
 
   const handleTestConnection = async (provider: AIProviderConfig) => {
     setConnectionTests((prev) => ({ ...prev, [provider.id]: { status: 'testing', message: 'Testing…' } }));
-    const result = await AIService.testConnection(provider);
-    setConnectionTests((prev) => ({
-      ...prev,
-      [provider.id]: {
-        status: result.success ? 'success' : 'error',
-        message: result.success ? `Connected, responded in ${result.latencyMs}ms` : result.message,
-      },
-    }));
+    try {
+      const result = await AIService.testConnection(provider);
+      setConnectionTests((prev) => ({
+        ...prev,
+        [provider.id]: {
+          status: result.success ? 'success' : 'error',
+          message: result.success ? `Connected, responded in ${result.latencyMs}ms` : result.message,
+        },
+      }));
+    } catch (err) {
+      setConnectionTests((prev) => ({
+        ...prev,
+        [provider.id]: { status: 'error', message: err instanceof Error ? err.message : 'Unknown error' },
+      }));
+    }
   };
 
   // Save/Edit/Delete Custom AI Agents
@@ -1062,7 +1078,7 @@ export const AIPromptsView: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <label className="text-[10px] text-gray-400 block mb-1">Role</label>
-                  <Select value={promptRole} onChange={(e) => setPromptRole(e.target.value as any)}>
+                  <Select value={templateFormRole} onChange={(e) => setTemplateFormRole(e.target.value as any)}>
                     <option value="System">System</option>
                     <option value="Developer">Developer</option>
                     <option value="User">User</option>
