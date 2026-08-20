@@ -2,6 +2,34 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-20 (cycle 7: improvement mode — Duplicate on remaining profiles)
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+Pushed the 14 commits accumulated since the last push (through `ed91c7d`) per explicit user
+approval, then continued the Duplicate-action thread flagged as the natural next step in cycle 6.
+
+- **Cache/Logging/Encryption/Deployment/Authentication profiles (`7f7334c`)**: added the same
+  Duplicate button (Copy icon, next to Edit/Delete) to all five remaining profile sections in
+  `TechStacksView.tsx` — the only entities left without it after Tech Stacks and Rule Sets got it
+  in cycle 6. Each handler follows the exact `handleDuplicateStack` shape: `{...id-prefix}-${Date.now()}`
+  id, `<name> (Copy)`, append-and-save via the existing `profileRepository.save*Profiles` methods,
+  same narrowly-scoped `eslint-disable-next-line react-hooks/purity` precedent already established
+  for this pattern.
+- Verified: `npm run lint` clean, `npm run test` 169/169 passing (unchanged — reuses existing,
+  already-tested repository methods, no new service-layer logic), `npm run build` clean.
+- **Could not Playwright-verify live this cycle**: the Playwright browser binary
+  (`chrome.exe`) is not installed in this environment (`npx playwright install chrome` would be
+  needed). Confidence is based on: identical pattern to the already-Playwright-verified
+  `handleDuplicateStack`/`RuleService.duplicateRuleSet` from cycle 6, clean lint/build/test. Flagging
+  this as a real gap rather than silently claiming full verification — worth running
+  `npx playwright install chrome` at the start of a future session before relying on live UI checks.
+- Next step if continuing: with Duplicate now present on every list-style entity in the app,
+  consider closing this thread and picking one of the two ideas left open from cycle 5: an "Undo
+  delete" toast, or dark/light theme (bigger effort — needs a CSS-variable pass first since colors
+  are hardcoded hex throughout).
+
 ## Session — 2026-08-19 (cycle 6: improvement mode — Duplicate everywhere it fits)
 
 **Detected stack:** Next.js (App Router)
