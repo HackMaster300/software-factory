@@ -193,6 +193,12 @@ export const TechStacksView: React.FC = () => {
     if (!confirm('Delete this cache profile?')) return;
     profileRepository.saveCacheProfiles(cacheProfiles.filter((p) => p.id !== id));
   };
+  const handleDuplicateCache = (profileToCopy: ProfileCache) => {
+    // eslint-disable-next-line react-hooks/purity
+    const newId = `cache-prof-custom-${Date.now()}`;
+    const duplicated: ProfileCache = { ...profileToCopy, id: newId, name: `${profileToCopy.name} (Copy)` };
+    profileRepository.saveCacheProfiles([...cacheProfiles, duplicated]);
+  };
 
   // --- Logging handlers ---
   const handleOpenAddLogging = () => {
@@ -219,6 +225,12 @@ export const TechStacksView: React.FC = () => {
   const handleDeleteLogging = (id: string) => {
     if (!confirm('Delete this logging profile?')) return;
     profileRepository.saveLoggingProfiles(loggingProfiles.filter((p) => p.id !== id));
+  };
+  const handleDuplicateLogging = (profileToCopy: ProfileLogging) => {
+    // eslint-disable-next-line react-hooks/purity
+    const newId = `log-prof-custom-${Date.now()}`;
+    const duplicated: ProfileLogging = { ...profileToCopy, id: newId, name: `${profileToCopy.name} (Copy)` };
+    profileRepository.saveLoggingProfiles([...loggingProfiles, duplicated]);
   };
 
   // --- Encryption handlers ---
@@ -249,6 +261,12 @@ export const TechStacksView: React.FC = () => {
     if (!confirm('Delete this encryption profile?')) return;
     profileRepository.saveEncryptionProfiles(encryptionProfiles.filter((p) => p.id !== id));
   };
+  const handleDuplicateEncryption = (profileToCopy: ProfileEncryption) => {
+    // eslint-disable-next-line react-hooks/purity
+    const newId = `enc-prof-${Date.now()}`;
+    const duplicated: ProfileEncryption = { ...profileToCopy, id: newId, name: `${profileToCopy.name} (Copy)` };
+    profileRepository.saveEncryptionProfiles([...encryptionProfiles, duplicated]);
+  };
 
   // --- Deployment handlers ---
   const handleOpenAddDeployment = () => {
@@ -278,6 +296,12 @@ export const TechStacksView: React.FC = () => {
     if (!confirm('Delete this deployment profile?')) return;
     profileRepository.saveDeploymentProfiles(deploymentProfiles.filter((p) => p.id !== id));
   };
+  const handleDuplicateDeployment = (profileToCopy: ProfileDeployment) => {
+    // eslint-disable-next-line react-hooks/purity
+    const newId = `deploy-prof-${Date.now()}`;
+    const duplicated: ProfileDeployment = { ...profileToCopy, id: newId, name: `${profileToCopy.name} (Copy)` };
+    profileRepository.saveDeploymentProfiles([...deploymentProfiles, duplicated]);
+  };
 
   // --- Authentication handlers ---
   const handleOpenAddAuth = () => {
@@ -304,6 +328,12 @@ export const TechStacksView: React.FC = () => {
   const handleDeleteAuth = (id: string) => {
     if (!confirm('Delete this authentication profile?')) return;
     profileRepository.saveAuthenticationProfiles(authenticationProfiles.filter((p) => p.id !== id));
+  };
+  const handleDuplicateAuth = (profileToCopy: ProfileAuthentication) => {
+    // eslint-disable-next-line react-hooks/purity
+    const newId = `auth-prof-${Date.now()}`;
+    const duplicated: ProfileAuthentication = { ...profileToCopy, id: newId, name: `${profileToCopy.name} (Copy)` };
+    profileRepository.saveAuthenticationProfiles([...authenticationProfiles, duplicated]);
   };
 
   const tabs: Array<{ id: TabId; label: string; count: number; icon: React.ReactNode }> = [
@@ -468,6 +498,9 @@ export const TechStacksView: React.FC = () => {
                     Default TTL: {p.defaultTtlMinutes}m • Distributed Lock: {p.enableDistributedLock ? 'Enabled' : 'Disabled'}
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleDuplicateCache(p)} aria-label={`Duplicate cache profile ${p.name}`}>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Duplicate
+                    </Button>
                     <Button size="sm" onClick={() => handleOpenEditCache(p)} aria-label={`Edit cache profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
                     </Button>
@@ -507,6 +540,9 @@ export const TechStacksView: React.FC = () => {
                     JSON: {p.structuredJson ? 'Yes' : 'No'} • Console: {p.sinkToConsole ? 'Yes' : 'No'} • Seq/Jaeger: {p.sinkToSeqOrJaeger ? 'Yes' : 'No'}
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleDuplicateLogging(p)} aria-label={`Duplicate logging profile ${p.name}`}>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Duplicate
+                    </Button>
                     <Button size="sm" onClick={() => handleOpenEditLogging(p)} aria-label={`Edit logging profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
                     </Button>
@@ -546,6 +582,9 @@ export const TechStacksView: React.FC = () => {
                     Key Rotation: {p.keyRotationDays}d • At Rest: {p.encryptAtRest ? 'Yes' : 'No'} • In Transit: {p.encryptInTransit ? 'Yes' : 'No'}
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleDuplicateEncryption(p)} aria-label={`Duplicate encryption profile ${p.name}`}>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Duplicate
+                    </Button>
                     <Button size="sm" onClick={() => handleOpenEditEncryption(p)} aria-label={`Edit encryption profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
                     </Button>
@@ -585,6 +624,9 @@ export const TechStacksView: React.FC = () => {
                     Replicas: {p.replicas} • Auto-Scale: {p.autoScale ? 'Enabled' : 'Disabled'}
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleDuplicateDeployment(p)} aria-label={`Duplicate deployment profile ${p.name}`}>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Duplicate
+                    </Button>
                     <Button size="sm" onClick={() => handleOpenEditDeployment(p)} aria-label={`Edit deployment profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
                     </Button>
@@ -624,6 +666,9 @@ export const TechStacksView: React.FC = () => {
                     Session Timeout: {p.sessionTimeoutMinutes}m • MFA: {p.enableMfa ? 'Enabled' : 'Disabled'}
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#2b303d]">
+                    <Button size="sm" onClick={() => handleDuplicateAuth(p)} aria-label={`Duplicate authentication profile ${p.name}`}>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Duplicate
+                    </Button>
                     <Button size="sm" onClick={() => handleOpenEditAuth(p)} aria-label={`Edit authentication profile ${p.name}`}>
                       <Edit3 className="w-3.5 h-3.5" aria-hidden="true" /> Edit
                     </Button>
