@@ -38,6 +38,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
+import { showToast } from '../../hooks/use-toasts';
 
 const MODEL_ID_PLACEHOLDERS: Record<string, string> = {
   'Google Gemini': 'gemini-2.5-flash',
@@ -292,11 +293,19 @@ export const AIPromptsView: React.FC = () => {
   };
 
   const handleDeletePromptTemplate = (id: string) => {
-    if (confirm('Are you sure you want to delete this prompt template?')) {
-      const updated = promptTemplates.filter((t) => t.id !== id);
-      setPromptTemplates(updated);
-      StorageService.savePromptTemplates(updated);
-    }
+    const toDelete = promptTemplates.find((t) => t.id === id);
+    if (!toDelete) return;
+    const updated = promptTemplates.filter((t) => t.id !== id);
+    setPromptTemplates(updated);
+    StorageService.savePromptTemplates(updated);
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => {
+        const restored = [...StorageService.getPromptTemplates(), toDelete];
+        setPromptTemplates(restored);
+        StorageService.savePromptTemplates(restored);
+      },
+    });
   };
 
   // Save/Edit AI Providers
@@ -444,9 +453,13 @@ export const AIPromptsView: React.FC = () => {
   };
 
   const handleDeleteAgent = (id: string) => {
-    if (confirm('Are you sure you want to delete this custom AI agent?')) {
-      aiAgentRepository.saveAIAgents(customAgents.filter((a) => a.id !== id));
-    }
+    const toDelete = customAgents.find((a) => a.id === id);
+    if (!toDelete) return;
+    aiAgentRepository.saveAIAgents(customAgents.filter((a) => a.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => aiAgentRepository.saveAIAgents([...StorageService.getAIAgents(), toDelete]),
+    });
   };
 
   const handleExportPromptConfig = () => {

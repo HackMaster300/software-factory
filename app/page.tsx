@@ -6,6 +6,7 @@ import { Sidebar } from '../components/Sidebar';
 import { ProjectAdvisorPanel } from '../components/ProjectAdvisorPanel';
 import { AIAssistantDrawer } from '../components/AIAssistantDrawer';
 import { CommandPalette } from '../components/CommandPalette';
+import { ToastContainer } from '../components/ui/ToastContainer';
 
 import { DashboardView } from '../components/views/DashboardView';
 import { BlueprintsView } from '../components/views/BlueprintsView';
@@ -301,6 +302,9 @@ export default function SoftwareFactoryPage() {
         blueprint={selectedBlueprint}
         initialPrompt={aiDrawerPrompt}
       />
+
+      {/* Toast notifications (e.g. "Deleted — Undo") */}
+      <ToastContainer />
     </div>
   );
 }

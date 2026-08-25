@@ -84,6 +84,11 @@ export class RuleService {
     ruleSetRepository.saveRuleSets(ruleSets.filter((rs) => rs.id !== ruleSetId));
   }
 
+  /** Re-adds a previously deleted Rule Set as-is (used by the Undo-delete toast). */
+  static restoreRuleSet(ruleSet: RuleSet): void {
+    ruleSetRepository.saveRuleSets([...this.getRuleSets(), ruleSet]);
+  }
+
   static toggleRule(ruleSetId: string, ruleId: string, isEnabled: boolean): void {
     const ruleSets = this.getRuleSets();
     const rs = ruleSets.find((r) => r.id === ruleSetId);

@@ -24,8 +24,9 @@ import {
 } from 'lucide-react';
 import { FeatureManifest, FeatureCategory, FeatureQuestion, GeneratedFile, Blueprint } from '../../types/factory';
 import { FeatureService } from '../../services/featureService';
-import { useFeatureManifests } from '../../services/storageService';
+import { StorageService, useFeatureManifests } from '../../services/storageService';
 import { featureManifestRepository } from '../../services/repositories';
+import { showToast } from '../../hooks/use-toasts';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -120,12 +121,18 @@ export const FeatureManifestsView: React.FC<FeatureManifestsViewProps> = ({
   };
 
   const handleDeleteFeature = (feat: FeatureManifest) => {
-    if (!confirm(`Delete feature manifest "${feat.name}"? This cannot be undone.`)) return;
     const updated = features.filter((f) => f.id !== feat.id);
     featureManifestRepository.saveFeatureManifests(updated);
     if (selectedFeatureId === feat.id) {
       setSelectedFeatureId(updated[0]?.id || '');
     }
+    showToast(`"${feat.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => {
+        featureManifestRepository.saveFeatureManifests([...StorageService.getFeatureManifests(), feat]);
+        setSelectedFeatureId(feat.id);
+      },
+    });
   };
 
   const handleDuplicateFeature = (feat: FeatureManifest) => {

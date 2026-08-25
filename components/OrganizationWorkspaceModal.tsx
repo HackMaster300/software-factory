@@ -3,12 +3,13 @@
 import React, { useState, useRef } from 'react';
 import { Building2, FolderGit2, Plus, Edit3, Trash2, X } from 'lucide-react';
 import { Organization, Workspace } from '../types/factory';
-import { useOrganizations, useWorkspaces } from '../services/storageService';
+import { StorageService, useOrganizations, useWorkspaces } from '../services/storageService';
 import { organizationRepository, workspaceRepository } from '../services/repositories';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { Input, Textarea, Select } from './ui/Input';
 import { useFocusTrap } from '../hooks/use-focus-trap';
+import { showToast } from '../hooks/use-toasts';
 
 interface OrganizationWorkspaceModalProps {
   isOpen: boolean;
@@ -95,11 +96,6 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
 
   const handleDeleteOrg = (org: Organization) => {
     const orgWorkspaces = workspaces.filter((w) => w.organizationId === org.id);
-    const confirmMsg =
-      orgWorkspaces.length > 0
-        ? `Delete "${org.name}" and its ${orgWorkspaces.length} workspace(s)? This cannot be undone.`
-        : `Delete organization "${org.name}"? This cannot be undone.`;
-    if (!confirm(confirmMsg)) return;
 
     // Cascade-delete: removing an Organization also removes its Workspaces,
     // since a Workspace has no meaning without its parent Organization and
@@ -108,6 +104,19 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
     workspaceRepository.saveWorkspaces(workspaces.filter((w) => w.organizationId !== org.id));
 
     if (selectedOrgId === org.id) setSelectedOrgId('');
+
+    const message =
+      orgWorkspaces.length > 0
+        ? `"${org.name}" and its ${orgWorkspaces.length} workspace(s) deleted.`
+        : `"${org.name}" deleted.`;
+    showToast(message, {
+      label: 'Undo',
+      onAction: () => {
+        organizationRepository.saveOrganizations([...StorageService.getOrganizations(), org]);
+        workspaceRepository.saveWorkspaces([...StorageService.getWorkspaces(), ...orgWorkspaces]);
+        setSelectedOrgId(org.id);
+      },
+    });
   };
 
   const handleOpenAddWs = () => {
@@ -144,8 +153,11 @@ export const OrganizationWorkspaceModal: React.FC<OrganizationWorkspaceModalProp
   };
 
   const handleDeleteWs = (ws: Workspace) => {
-    if (!confirm(`Delete workspace "${ws.name}"? This cannot be undone.`)) return;
     workspaceRepository.saveWorkspaces(workspaces.filter((w) => w.id !== ws.id));
+    showToast(`"${ws.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => workspaceRepository.saveWorkspaces([...StorageService.getWorkspaces(), ws]),
+    });
   };
 
   return (

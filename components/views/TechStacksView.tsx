@@ -31,6 +31,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
+import { showToast } from '../../hooks/use-toasts';
 
 const LANGUAGES: TechStack['language'][] = ['csharp', 'typescript', 'java', 'go', 'python', 'rust', 'kotlin', 'dart'];
 const CACHE_PROVIDERS: ProfileCache['provider'][] = ['Redis', 'In-Memory', 'Memcached'];
@@ -154,8 +155,13 @@ export const TechStacksView: React.FC = () => {
       alert('At least one Technology Stack must remain.');
       return;
     }
-    if (!confirm('Delete this technology stack?')) return;
+    const toDelete = stacks.find((s) => s.id === id);
+    if (!toDelete) return;
     techStackRepository.saveTechStacks(stacks.filter((s) => s.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => techStackRepository.saveTechStacks([...StorageService.getTechStacks(), toDelete]),
+    });
   };
   const handleDuplicateStack = (stackToCopy: TechStack) => {
     // False positive below: a plain onClick-only event handler (never called during
@@ -190,8 +196,13 @@ export const TechStacksView: React.FC = () => {
     setIsCacheModalOpen(false);
   };
   const handleDeleteCache = (id: string) => {
-    if (!confirm('Delete this cache profile?')) return;
+    const toDelete = cacheProfiles.find((p) => p.id === id);
+    if (!toDelete) return;
     profileRepository.saveCacheProfiles(cacheProfiles.filter((p) => p.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => profileRepository.saveCacheProfiles([...StorageService.getCacheProfiles(), toDelete]),
+    });
   };
   const handleDuplicateCache = (profileToCopy: ProfileCache) => {
     // eslint-disable-next-line react-hooks/purity
@@ -223,8 +234,13 @@ export const TechStacksView: React.FC = () => {
     setIsLoggingModalOpen(false);
   };
   const handleDeleteLogging = (id: string) => {
-    if (!confirm('Delete this logging profile?')) return;
+    const toDelete = loggingProfiles.find((p) => p.id === id);
+    if (!toDelete) return;
     profileRepository.saveLoggingProfiles(loggingProfiles.filter((p) => p.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => profileRepository.saveLoggingProfiles([...StorageService.getLoggingProfiles(), toDelete]),
+    });
   };
   const handleDuplicateLogging = (profileToCopy: ProfileLogging) => {
     // eslint-disable-next-line react-hooks/purity
@@ -258,8 +274,13 @@ export const TechStacksView: React.FC = () => {
     setIsEncryptionModalOpen(false);
   };
   const handleDeleteEncryption = (id: string) => {
-    if (!confirm('Delete this encryption profile?')) return;
+    const toDelete = encryptionProfiles.find((p) => p.id === id);
+    if (!toDelete) return;
     profileRepository.saveEncryptionProfiles(encryptionProfiles.filter((p) => p.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => profileRepository.saveEncryptionProfiles([...StorageService.getEncryptionProfiles(), toDelete]),
+    });
   };
   const handleDuplicateEncryption = (profileToCopy: ProfileEncryption) => {
     // eslint-disable-next-line react-hooks/purity
@@ -293,8 +314,13 @@ export const TechStacksView: React.FC = () => {
     setIsDeploymentModalOpen(false);
   };
   const handleDeleteDeployment = (id: string) => {
-    if (!confirm('Delete this deployment profile?')) return;
+    const toDelete = deploymentProfiles.find((p) => p.id === id);
+    if (!toDelete) return;
     profileRepository.saveDeploymentProfiles(deploymentProfiles.filter((p) => p.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => profileRepository.saveDeploymentProfiles([...StorageService.getDeploymentProfiles(), toDelete]),
+    });
   };
   const handleDuplicateDeployment = (profileToCopy: ProfileDeployment) => {
     // eslint-disable-next-line react-hooks/purity
@@ -326,8 +352,13 @@ export const TechStacksView: React.FC = () => {
     setIsAuthModalOpen(false);
   };
   const handleDeleteAuth = (id: string) => {
-    if (!confirm('Delete this authentication profile?')) return;
+    const toDelete = authenticationProfiles.find((p) => p.id === id);
+    if (!toDelete) return;
     profileRepository.saveAuthenticationProfiles(authenticationProfiles.filter((p) => p.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => profileRepository.saveAuthenticationProfiles([...StorageService.getAuthenticationProfiles(), toDelete]),
+    });
   };
   const handleDuplicateAuth = (profileToCopy: ProfileAuthentication) => {
     // eslint-disable-next-line react-hooks/purity

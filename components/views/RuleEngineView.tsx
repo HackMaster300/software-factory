@@ -26,6 +26,7 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Input, Textarea, Select } from '../ui/Input';
+import { showToast } from '../../hooks/use-toasts';
 
 interface RuleEngineViewProps {
   openAIRefactor: (prompt: string) => void;
@@ -144,15 +145,28 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
   };
 
   const handleDeleteRule = (ruleId: string) => {
-    if (confirm('Are you sure you want to delete this rule policy?')) {
-      RuleService.deleteRule(activeRuleSet.id, ruleId);
-      const updatedSets = RuleService.getRuleSets();
-      setRuleSets(updatedSets);
-      if (blueprint) {
-        const updatedActiveSet = updatedSets.find((rs) => rs.id === activeRuleSet.id) || updatedSets[0];
-        setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
-      }
+    const ruleSetId = activeRuleSet.id;
+    const toDelete = activeRuleSet.rules.find((r) => r.id === ruleId);
+    if (!toDelete) return;
+    RuleService.deleteRule(ruleSetId, ruleId);
+    const updatedSets = RuleService.getRuleSets();
+    setRuleSets(updatedSets);
+    if (blueprint) {
+      const updatedActiveSet = updatedSets.find((rs) => rs.id === ruleSetId) || updatedSets[0];
+      setValidationReport(RuleService.validateBlueprint(blueprint, updatedActiveSet));
     }
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => {
+        RuleService.addRule(ruleSetId, toDelete);
+        const restoredSets = RuleService.getRuleSets();
+        setRuleSets(restoredSets);
+        if (blueprint) {
+          const restoredActiveSet = restoredSets.find((rs) => rs.id === ruleSetId) || restoredSets[0];
+          setValidationReport(RuleService.validateBlueprint(blueprint, restoredActiveSet));
+        }
+      },
+    });
   };
 
   const handleDuplicateRule = (rule: Rule) => {
@@ -324,13 +338,21 @@ export const RuleEngineView: React.FC<RuleEngineViewProps> = ({
       alert('At least one Rule Set must remain.');
       return;
     }
-    if (!confirm('Delete this Rule Set? Its rules cannot be recovered.')) return;
+    const toDelete = ruleSets.find((rs) => rs.id === ruleSetId);
+    if (!toDelete) return;
     RuleService.deleteRuleSet(ruleSetId);
     const updatedSets = RuleService.getRuleSets();
     setRuleSets(updatedSets);
     if (blueprint?.ruleSetId === ruleSetId && updatedSets[0]) {
       handleSwitchRuleSet(updatedSets[0].id);
     }
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => {
+        RuleService.restoreRuleSet(toDelete);
+        setRuleSets(RuleService.getRuleSets());
+      },
+    });
   };
 
   const filteredRules = activeRuleSet.rules.filter((rule) => {

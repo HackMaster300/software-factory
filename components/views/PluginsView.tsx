@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import { Puzzle, Plus, Edit3, Trash2, X, Search } from 'lucide-react';
 import { Plugin } from '../../types/factory';
-import { usePlugins } from '../../services/storageService';
+import { StorageService, usePlugins } from '../../services/storageService';
 import { pluginRepository } from '../../services/repositories';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Input, Textarea } from '../ui/Input';
+import { showToast } from '../../hooks/use-toasts';
 
 const CATEGORY_SUGGESTIONS = ['Quality', 'Security', 'Observability', 'Productivity', 'Integration'];
 
@@ -73,9 +74,13 @@ export const PluginsView: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this plugin?')) {
-      pluginRepository.savePlugins(plugins.filter((p) => p.id !== id));
-    }
+    const toDelete = plugins.find((p) => p.id === id);
+    if (!toDelete) return;
+    pluginRepository.savePlugins(plugins.filter((p) => p.id !== id));
+    showToast(`"${toDelete.name}" deleted.`, {
+      label: 'Undo',
+      onAction: () => pluginRepository.savePlugins([...StorageService.getPlugins(), toDelete]),
+    });
   };
 
   const handleToggleActive = (id: string) => {

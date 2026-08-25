@@ -66,4 +66,16 @@ describe('RuleService.createRuleSet / deleteRuleSet (Phase 2b — Rule Set as a 
   it('returns undefined when duplicating a non-existent rule set id', () => {
     expect(RuleService.duplicateRuleSet('does-not-exist')).toBeUndefined();
   });
+
+  it('restores a previously deleted rule set as-is, for the Undo-delete toast', () => {
+    const deleted = RuleService.getRuleSets()[0];
+    RuleService.createRuleSet('Keeps at least one other set alive', '');
+    RuleService.deleteRuleSet(deleted.id);
+    expect(RuleService.getRuleSets().some((rs) => rs.id === deleted.id)).toBe(false);
+
+    RuleService.restoreRuleSet(deleted);
+
+    const restored = RuleService.getRuleSets().find((rs) => rs.id === deleted.id);
+    expect(restored).toEqual(deleted);
+  });
 });
