@@ -2,6 +2,53 @@
 
 Autonomous work log. Newest session on top.
 
+## Session — 2026-08-24 (cycle 8: improvement mode — "Undo delete" toast)
+
+**Detected stack:** Next.js (App Router)
+**Status:** In progress
+
+Picked up the "Undo delete" idea flagged as open in cycles 5 and 7, now that the storage-layer
+data-loss bug (fixed in cycle 4) makes an undo affordance actually trustworthy.
+
+- **New shared infrastructure**: `hooks/use-toasts.ts` — a module-level pub-sub store
+  (`showToast`/`dismissToast`/`useToasts`) following the exact same pattern this codebase already
+  uses for cross-component reactive state (`storageService.ts`'s `subscribeToStorage` /
+  `useSyncExternalStore`, and `app/page.tsx`'s `activeViewListeners`), not a new dependency or a
+  React Context. `components/ui/ToastContainer.tsx` renders the queue bottom-center, mounted once
+  in `app/page.tsx`. Each toast: a message, an optional action button (used for "Undo"), a close
+  button, and a 6-second auto-dismiss timer.
+- **Replaced `confirm()`-gated deletes with immediate-delete-plus-Undo-toast** across every list
+  view that had one (7 files, matching the exact scope the `confirm(` search turned up):
+  `TechStacksView.tsx` (Tech Stacks + Cache/Logging/Encryption/Deployment/Authentication
+  profiles — 6 handlers), `AIPromptsView.tsx` (Prompt Templates, Custom AI Agents),
+  `RuleEngineView.tsx` (individual rules, whole Rule Sets), `FeatureManifestsView.tsx`,
+  `PluginsView.tsx`, `OrganizationWorkspaceModal.tsx` (Organization — including its cascaded
+  Workspaces — and standalone Workspace deletes). Each handler captures the deleted item(s) before
+  saving, then on "Undo" re-appends them to whatever the *current* persisted list is (via each
+  entity's `StorageService.get*()` getter, not the stale pre-delete closure) so an undo lands
+  correctly even if other edits happened in between.
+- **Left `Header.tsx`'s "Reset Data" `confirm()` untouched** — that's a full-store wipe followed by
+  `window.location.reload()`, not a single-item delete; a toast would vanish on reload anyway, and
+  the destructive-reset semantics genuinely call for an explicit confirmation, not an undo window.
+- **New service method**: `RuleService.restoreRuleSet()` (re-adds a full Rule Set object as-is) —
+  needed because deleting a whole Rule Set has no existing "add a whole set back" primitive
+  (`createRuleSet` builds a fresh empty one, `duplicateRuleSet` mints new ids). Covered by a new
+  test in `ruleService.test.ts`.
+- Verified: `npm run lint` clean, `npx tsc --noEmit` clean, `npm run test` 170/170 passing (1 new),
+  `npm run build` clean.
+- **Could not Playwright-verify live this cycle either**: attempted `npx playwright install
+  chrome`, which failed in this sandbox ("insufficient privileges... re-running as Administrator
+  may help"). Confidence here is lower than a typical cycle — this is genuinely new client-side
+  state (a toast store + auto-dismiss timers) rather than a repeat of an already-verified pattern
+  like the Duplicate rollout was. Flagging explicitly: **the toast stacking/auto-dismiss/Undo
+  click-through has only been verified by reading the code and type-checking, not by clicking it in
+  a real browser.** Strongly recommend a live Playwright pass (delete an item, click Undo, confirm
+  it reappears; let a toast expire and confirm it clears; trigger 2+ toasts and confirm they stack
+  without layout breakage) as the very first thing next session, before further UI work compounds
+  on top of an unverified interaction.
+- Next step if continuing: the live Playwright verification above, then either dark/light theme
+  (still flagged as the bigger remaining effort) or another genuinely new feature area.
+
 ## Session — 2026-08-20 (cycle 7: improvement mode — Duplicate on remaining profiles)
 
 **Detected stack:** Next.js (App Router)
