@@ -129,6 +129,16 @@ export class ProjectService {
 
     const packagesList: Array<{ name: string; version: string; packageManager: string; project: string }> = [];
 
+    // Phase 12: pacotes das Features entram NOS manifests — por tipo de projeto
+    // (feat.generatedProjects usa os mesmos tipos de BlueprintProject['type']).
+    // Sem mutar o blueprint: cópia por projeto + dedupe por nome (case-insensitive).
+    const manifestPackages = new Map<string, Array<{ name: string; version: string; packageManager?: string }>>();
+    for (const proj of blueprint.projects) {
+      manifestPackages.set(proj.id, [...(proj.packages || [])]);
+    }
+    const hasPackage = (list: Array<{ name: string }>, name: string): boolean =>
+      list.some((p) => p.name.toLowerCase() === name.toLowerCase());
+
     // Collect packages from features and module-specific packages
     activeFeatures.forEach((feat) => {
       feat.generatedPackages?.forEach((pkg) => {
@@ -138,6 +148,16 @@ export class ProjectService {
           packageManager: pkg.packageManager,
           project: feat.generatedProjects?.[0] || 'Infrastructure',
         });
+        // Injeção no manifest: só quando a feature declara projetos-alvo que existem.
+        // Sem alvo declarado/existente, o pacote aparece na lista (display) mas não no manifest.
+        for (const target of feat.generatedProjects || []) {
+          for (const proj of blueprint.projects.filter((p) => p.type === target)) {
+            const list = manifestPackages.get(proj.id);
+            if (list && !hasPackage(list, pkg.name)) {
+              list.push({ name: pkg.name, version: pkg.version, packageManager: pkg.packageManager });
+            }
+          }
+        }
       });
     });
 
@@ -588,7 +608,9 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
         return refProj ? `    <ProjectReference Include="..\\${refProj.name}\\${refProj.name}.csproj" />` : '';
       }).filter(Boolean).join('\n');
 
-      const pkgXml = (proj.packages || []).map((p) => `    <PackageReference Include="${p.name}" Version="${p.version}" />`).join('\n');
+      // Phase 12: manifest usa pacotes do módulo + injetados das Features (não só do módulo).
+      const effectivePackages = manifestPackages.get(proj.id) || [];
+      const pkgXml = effectivePackages.map((p) => `    <PackageReference Include="${p.name}" Version="${p.version}" />`).join('\n');
       // Phase 9: Tests C# ganham xUnit real (restore via NuGet); Api usa Sdk.Web (Program.cs).
       const testPkgs = lang === 'csharp' && proj.type === 'Tests'
         ? `\n    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />\n    <PackageReference Include="xunit" Version="2.9.2" />\n    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />`
@@ -599,7 +621,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
       const sdk = lang === 'csharp' && proj.type === 'API' ? 'Microsoft.NET.Sdk.Web' : 'Microsoft.NET.Sdk';
       const projManifestSnippet = lang === 'csharp'
         ? `<Project Sdk="${sdk}">\n  <PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n    <ImplicitUsings>enable</ImplicitUsings>\n    <Nullable>enable</Nullable>\n  </PropertyGroup>\n\n  <ItemGroup>\n${refXml || '    <!-- No Outbound Project References -->'}\n  </ItemGroup>\n\n  <ItemGroup>\n${allPkgs || '    <!-- Core Packages -->'}\n  </ItemGroup>\n</Project>`
-        : `{\n  "name": "${proj.name.toLowerCase()}",\n  "version": "1.0.0",\n  "dependencies": {\n${(proj.packages || []).map((p) => `    "${p.name}": "${p.version}"`).join(',\n')}\n  }\n}`;
+        : `{\n  "name": "${proj.name.toLowerCase()}",\n  "version": "1.0.0",\n  "dependencies": {\n${effectivePackages.map((p) => `    "${p.name}": "${p.version}"`).join(',\n')}\n  }\n}`;
 
       projFolderNode.children?.unshift({
         id: `file-proj-manifest-${proj.id}`,

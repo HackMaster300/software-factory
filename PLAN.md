@@ -490,6 +490,28 @@ Playwright contra Docker limpo. Nada de `git push` sem aprovação explícita.
 
 ---
 
+## Phase 12 — Fechamento do intuito original (pós-veredito 2026-09-14) — DONE
+
+Os 3 gaps do veredito ("80% → 100% do não-repetir-trabalho .NET"):
+
+- [x] **Pacotes das Features nos manifests**: `generateSolutionPreview` injeta
+  `generatedPackages` nos `.csproj` por tipo de projeto (`generatedProjects` usa os tipos de
+  `BlueprintProject`), sem mutar o blueprint, com dedupe case-insensitive. Sem alvo
+  declarado/existente, o pacote segue só na lista (display). Testes: injeção por tipo,
+  sem duplicata, sem mutação. E2E `dotnet build` agora restaura pacotes NuGet reais.
+- [x] **Versionamento de Template**: `bumpVersion` semver honesto (throw em versão inválida),
+  `createNewVersion` (original preservado, snapshot deep-clone do blueprint),
+  `getVersionHistory` ordenado, `diffBlueprints` real (projetos/refs/features/stack/estilo/
+  ruleset/profiles, `[]` se idêntico), `previewMigration` não-destrutivo com customConfig
+  preservado. 6 testes novos. Sem UI nova (documentado como follow-up).
+- [x] **`dotnet new` privado**: `dotnet-template/` commitado (33 arquivos, gerado do
+  `ProjectService`, `shortName sffactory-clean`, `sourceName Acme.Golden`) + README de
+  install/uso/re-export + E2E install→instantiate(`Verify.App`)→build→uninstall verde +
+  drift guard (compara byte-a-byte com GUIDs normalizados; GUID random por design).
+- [x] Verified: `lint` clean, `test` 203/203 (12 novos), `build` clean.
+
+---
+
 ## Progress log
 
 (Newest entry on top. One line per phase milestone, with commit hash.)

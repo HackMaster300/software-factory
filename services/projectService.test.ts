@@ -165,6 +165,64 @@ describe('ProjectService.generateSolutionPreview', () => {
     expect(preview.packageDependenciesCount).toBe(preview.allPackages.length);
   });
 
+  it('injects active feature packages into matching project manifests by type (Phase 12)', () => {
+    // feat-postgres-ef targets Infrastructure+Core; feat-jwt-auth targets Infrastructure+API.
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'i', name: 'App.Infrastructure', type: 'Infrastructure', references: ['c'], description: '' },
+        { id: 'a', name: 'App.Api', type: 'API', references: ['i'], description: '' },
+      ],
+      featureIds: ['feat-postgres-ef', 'feat-jwt-auth'],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    const findManifest = (projName: string): string => {
+      const folder = preview.solutionTree
+        .find((n) => n.name === 'src')
+        ?.children?.find((n) => n.name === projName);
+      const manifest = folder?.children?.find((n) => n.name === `${projName}.csproj`);
+      return manifest?.contentSnippet || '';
+    };
+
+    // Npgsql vai para Infrastructure e Core; JwtBearer para Infrastructure e API — nunca para Core.
+    expect(findManifest('App.Infrastructure')).toContain('Npgsql.EntityFrameworkCore.PostgreSQL');
+    expect(findManifest('App.Infrastructure')).toContain('Microsoft.AspNetCore.Authentication.JwtBearer');
+    expect(findManifest('App.Core')).toContain('Npgsql.EntityFrameworkCore.PostgreSQL');
+    expect(findManifest('App.Core')).not.toContain('Microsoft.AspNetCore.Authentication.JwtBearer');
+    expect(findManifest('App.Api')).toContain('Microsoft.AspNetCore.Authentication.JwtBearer');
+  });
+
+  it('does not duplicate a feature package already present on the module (Phase 12)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'i', name: 'App.Infrastructure', type: 'Infrastructure', references: [], description: '', packages: [{ name: 'Npgsql.EntityFrameworkCore.PostgreSQL', version: '9.0.0' }] },
+      ],
+      featureIds: ['feat-postgres-ef'],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    const folder = preview.solutionTree.find((n) => n.name === 'src')
+      ?.children?.find((n) => n.name === 'App.Infrastructure');
+    const manifest = folder?.children?.find((n) => n.name === 'App.Infrastructure.csproj')?.contentSnippet || '';
+    expect(manifest.match(/Npgsql\.EntityFrameworkCore\.PostgreSQL/g)?.length).toBe(1);
+  });
+
+  it('does not mutate the input blueprint when injecting feature packages (Phase 12)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'i', name: 'App.Infrastructure', type: 'Infrastructure', references: [], description: '' },
+      ],
+      featureIds: ['feat-postgres-ef'],
+    };
+
+    ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    expect(blueprint.projects[0].packages).toBeUndefined();
+  });
+
   it('uses custom env vars over the language defaults when provided', () => {
     const blueprint: Blueprint = { ...baseBlueprint, projects: [] };
     const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test', true, [

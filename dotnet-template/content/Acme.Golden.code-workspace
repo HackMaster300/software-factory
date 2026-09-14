@@ -1,0 +1,30 @@
+{
+  "folders": [
+    {
+      "name": "Acme.Golden (Root)",
+      "path": "."
+    },
+    {
+      "name": "Source Code",
+      "path": "src"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/bin": true,
+      "**/obj": true,
+      "**/node_modules": true,
+      "**/.git": true
+    },
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-dotnettools.csharp",
+      "esbenp.prettier-vscode",
+      "ms-azuretools.vscode-docker",
+      "eamodio.gitlens"
+    ]
+  }
+}

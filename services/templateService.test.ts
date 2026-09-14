@@ -83,3 +83,72 @@ describe('TemplateService', () => {
     expect(TemplateService.getTemplates()).toEqual(before);
   });
 });
+
+describe('TemplateService versioning (Phase 12)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    TemplateService.saveTemplate(sampleTemplate);
+  });
+
+  it('bumpVersion follows semver per level and rejects garbage honestly', () => {
+    expect(TemplateService.bumpVersion('2.4.0', 'patch')).toBe('2.4.1');
+    expect(TemplateService.bumpVersion('2.4.0', 'minor')).toBe('2.5.0');
+    expect(TemplateService.bumpVersion('2.4.0', 'major')).toBe('3.0.0');
+    expect(() => TemplateService.bumpVersion('not-a-version', 'patch')).toThrow('Invalid semver');
+  });
+
+  it('createNewVersion preserves the original and snapshots the blueprint', () => {
+    const v2 = TemplateService.createNewVersion(sampleTemplate.id, 'minor', 'Added worker docs');
+
+    expect(v2.id).toBe(`${sampleTemplate.id}-v1.1.0`);
+    expect(v2.version).toBe('1.1.0');
+    expect(v2.description).toContain('Added worker docs');
+    expect(TemplateService.getTemplateById(sampleTemplate.id)?.version).toBe('1.0.0');
+    // Snapshot: mutating the clone must not leak into v1.
+    v2.blueprint.featureIds.push('feat-docker');
+    TemplateService.saveTemplate(v2);
+    expect(TemplateService.getTemplateById(sampleTemplate.id)?.blueprint.featureIds).not.toContain('feat-docker');
+  });
+
+  it('createNewVersion throws honestly for unknown templates', () => {
+    expect(() => TemplateService.createNewVersion('missing', 'patch')).toThrow('not found');
+  });
+
+  it('getVersionHistory returns the line ordered ascending by semver', () => {
+    TemplateService.createNewVersion(sampleTemplate.id, 'major');
+    TemplateService.createNewVersion(sampleTemplate.id, 'patch');
+    const history = TemplateService.getVersionHistory(`${sampleTemplate.id}-v2.0.0`);
+    expect(history.map((t) => t.version)).toEqual(['1.0.0', '1.0.1', '2.0.0']);
+  });
+
+  it('diffBlueprints reports real changes and [] when identical', () => {
+    const a = sampleTemplate.blueprint;
+    const b: Blueprint = {
+      ...a,
+      techStackId: 'stack-node-nestjs',
+      architectureStyle: 'Microservices',
+      featureIds: ['feat-docker'],
+      projects: [{ id: 'x', name: 'App.Extra', type: 'Worker', references: [], description: '' }],
+    };
+    const changes = TemplateService.diffBlueprints(a, b);
+    const kinds = changes.map((c) => c.kind);
+    expect(kinds).toContain('project-added');
+    expect(kinds).toContain('feature-added');
+    expect(kinds).toContain('stack-changed');
+    expect(kinds).toContain('style-changed');
+    expect(TemplateService.diffBlueprints(a, { ...a })).toEqual([]);
+  });
+
+  it('previewMigration never saves and preserves customConfig keys', () => {
+    const v2 = TemplateService.createNewVersion(sampleTemplate.id, 'minor');
+    const before = TemplateService.getTemplates().length;
+    const preview = TemplateService.previewMigration(
+      sampleTemplate.blueprint,
+      { deployRegion: 'eu-west', replicas: 3 },
+      v2.id
+    );
+    expect(TemplateService.getTemplates()).toHaveLength(before);
+    expect(preview.preservedCustomConfigKeys).toEqual(['deployRegion', 'replicas']);
+    expect(preview.blueprint.id).toBe(v2.blueprint.id);
+  });
+});
