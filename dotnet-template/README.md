@@ -30,6 +30,9 @@ dotnet test
 SF_EXPORT_TEMPLATE=./dotnet-template npm run test -- scaffoldDotnetNew -t "writes the pack"
 ```
 
+Nota honesta: re-export reescreve os GUIDs do `.sln` (random por design) — diff só de
+GUIDs é esperado e não indica drift funcional (o drift guard normaliza GUIDs).
+
 ## Uninstall
 
 ```bash

@@ -58,8 +58,12 @@ export function exportTemplatePack(dir: string): void {
   const preview = ProjectService.generateSolutionPreview(initialBlueprints[0], PACK_NAME, true);
   mkdirSync(join(dir, '.template.config'), { recursive: true });
   writeFileSync(join(dir, '.template.config', 'template.json'), templateJson());
-  mkdirSync(join(dir, 'content'), { recursive: true });
-  writeTree(preview.solutionTree, join(dir, 'content'));
+  const contentDir = join(dir, 'content');
+  mkdirSync(contentDir, { recursive: true });
+  writeTree(preview.solutionTree, contentDir);
+  // Template distribuído nunca carrega .env real (só .env.example) — além de conter
+  // placeholders sensíveis, `.env*` está no .gitignore e quebraria o snapshot no clone.
+  rmSync(join(contentDir, '.env'), { force: true });
 }
 
 function listFilesRecursive(root: string): Map<string, string> {
@@ -124,6 +128,7 @@ describe('dotnet-template/ committed snapshot matches the generator (drift guard
       mkdirSync(freshRoot, { recursive: true });
       writeTree(preview.solutionTree, freshRoot);
       const fresh = listFilesRecursive(freshRoot);
+      fresh.delete('.env'); // omitido do pack por design (ver exportTemplatePack)
       // .sln GUIDs são randomUUID por design (Phase 7) — normaliza antes de comparar.
       // Todo o resto (estrutura, arquivos, código) deve ser byte-idêntico.
       const normalize = (s: string): string =>
