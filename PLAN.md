@@ -512,6 +512,21 @@ Os 3 gaps do veredito ("80% → 100% do não-repetir-trabalho .NET"):
 
 ---
 
+## Phase 13 — Fechamento do intuito original: 95% → 100% (2026-09-14) — IN PROGRESS
+
+Gap 1 (maior): `generatedFiles` com `/` eram descartados (`if (!path.includes('/'))`) — previews na UI mas nunca no ZIP. Corrigido: remapeamento `src/Infrastructure/` → `src/<InfraReal>/` + patch de namespace + inserção por path dentro de `srcFolderNode` (dedupe). `Program.cs` agora faz wiring real das Features ativas (EF Npgsql/Redis/JWT/MediatR/Fluent/OTel/Worker/Quartz) — pacotes injetados viram código.
+
+Gap 2: RPA Worker sem wiring — agora `RpaWorker.cs`/`RpaJob.cs` entram no ZIP quando as Features são ativas e `Program.cs` registra `AddHostedService<RpaWorker>`/`AddQuartz`.
+
+Gap 3/4: `dotnet new` com símbolo `enableWorker` + `dotnet-template/README` atualizado; UI de versionamento/migrate no `BlueprintsView` (lista semver, bump patch/minor/major, diff real e preview com customConfig preservado, apply).
+
+- [x] 13.1 snippets das Features no ZIP (incl. RPA) — 2 testes novos cobrem ApplicationDbContext/HealthCheck/Jwt + RpaWorker/RpaJob + wiring de Program.cs.
+- [x] 13.2 Program.cs wiring — E2E `dotnet build` voltou a passar após ajuste OpenTelemetry minimal.
+- [x] 13.3 RPA completo — build verde com e sem Worker (toggle).
+- [x] 13.4 dotnet new `enableWorker` + BlueprintsView version/migrate UI.
+
+---
+
 ## Progress log
 
 (Newest entry on top. One line per phase milestone, with commit hash.)

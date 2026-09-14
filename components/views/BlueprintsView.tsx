@@ -15,6 +15,7 @@ import { Blueprint, ArchitectureStyle } from '../../types/factory';
 import { StorageService } from '../../services/storageService';
 import { TemplateService } from '../../services/templateService';
 import { BlueprintService } from '../../services/blueprintService';
+import { useTemplates } from '../../services/storageService';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -61,6 +62,11 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'graph' | 'tree' | 'properties'>('graph');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(blueprint.projects[0]?.id || null);
+  const templates = useTemplates();
+  const baseTemplate = templates.find((t) => t.id === 'tmpl-clean-dotnet9') || templates[0];
+  const versionHistory = baseTemplate ? TemplateService.getVersionHistory(baseTemplate.id) : [];
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [changelog, setChangelog] = useState('');
 
   const techStacks = StorageService.getTechStacks();
   const dbProfiles = StorageService.getDatabaseProfiles();
@@ -141,6 +147,16 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
   const handleSaveBlueprint = () => {
     TemplateService.updateTemplateBlueprint('tmpl-clean-dotnet9', blueprint);
     alert('Blueprint changes saved to LocalStorage persistence!');
+  };
+
+  const handleBump = (bump: 'major' | 'minor' | 'patch') => {
+    try {
+      const created = TemplateService.createNewVersion('tmpl-clean-dotnet9', bump, changelog.trim() || `Bump ${bump}`);
+      setChangelog('');
+      setSelectedVersionId(created.id);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+    }
   };
 
   const handlePresetModuleCount = (count: number) => {
@@ -225,6 +241,87 @@ export const BlueprintsView: React.FC<BlueprintsViewProps> = ({
             <Save className="w-3.5 h-3.5" /> Save Blueprint
           </Button>
         </div>
+      </Card>
+
+      {/* Template Versioning & Migrate (Phase 12) */}
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="font-semibold text-gray-200 text-xs">Template Versioning</div>
+          <span className="text-[11px] font-mono text-gray-400">
+            Current: {baseTemplate?.id} • v{baseTemplate?.version} • {versionHistory.length} version(s)
+          </span>
+        </div>
+
+        {baseTemplate && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={changelog}
+                onChange={(e) => setChangelog(e.target.value)}
+                placeholder="Changelog for next version (optional)"
+                className="flex-1 min-w-[200px] px-2 py-1.5 rounded bg-[#13151b] border border-[#2b303d] text-xs text-gray-200 placeholder:text-gray-500"
+              />
+              <Button variant="secondary" onClick={() => handleBump('patch')}>Patch bump</Button>
+              <Button variant="secondary" onClick={() => handleBump('minor')}>Minor bump</Button>
+              <Button variant="secondary" onClick={() => handleBump('major')}>Major bump</Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {versionHistory.map((t) => {
+                const isSelected = selectedVersionId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedVersionId(t.id)}
+                    className={`p-2.5 rounded-lg border text-left cursor-pointer ${isSelected ? 'bg-blue-600/20 border-blue-500' : 'bg-[#13151b] border-[#2b303d] hover:bg-[#1a1d26]'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs text-gray-100">v{t.version}</span>
+                      <Badge tone={t.isOfficial ? 'brand' : 'neutral'}>{t.isOfficial ? 'Official' : 'Custom'}</Badge>
+                    </div>
+                    <div className="text-[11px] text-gray-400 truncate">{t.id}</div>
+                    <div className="text-[11px] text-gray-500">{t.updatedAt}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedVersionId && (() => {
+              const target = versionHistory.find((t) => t.id === selectedVersionId);
+              if (!target) return null;
+              const diff = TemplateService.diffBlueprints(blueprint, target.blueprint);
+              const preview = TemplateService.previewMigration(blueprint, {}, target.id);
+              return (
+                <div className="space-y-2 p-3 rounded-lg bg-[#13151b] border border-[#2b303d]">
+                  <div className="font-semibold text-xs text-gray-200">Migrate preview → {target.id} (v{target.version})</div>
+                  {diff.length === 0 ? (
+                    <div className="text-[11px] text-gray-400">No changes — target blueprint is identical to current editor state.</div>
+                  ) : (
+                    <ul className="list-disc list-inside text-[11px] text-gray-300 space-y-0.5">
+                      {diff.map((c, i) => (
+                        <li key={i} className="font-mono">[{c.kind}] {c.detail}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="text-[11px] text-gray-400">Custom config keys preserved: {preview.preservedCustomConfigKeys.join(', ') || '(none)'}</div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        setBlueprint(JSON.parse(JSON.stringify(target.blueprint)));
+                        const first = target.blueprint.projects[0]?.id || null;
+                        setSelectedProjectId(first);
+                      }}
+                    >
+                      Apply this version to editor
+                    </Button>
+                    <Button variant="ghost" onClick={() => setSelectedVersionId(null)}>Close</Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
       </Card>
 
       {/* Technology Stack Selector */}

@@ -16,6 +16,15 @@
     "type": "solution"
   },
   "sourceName": "Acme.Golden",
+  "symbols": {
+    "enableWorker": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "false",
+      "displayName": "Include RPA Worker (IHostedService + FileSystemWatcher)",
+      "description": "When true, keeps the RpaWorker sample that ships only when feat-worker-service is enabled in the factory (no-op if the snapshot already contains it)."
+    }
+  },
   "sources": [
     {
       "source": "content/",

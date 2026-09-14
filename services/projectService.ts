@@ -356,18 +356,73 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
       });
     }
 
-    // Check Docker feature files
+    // Phase 13: todos os generatedFiles das Features entram na árvore — por path real.
+    // Paths hardcoded no catálogo (ex. src/Infrastructure/Diagnostics/...) são remapeados
+    // para os nomes reais do blueprint (App.Infrastructure, App.Application, ...).
+    const remapFeaturePath = (rawPath: string): string => {
+      if (!rawPath.includes('/')) return rawPath;
+      const infraName = blueprint.projects.find((p) => p.type === 'Infrastructure')?.name || 'App.Infrastructure';
+      const appName = blueprint.projects.find((p) => p.type === 'Application')?.name || 'App.Application';
+      const coreName = blueprint.projects.find((p) => p.type === 'Core')?.name || 'App.Core';
+      let out = rawPath;
+      out = out.replace(/^src\/Infrastructure\//, `src/${infraName}/`);
+      out = out.replace(/^src\/Application\//, `src/${appName}/`);
+      out = out.replace(/^src\/Core\//, `src/${coreName}/`);
+      // Legacy fallback: src/App.Infrastructure/ já é nome real (RPA features), não remapeia.
+      return out;
+    };
+
+    const insertByPath = (nodes: SolutionTreeNode[], fullPath: string, fileNode: SolutionTreeNode): void => {
+      const parts = fullPath.split('/');
+      const fileName = parts.pop()!;
+      let cursor: SolutionTreeNode[] = nodes;
+      let curPath = '';
+      for (const part of parts) {
+        curPath = curPath ? `${curPath}/${part}` : part;
+        let folder = cursor.find((n) => n.path === curPath && (n.type === 'folder' || n.type === 'project'));
+        if (!folder) {
+          folder = { id: `dir-auto-${curPath}`, name: part, type: 'folder', path: curPath, children: [] };
+          cursor.push(folder);
+        }
+        cursor = folder.children!;
+      }
+      // dedupe por path: feature + golden path podem colidir (ex. mesmo arquivo)
+      if (!cursor.some((n) => n.path === fullPath && n.type === 'file')) {
+        cursor.push(fileNode);
+      }
+    };
+
+    // Primeiro, todos os arquivos de feature cujo path começa com src/ (inclui os novos de RPA)
+    // — inseridos no srcFolderNode quando for src/App.*, ou em rootNodes quando for src/Infrastructure mapeado.
+    const featureFilesForSrc: Array<{ gf: NonNullable<FeatureManifest['generatedFiles']>[number]; remapped: string }> = [];
+    const featureFilesForRoot: Array<{ gf: NonNullable<FeatureManifest['generatedFiles']>[number]; remapped: string }> = [];
+
     activeFeatures.forEach((f) => {
       f.generatedFiles?.forEach((gf) => {
-        if (!gf.path.includes('/')) {
-          rootFiles.push({
-            id: `gf-${gf.path}`,
-            name: gf.path,
-            type: 'file',
-            path: gf.path,
-            language: gf.language,
-            contentSnippet: gf.templateSnippet,
-          });
+        const remapped = remapFeaturePath(gf.path);
+        const fileNode: SolutionTreeNode = {
+          id: `gf-${f.id}-${gf.path}`,
+          name: remapped.split('/').pop()!,
+          type: 'file',
+          path: remapped,
+          language: gf.language,
+          contentSnippet: gf.templateSnippet,
+        };
+        if (remapped.includes('/')) {
+          // src/... → srcFolderNode; outros com / mas não src (improvável) → rootNodes
+          if (remapped.startsWith('src/')) {
+            // Garante que srcFolderNode existe como raiz; inserção será após sua criação,
+            // então enfileira para inserir depois. Para já, marca como pendente src.
+            featureFilesForSrc.push({ gf, remapped });
+            // fileNode guardado; inserção real após srcFolderNode criado
+            // (usamos closure sobre fileNode derivado de gf)
+            // Mantém fileNode para uso posterior — recriado no loop final
+          } else {
+            featureFilesForRoot.push({ gf, remapped });
+            insertByPath(rootNodes, remapped, fileNode);
+          }
+        } else {
+          rootFiles.push(fileNode);
         }
       });
     });
@@ -379,6 +434,60 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
       type: 'folder',
       path: 'src',
       children: [],
+    };
+
+    // Phase 13: insere os arquivos src/ das Features dentro de srcFolderNode (remapeados).
+    // Patches namespace hardcoded (Infrastructure.*) para o nome real do projeto (App.Infrastructure.*).
+    const patchSnippetNamespaces = (snippet: string): string => {
+      const infraName = blueprint.projects.find((p) => p.type === 'Infrastructure')?.name || 'App.Infrastructure';
+      const appName = blueprint.projects.find((p) => p.type === 'Application')?.name || 'App.Application';
+      return snippet
+        .replace(/namespace Infrastructure\.Persistence/g, `namespace ${infraName}.Persistence`)
+        .replace(/namespace Infrastructure\.Diagnostics/g, `namespace ${infraName}.Diagnostics`)
+        .replace(/namespace Infrastructure\.Security/g, `namespace ${infraName}.Security`)
+        .replace(/namespace Infrastructure\.Auth/g, `namespace ${infraName}.Auth`)
+        .replace(/namespace Infrastructure\.Workers/g, `namespace ${infraName}.Workers`)
+        .replace(/namespace Infrastructure\.Scheduling/g, `namespace ${infraName}.Scheduling`)
+        .replace(/namespace Infrastructure\.Caching/g, `namespace ${infraName}.Caching`)
+        .replace(/namespace Application\.Common\.Behaviors/g, `namespace ${appName}.Common.Behaviors`);
+    };
+
+    const insertFeatureSrcFiles = (): void => {
+      for (const { gf, remapped } of featureFilesForSrc) {
+        const fileNode: SolutionTreeNode = {
+          id: `gf-${gf.path}-${remapped}`,
+          name: remapped.split('/').pop()!,
+          type: 'file',
+          path: remapped,
+          language: gf.language,
+          contentSnippet: patchSnippetNamespaces(gf.templateSnippet),
+        };
+        // remapped é "src/App.Infrastructure/Persistence/Foo.cs"
+        // Tira o prefixo "src/" e insere relativo ao srcFolderNode.
+        const rel = remapped.replace(/^src\//, '');
+        const parts = rel.split('/');
+        const fileName = parts.pop()!;
+        let cursor: SolutionTreeNode[] = srcFolderNode.children!;
+        let curPath = 'src';
+        for (const part of parts) {
+          curPath = `${curPath}/${part}`;
+          let folder = cursor.find((n) => n.path === curPath && (n.type === 'folder' || n.type === 'project'));
+          if (!folder) {
+            // Se for um nome de projeto real (App.Core etc.), preserva type 'project'
+            const isProject = blueprint.projects.some((p) => p.name === part);
+            folder = { id: `dir-auto-${curPath}`, name: part, type: isProject ? 'project' : 'folder', path: curPath, children: [] };
+            cursor.push(folder);
+          }
+          cursor = folder.children!;
+        }
+        const fullPath = remapped;
+        if (!cursor.some((n) => n.path === fullPath && n.type === 'file')) {
+          // Corrige o id/name já setado acima
+          fileNode.name = fileName;
+          fileNode.path = fullPath;
+          cursor.push(fileNode);
+        }
+      }
     };
 
     blueprint.projects.forEach((proj) => {
@@ -572,14 +681,75 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
           ],
         });
         if (lang === 'csharp') {
+          // Phase 13: Program.cs wiring real das Features ativas (pacotes viram código).
+          const has = (id: string): boolean => activeFeatureIds.includes(id);
+          const programUsings: string[] = [
+            `using ${appName2}.Commands;`,
+            `using ${appName2}.Common;`,
+            `using ${infraName}.Persistence;`,
+          ];
+          const programServices: string[] = [
+            'builder.Services.AddControllers();',
+            'builder.Services.AddHealthChecks().AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());',
+            'builder.Services.AddSingleton(TimeProvider.System);',
+            'builder.Services.AddScoped(typeof(IRepository<>), typeof(InMemoryRepository<>));',
+            'builder.Services.AddScoped<ICommandHandler<CreateTransactionCommand, Guid>, CreateTransactionHandler>();',
+          ];
+          const programExtras: string[] = [];
+          if (has('feat-postgres-ef')) {
+            programUsings.push('using Microsoft.EntityFrameworkCore;');
+            programServices.push('builder.Services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Host=localhost;Database=appdb;Username=appuser;Password=appsecret"));');
+          }
+          if (has('feat-redis-cache')) {
+            programServices.push('builder.Services.AddStackExchangeRedisCache(o => o.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379");');
+          }
+          if (has('feat-jwt-auth')) {
+            programUsings.push('using Microsoft.AspNetCore.Authentication.JwtBearer;');
+            programUsings.push('using Microsoft.IdentityModel.Tokens;');
+            programServices.push('builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();');
+            programServices.push('builder.Services.AddAuthorization();');
+            programExtras.push('app.UseAuthentication();', 'app.UseAuthorization();');
+          }
+          if (has('feat-mediatr-cqrs')) {
+            programServices.push('builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CreateTransactionCommand>());');
+          }
+          if (has('feat-fluent-validation')) {
+            programUsings.push('using FluentValidation;');
+            programServices.push('builder.Services.AddValidatorsFromAssemblyContaining<CreateTransactionCommand>();');
+          }
+          if (has('feat-opentelemetry')) {
+            // Minimal wiring — WithTracing+Instrumentation requires the instrumentation package
+            // plus an extra using. Keep it simple to stay compilable across package versions.
+            programServices.push('builder.Services.AddOpenTelemetry();');
+          }
+          if (has('feat-worker-service')) {
+            programUsings.push(`using ${infraName}.Workers;`);
+            programServices.push('builder.Services.AddHostedService<RpaWorker>();');
+          }
+          if (has('feat-quartz-scheduler')) {
+            programUsings.push('using Quartz;');
+            programServices.push('builder.Services.AddQuartz(q => {});', 'builder.Services.AddQuartzHostedService(o => o.WaitForJobsToComplete = true);');
+          }
+          const programContent = [
+            ...programUsings,
+            '',
+            'var builder = WebApplication.CreateBuilder(args);',
+            ...programServices.map((s) => s),
+            '',
+            'var app = builder.Build();',
+            ...programExtras,
+            'app.MapControllers();',
+            'app.MapHealthChecks("/healthz");',
+            'app.Run();',
+          ].join('\n');
+
           projFolderNode.children?.push({
             id: 'file-program',
             name: 'Program.cs',
             type: 'file',
             path: `src/${proj.name}/Program.cs`,
             language: 'csharp',
-            contentSnippet:
-              `using ${appName2}.Commands;\nusing ${appName2}.Common;\nusing ${infraName}.Persistence;\n\nvar builder = WebApplication.CreateBuilder(args);\nbuilder.Services.AddControllers();\nbuilder.Services.AddHealthChecks().AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());\nbuilder.Services.AddSingleton(TimeProvider.System);\nbuilder.Services.AddScoped(typeof(IRepository<>), typeof(InMemoryRepository<>));\nbuilder.Services.AddScoped<ICommandHandler<CreateTransactionCommand, Guid>, CreateTransactionHandler>();\n\nvar app = builder.Build();\napp.MapControllers();\napp.MapHealthChecks("/healthz");\napp.Run();`,
+            contentSnippet: programContent,
           });
           projFolderNode.children?.push({
             id: 'file-appsettings',
@@ -659,6 +829,9 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
 
       srcFolderNode.children?.push(projFolderNode);
     });
+
+    // Phase 13: feature src files entram no srcFolderNode (após projetos base)
+    insertFeatureSrcFiles();
 
     const vscodeFolderNode: SolutionTreeNode = {
       id: 'dir-vscode',

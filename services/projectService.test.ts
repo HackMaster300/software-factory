@@ -223,6 +223,77 @@ describe('ProjectService.generateSolutionPreview', () => {
     expect(blueprint.projects[0].packages).toBeUndefined();
   });
 
+  it('injects active feature generatedFiles by real path per Phase 13 (remapped)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'i', name: 'App.Infrastructure', type: 'Infrastructure', references: ['c'], description: '' },
+        { id: 'a', name: 'App.Api', type: 'API', references: ['i'], description: '' },
+      ],
+      featureIds: ['feat-postgres-ef', 'feat-healthchecks', 'feat-jwt-auth'],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    const allFiles = (nodes: typeof preview.solutionTree): string[] => {
+      const out: string[] = [];
+      const walk = (ns: typeof preview.solutionTree): void => {
+        for (const n of ns) {
+          if (n.type === 'file') out.push(n.path);
+          if (n.children) walk(n.children);
+        }
+      };
+      walk(nodes);
+      return out;
+    };
+    const files = allFiles(preview.solutionTree);
+    // Remap: src/Infrastructure/Persistence/ApplicationDbContext.cs → src/App.Infrastructure/Persistence/...
+    expect(files).toContain('src/App.Infrastructure/Persistence/ApplicationDbContext.cs');
+    expect(files).toContain('src/App.Infrastructure/Diagnostics/HealthCheckExtensions.cs');
+    expect(files).toContain('src/App.Infrastructure/Auth/JwtTokenGenerator.cs');
+    // Program.cs deve ter wiring dos pacotes ativos
+    const apiProgram = preview.solutionTree
+      .find((n) => n.name === 'src')
+      ?.children?.find((n) => n.name === 'App.Api')
+      ?.children?.find((n) => n.name === 'Program.cs')?.contentSnippet || '';
+    expect(apiProgram).toContain('AddDbContext<ApplicationDbContext>');
+    expect(apiProgram).toContain('AddJwtBearer');
+  });
+
+  it('injects RPA Worker+Quartz files and Program wiring when those features are active', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'i', name: 'App.Infrastructure', type: 'Infrastructure', references: ['c'], description: '' },
+        { id: 'a', name: 'App.Api', type: 'API', references: ['i'], description: '' },
+      ],
+      featureIds: ['feat-worker-service', 'feat-quartz-scheduler'],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    const allFiles = (nodes: typeof preview.solutionTree): string[] => {
+      const out: string[] = [];
+      const walk = (ns: typeof preview.solutionTree): void => {
+        for (const n of ns) {
+          if (n.type === 'file') out.push(n.path);
+          if (n.children) walk(n.children);
+        }
+      };
+      walk(nodes);
+      return out;
+    };
+    const files = allFiles(preview.solutionTree);
+    expect(files).toContain('src/App.Infrastructure/Workers/RpaWorker.cs');
+    expect(files).toContain('src/App.Infrastructure/Scheduling/RpaJob.cs');
+    const apiProgram = preview.solutionTree
+      .find((n) => n.name === 'src')
+      ?.children?.find((n) => n.name === 'App.Api')
+      ?.children?.find((n) => n.name === 'Program.cs')?.contentSnippet || '';
+    expect(apiProgram).toContain('AddHostedService<RpaWorker>');
+    expect(apiProgram).toContain('AddQuartz');
+  });
+
   it('uses custom env vars over the language defaults when provided', () => {
     const blueprint: Blueprint = { ...baseBlueprint, projects: [] };
     const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test', true, [
