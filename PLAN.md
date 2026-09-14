@@ -370,19 +370,123 @@ unknown bugs this phase surfaced along the way.
       already documented in Phase 3. Not a code or key problem; the important thing verified is
       that the app makes a real attempt and shows the real error rather than a fake success.
 
-## Realignment plan status: complete (Phases 0-6)
+## Realignment plan status: complete (Phases 0-6) — NEW DIRECTION APPROVED (Phases 7-11)
 
-All six phases from the original gap analysis are done: a real repository-pattern architecture
-swap-ready for a future REST API (Phase 0); a genuinely empty starting state with no invented
-history (Phase 1); every entity the original vision asked to create now has real create/edit/delete
-UI (Phase 2); the user can bring their own AI provider key for Gemini/OpenAI/Anthropic/DeepSeek/
-Azure OpenAI/Ollama (Phase 3); every view now shares a consistent, decluttered design system
-(Phase 4); the app is usable at mobile/tablet/desktop breakpoints (Phase 5); and this phase closed
-two real, previously-hidden correctness bugs that directly served the "no invented data, 100% real
-functionality" mandate — a scoring formula that silently ignored configuration, and a shared-
-reference bug that could resurrect deleted data after a storage reset. 98/98 tests passing across
-21 test files, lint clean, build clean. Nothing has been pushed to the remote — that still needs
-explicit approval per the Execution mode section above.
+Phases 0-6 done. New user decision (2026-09-14):
+- Stack âncora = **C# / .NET 9** (`stack-dotnet9`). É a mais madura (Features, RuleSet,
+  `suggestPackages` 9 categorias, 5 estilos, `.sln/.csproj` real). Vira o golden path.
+- Multilang mantido, mas **congelado**: `java/go/python/typescript/rust/kotlin/dart` não recebem
+  melhoria até o C# estar compilável de ponta-a-ponta.
+- Princípio **"zero simulado"**: tudo que hoje retorna dado fake passa a falhar alto
+  (erro real) ou a computar de verdade. Nada de fallback silencioso.
+- **Backend legítimo com Docker + SQL**: sair do `localStorage` para Postgres em Docker,
+  via Prisma + API REST real, mantendo as interfaces `I*Repository` da Phase 0.
+
+Inventário simulado a eliminar (não tocar em outra coisa antes de ler cada arquivo):
+- `app/api/ai/generate/route.ts:32 simulatedResponse()` + fallback `!resolvedKey` → texto fake.
+- `services/aiService.ts:62 Fallback Analysis` no `catch` — esconde erro real de rede/key.
+- `services/impactService.ts` inteiro — gerador de cópia fixa ("canned"), não diff real.
+- `services/advisorService.ts` — deltas hardcoded por linguagem + `impactScores` ilustrativos;
+  `qualityScore` é média ponderada inventada, não medida.
+- `services/mockSeedData.ts` — `costPer1k/latency/downloadCount` são placeholders, não benchmarks.
+- `services/projectService.ts:155 totalFiles=24/totalFolders=12`, `+5 por projeto`,
+  GUID `{0000...-000N}`, snippets parciais por linguagem — preview, não scaffold que compila.
+- `services/storageService.ts` — `localStorage` como única persistência (não é "simulado",
+  mas bloqueia multi-user/backup e precisa ser trocado pelo backend abaixo).
+
+---
+
+## Phase 7 — De-simulação: falhar alto, nada de fake (fazer ANTES do backend) — DONE 2026-09-14
+
+- [x] `route.ts`: sem key real → `400 {error}` em vez de `simulatedResponse` (removida).
+- [x] `aiService.requestAnalysis`: sem `catch → Fallback`; lança `Error` real. Drawer/Scaffolder
+  com try/catch exibindo "Falha na análise de IA: <motivo> + configure key".
+- [x] `impactService`: genérico retorna `[]` honesto; DB-change mantido como checklist
+  heurístico documentado; teste atualizado.
+- [x] `mockSeedData`: `costPer1k/latency` → `n/a`, `downloadCount` → `0`. Playground sem
+  `qualityScore` random e sem custo chutado (`n/a (custo não medido)`); form default `n/a`.
+- [x] `projectService`: contagem real da árvore, GUID `crypto.randomUUID()`.
+- [x] Verified: `lint` clean, `test` 170/170, `build` clean.
+
+## Phase 8 — Backend legítimo: Docker + Postgres + Prisma + API REST — PARCIAL 2026-09-14
+(restrição: registry npm inacessível → zero novas deps; `pg`/`prisma` ficam p/ Phase-8-full)
+
+- [x] `Dockerfile` multi-stage (node:22-alpine, standalone) + `.dockerignore`.
+- [x] `docker-compose.yml`: `app` (volume `appdata`, `SQLITE_PATH`, `DATABASE_URL`) + `db`
+  postgres:16-alpine com healthcheck e `db/schema.sql` no initdb. `compose config` válido.
+- [x] `db/schema.sql`: DDL Postgres real (organizations, workspaces, projects, ai_providers
+  com api_key server-side, catalog, decision_logs). `lib/sql.ts` espelha em SQLite.
+- [x] `.env.example`: `SQLITE_PATH` + `DATABASE_URL` (alvo) + `GEMINI_API_KEY`.
+- [x] Runtime SQL: `lib/sql.ts` (node:sqlite builtin, singleton lazy, DDL auto) +
+  `types/node-sqlite.d.ts` (tipos locais, @types/node v20 sem sqlite).
+- [x] API v1: `health`, `organizations` GET/POST, `workspaces` GET/POST (FK checada, 400
+  honesto), `ai-providers` GET redigido (hasKey, nunca api_key) + POST upsert com
+  `isActiveDefault` exclusivo, `admin/seed-catalog` (só catálogo, idempotente, sem histórico).
+- [x] `lib/api-client.ts` async (seam p/ futuros `Api*Repository`; `NEXT_PUBLIC_DATA_SOURCE`
+  flag, default `local` = comportamento atual inalterado) + `lib/api-validation.test.ts` (5).
+- [x] Verified ao vivo (standalone :3101, SQLite isolado): health ok zerado → POST org 201 →
+  POST ws 201 → FK inválida 400 → seed 10+4 → POST provider com key retorna hasKey sem
+  segredo → GET sem `api_key` em lugar nenhum. `lint` clean, `test` 175/175, `build` clean.
+- [x] Backup round-trip 2026-09-14: `POST /api/v1/admin/import` aceita o JSON de
+  `StorageService.exportFullWorkspaceState()` (idempotente, workspaces órfãos pulados, apiKey
+  descartada na validação) + `GET /api/v1/admin/export` devolve o dump no mesmo shape sem
+  segredos. Verificado ao vivo (import 4 → re-import 0 → export íntegro, sem `SECRET`/`api_key`).
+  `lib/admin-import.test.ts` (4). `lint/test` 191/191, `build` clean.
+- [ ] Phase-8-full (pendente, precisa registry): `npm i pg|prisma`, wire `lib/sql.ts`→Postgres,
+  `Api*Repository` implementando `I*Repository` (services viram async), auth mínima.
+
+## Phase 9 — Golden path C# / .NET 9: template que compila (só esta stack) — DONE 2026-09-14
+
+- [x] `projectService.ts` golden path C#: `App.Core` (+ `Transaction.cs` com `DateTimeOffset.UtcNow`, sem
+  `DateTime.Now`/`Console`), `App.Application` (+ `CreateTransactionCommand/Handler` sem MediatR + `Common`
+  `IRepository<T>/ICommandHandler`), `App.Infrastructure` (`InMemoryRepository<T>` implementando a interface
+  de Application — rule-3), `App.Api` (`BaseApiController` abstrato + `TransactionsController : BaseApiController`
+  — rule-2 + `Program.cs` DI/HealthChecks/TimeProvider + `appsettings.json`/`Development.json`), `App.UnitTests`
+  (`GoldenPathTests.cs` self-contained com `FakeRepository` + xUnit 2.9, sem precisar `Infrastructure` ref),
+  root (`Directory.Build.props` + `global.json` + `README` com build, `.editorconfig` já existente,
+  `.sln` com `ProjectConfigurationPlatforms` + GUID real + `Sdk.Web` no Api).
+- [x] Scaffolder UI: import `ValidationService`, `treeValidation = validateGeneratedTree(solutionTree)`,
+  banner honesto (erro/warning vs. "no rule 2-5 violations"), "Files/Directories (real count)" e
+  Step 3 "Heuristic score" sem "Simulated".
+- [x] `ValidationService.validateGeneratedTree()` cobre rules 2-5 no código gerado (controladores,
+  interface vs. impl, `DateTime.Now`, `Console.WriteLine`) + `validationService.test.ts` (5 novos).
+- [x] RPA (mesma stack): `feat-worker-service` (BackgroundService + FileSystemWatcher) e
+  `feat-quartz-scheduler` (Quartz IJob) como FeatureManifests novos reutilizando o template.
+- [x] Verified: `lint` clean, `test` 181/181 (incl. `scaffoldDotnetBuild` E2E que faz `dotnet build`
+  real e exige `Build succeeded` + DLLs; `dotnet test` no artefato gerado passa 2/2), `build` clean.
+  Nota: `dotnet build` anterior falso-positivo (exit 0 sem compilar) foi pego e corrigido no próprio E2E.
+
+## Phase 10 — IA assistente grounded (DEPOIS do backend + template real) — DONE 2026-09-14
+
+- [x] `lib/ai-grounding.ts`: `buildGroundedPrompt(blueprint, userPrompt)` ancora blueprint real +
+  ruleSet ativo + features ativas (via Smart Dependencies) + validation com ruleId; system prompt
+  fixo "Standard Consultant, cite ruleId" (`GROUNDED_SYSTEM_INSTRUCTION`), custom agent vira complemento.
+- [x] Callers ligados: Drawer (sempre grounded), Scaffolder package advisor (grounded + pede ruleId),
+  Playground (grounded contra template[0] quando há; cru quando não), rota default cita ruleId.
+- [x] Sem key → erro honesto (Phase 7 mantido); Drawer sem "Offline Mode" fake ("No provider key
+  configured" + badge "Offline — configure a key" só em erro real); playground já loga latency real.
+- [x] Verified: `lint` clean, `test` 185/185 (4 novos `ai-grounding`; 1 falha inicial honesta —
+  Smart Dependencies auto-ativa healthchecks, teste ajustado p/ desabilitar de verdade),
+  `build` clean. E2E com key real fica p/ ambiente com internet + key do usuário.
+
+## Phase 11 — Scores e Impact reais (POR ÚLTIMO, depende de 9+10) — DONE 2026-09-14
+
+- [x] `AdvisorService` reescrito: baseline heurística declarada 60 + penalidades de validation
+  real (error −15, warning −7, citando code/ruleId) + checklist verificável (feature presente = +N
+  com feature id) + propriedades estruturais documentadas + complexidade determinística por
+  contagem. Removidos bônus por estereótipo de linguagem. Cada ponto rastreável no rationale.
+- [x] `ImpactAnalyzerView` reescrita: target-state = mutação real (estilo + 3 toggles do catálogo)
+  reavaliada pelo engine; diff de módulos via layout real, features via catálogo, violações via
+  códigos reais (novas vs. resolvidas); "2-3 sprints"/"~34 files" removidos (sizing honesto por
+  contagem); vazio honesto sem mudanças; botão IA com diff real (grounded).
+- [x] `costPer1k/latency`: já honestos (`n/a`) desde Phase 7; playground mede latency real.
+- [x] Scaffolder: "Heuristic Estimate (traceable, not measured)" em vez de "Live Score Simulator".
+- [x] Verified: `lint` clean, `test` 187/187 (3 novos advisor: redis-checklist, complexidade
+  estrutural, regressão rule-6/DEP_RULE_006 no rationale; teste de estereótipo Rust removido),
+  `build` clean (1 type-error pego: literal estreito em toggles).
+
+Regra de execução: **7 → 8 → 9 → 10 → 11**. Não pular. Cada fase: lint + build + test +
+Playwright contra Docker limpo. Nada de `git push` sem aprovação explícita.
 
 ---
 

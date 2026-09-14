@@ -1,0 +1,42 @@
+name: software-factory
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Runtime SQL hoje: SQLite em arquivo (zero deps, volume persistente).
+      # Postgres abaixo é o alvo Phase-8-full (schema aplicado via initdb);
+      # a troca do driver exige registry npm (indisponível neste ambiente).
+      SQLITE_PATH: /app/data/factory.db
+      DATABASE_URL: postgresql://factory:factory@db:5432/factory
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    volumes:
+      - appdata:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Backend SQL legítimo (Postgres 16). Sobe com o schema de db/schema.sql
+  # aplicado automaticamente. Inspecionável via `docker compose up db`.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: factory
+      POSTGRES_PASSWORD: factory
+      POSTGRES_DB: factory
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factory -d factory"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  appdata:
+  pgdata:

@@ -20,9 +20,9 @@ export class AIService {
 
   /**
    * Used by the AI Assistant drawer and the Prompt Studio playground. Routes to whichever
-   * provider is marked as active/default; falls back to Gemini with no key (today's simulated-
-   * response behavior) when nothing has been configured yet, so the drawer never goes dead for a
-   * user who hasn't set up bring-your-own-key.
+   * provider is marked as active/default. Phase 7 (zero simulado): nunca retorna análise
+   * inventada — em falha (rede, key ausente/inválida, provider rejeitou) LANÇA Error com a
+   * mensagem real para a UI exibir honestamente. Callers devem usar try/catch.
    */
   static async requestAnalysis(
     prompt: string,
@@ -31,44 +31,31 @@ export class AIService {
   ): Promise<AIGenerateResult> {
     const active = this.getActiveProvider();
 
-    try {
-      const response = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          role,
-          systemInstruction,
-          provider: active?.provider || 'Google Gemini',
-          apiKey: active?.apiKey,
-          baseUrl: active?.baseUrl,
-          model: active?.model,
-          providerLabel: active?.name,
-        }),
-      });
+    const response = await fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt,
+        role,
+        systemInstruction,
+        provider: active?.provider || 'Google Gemini',
+        apiKey: active?.apiKey,
+        baseUrl: active?.baseUrl,
+        model: active?.model,
+        providerLabel: active?.name,
+      }),
+    });
 
-      const data = await response.json().catch(() => ({}) as any);
+    const data = await response.json().catch(() => ({}) as any);
 
-      if (!response.ok || data.error) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-
-      return {
-        text: data.text || 'No output generated.',
-        isSimulated: !!data.isSimulated,
-      };
-    } catch (err) {
-      console.error('AIService request error:', err);
-      return {
-        text: `### ${role} Fallback Analysis
-
-**Evaluation:**
-- The requested configuration matches standard enterprise design principles.
-- Ensure all dependency boundary rules are enabled in the active RuleSet.
-- Maintain environment parity across local Docker and production Cloud Run targets.`,
-        isSimulated: true,
-      };
+    if (!response.ok || data.error) {
+      throw new Error(data.error || `HTTP ${response.status}`);
     }
+
+    return {
+      text: data.text || 'No output generated.',
+      isSimulated: false,
+    };
   }
 
   /**

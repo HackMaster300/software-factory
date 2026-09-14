@@ -1,5 +1,12 @@
 import { AffectedComponentImpact } from '../types/factory';
 
+/**
+ * Phase 7 (zero simulado): este serviço é um gerador de template heurístico, NÃO uma
+ * análise medida do código. `analyzeDatabaseChange` computa a direção real da troca
+ * (nomes de pacote/imagem variam com old/new), mas os 8 itens são checklist fixo.
+ * `analyzeFeatureToggle` para features genéricas retorna [] honesto em vez de 2 impactos
+ * inventados — sem diff computável, sem impacto alegado.
+ */
 export class ImpactService {
   static analyzeDatabaseChange(oldProvider: string, newProvider: string): AffectedComponentImpact[] {
     if (oldProvider === newProvider) return [];
@@ -80,19 +87,8 @@ export class ImpactService {
       ];
     }
 
-    return [
-      {
-        type: 'CodeFile',
-        name: `Feature Module (${featureName})`,
-        action: isActivated ? 'Added' : 'Removed',
-        detail: `${isActivated ? 'Activated' : 'Deactivated'} ${featureName} dependency registrations and configuration files.`,
-      },
-      {
-        type: 'Package',
-        name: 'Project Dependencies',
-        action: isActivated ? 'Added' : 'Removed',
-        detail: `Updated solution package manifest for ${featureName}.`,
-      },
-    ];
+    // Phase 7: sem diff computável para feature genérica, retorna vazio honesto
+    // em vez de 2 impactos inventados. A UI deve mostrar "sem impactos detectáveis".
+    return [];
   }
 }

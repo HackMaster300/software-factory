@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { Blueprint, Project, ArchitectureStyle } from '../../types/factory';
 import { ProjectService, SolutionTreeNode } from '../../services/projectService';
+import { ValidationService } from '../../services/validationService';
 import { StorageService } from '../../services/storageService';
 import { DecisionService } from '../../services/decisionService';
 import { AdvisorService } from '../../services/advisorService';
@@ -252,13 +253,15 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) || templates[0];
   const activeTechStack = techStacks.find((s) => s.id === editableBlueprint.techStackId) || techStacks[0];
 
-  // Real-time Rule Engine Guardrails evaluation
+  // Real-time Rule Engine Guardrails evaluation (blueprint-level)
   const defaultRuleSet = RuleService.getRuleSets()[0];
   const ruleReport = RuleService.validateBlueprint(editableBlueprint, defaultRuleSet);
 
   // Dynamic real-time score calculation based on current user autonomy choices
   const liveScores = AdvisorService.calculateScores(editableBlueprint);
   const solutionPreview = ProjectService.generateSolutionPreview(editableBlueprint, projectName, useEnvFile, envVars);
+  // Phase 9: tree-level code-standard validation (rules 2-5) sobre o código gerado.
+  const treeValidation = ValidationService.validateGeneratedTree(solutionPreview.solutionTree);
 
   // Dynamic calculation of suggested packages based on project operational description
   const suggestedPackages = BlueprintService.suggestPackagesFromDescription(
@@ -305,19 +308,24 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
       setIsAnalyzingAiPackages(true);
       setAiPackageAnalysisText(null);
 
-      const prompt = `Análise de Arquitetura de Software:
+      const { buildGroundedPrompt, getGroundedSystemInstruction } = await import('../../lib/ai-grounding');
+      const userPrompt = `Análise de Arquitetura de Software:
 Descrição do Funcionamento do Projeto: "${projectDescription}"
 Linguagem / Stack Técnica: ${activeTechStack.name} (${activeTechStack.language})
 Módulos da Solução Atual: ${editableBlueprint.projects.map((p) => `${p.name} (${p.type})`).join(', ')}
 
-Por favor, forneça uma lista detalhada dos pacotes/dependências mais importantes recomendados para este funcionamento, explicando a finalidade de cada um e em qual camada da arquitetura (Core, Application, Infrastructure, API, Worker) deve ser adicionado.`;
+Por favor, forneça uma lista detalhada dos pacotes/dependências mais importantes recomendados para este funcionamento, explicando a finalidade de cada um e em qual camada da arquitetura (Core, Application, Infrastructure, API, Worker) deve ser adicionado, citando ruleId quando aplicar governança.`;
+      const groundedPrompt = buildGroundedPrompt(editableBlueprint, userPrompt);
+      const systemInstruction = getGroundedSystemInstruction();
 
-      const result = await AIService.requestAnalysis(prompt, 'Software Architect & Package Advisor');
+      const result = await AIService.requestAnalysis(groundedPrompt, 'Software Architect & Package Advisor', systemInstruction);
       setAiPackageAnalysisText(result.text);
 
       // Also apply suggested packages automatically
       handleApplyAllSuggestedPackages();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown AI error';
+      setAiPackageAnalysisText(`Falha na análise de IA: ${message}\nConfigure uma API key válida em AI & Prompts → Providers.`);
       console.error(err);
     } finally {
       setIsAnalyzingAiPackages(false);
@@ -592,7 +600,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
       projectId: newProject.id,
       decision: `Generated Production Solution '${projectName}' with ${activeTechStack.name}`,
       reason: `Custom autonomous architecture scaffolding using ${editableBlueprint.architectureStyle} and ${activeTechStack.framework}`,
-      impact: `Scaffolding created ${solutionPreview.estimatedFileCount} files across ${solutionPreview.estimatedFolderCount} directories. Final Simulated Quality Score: ${liveScores.qualityScore}/100.`,
+      impact: `Scaffolding created ${solutionPreview.estimatedFileCount} files across ${solutionPreview.estimatedFolderCount} directories. Heuristic quality estimate: ${liveScores.qualityScore}/100 (traceable, not measured).`,
       warningsIgnored: [],
       aiRecommendations: liveScores.rationale[0]?.recommendations || [],
       userJustification: 'Validated autonomous tech stack and architecture parameters.',
@@ -684,7 +692,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
           </div>
           <div>
             <div className="text-xs font-bold text-white flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> Live Score Simulator
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" /> Heuristic Estimate <span className="font-normal text-gray-400">(traceable, not measured)</span>
             </div>
             <div className="text-[11px] text-gray-400">
               Active Stack: <span className="text-blue-300 font-mono">{activeTechStack.name}</span> | Arch:{' '}
@@ -1469,7 +1477,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-white">Step 3: Quality Score Rationale & Recommendation Analysis</h2>
             <p className="text-gray-400 text-xs">
-              Simulated score evaluation based on stack capabilities, active features, and security parameters.
+              Heuristic score (Phase 9) — derived from stack/feature choices; Phase 11 will ground it in real validation.
             </p>
           </div>
 
@@ -1509,14 +1517,14 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
 
       {step === 4 && (
         <div className="space-y-5">
-          {/* Solution Estimates Bar */}
+          {/* Solution Estimates Bar — Phase 9: contagem real da árvore, não estimativa */}
           <Card className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Estimated Files</div>
+              <div className="text-[10px] text-gray-400 uppercase font-mono">Files (real count)</div>
               <div className="text-lg font-bold text-blue-400 font-mono">{solutionPreview.estimatedFileCount}</div>
             </div>
             <div>
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Directories</div>
+              <div className="text-[10px] text-gray-400 uppercase font-mono">Directories (real)</div>
               <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.estimatedFolderCount}</div>
             </div>
             <div>
@@ -1528,6 +1536,31 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
               <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.packageDependenciesCount}</div>
             </div>
           </Card>
+
+          {/* Tree validation (Phase 9) — honesto, sem fake-pass */}
+          {treeValidation.length > 0 ? (
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+                <ShieldAlert className="w-4 h-4" aria-hidden="true" />
+                <span>Tree validation: {treeValidation.length} issue(s) in generated code</span>
+              </div>
+              <ul className="mt-2 space-y-1 text-xs text-gray-300">
+                {treeValidation.map((m) => (
+                  <li key={m.id} className="flex gap-2">
+                    <Badge tone={m.type === 'error' ? 'danger' : 'warning'} className="shrink-0">{m.code}</Badge>
+                    <span><span className="text-gray-100">{m.title}</span> — {m.description} {m.ruleId && <span className="font-mono text-[11px] text-gray-400">({m.ruleId})</span>}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : (
+            <Card className="border-emerald-500/20 bg-emerald-500/5">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                <span>Generated code: no rule 2-5 violations detected</span>
+              </div>
+            </Card>
+          )}
 
           {/* Main Solution Explorer & Monaco Code Inspector */}
           <Card className="grid grid-cols-1 lg:grid-cols-12 gap-6">

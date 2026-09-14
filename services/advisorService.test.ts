@@ -58,14 +58,38 @@ describe('AdvisorService.calculateScores', () => {
     expect(scoresWith.securityScore).toBeGreaterThan(scoresWithout.securityScore);
   });
 
-  it('produces a different score for a Rust performance-oriented stack than a plain stack with the same features', () => {
-    const withDotnet: Blueprint = { ...baseBlueprint, techStackId: 'stack-dotnet9', featureIds: ['feat-docker'] };
-    const withRust: Blueprint = { ...baseBlueprint, techStackId: 'stack-rust-axum', featureIds: ['feat-docker'] };
+  it('produces a higher performance score when Redis caching is present (traceable checklist, not language stereotype)', () => {
+    const withoutRedis: Blueprint = { ...baseBlueprint, featureIds: ['feat-docker'] };
+    const withRedis: Blueprint = { ...baseBlueprint, featureIds: ['feat-docker', 'feat-redis-cache'] };
 
-    const dotnetScores = AdvisorService.calculateScores(withDotnet);
-    const rustScores = AdvisorService.calculateScores(withRust);
+    expect(AdvisorService.calculateScores(withRedis).performanceScore).toBeGreaterThan(
+      AdvisorService.calculateScores(withoutRedis).performanceScore
+    );
+  });
 
-    expect(rustScores.performanceScore).toBeGreaterThan(dotnetScores.performanceScore);
+  it('produces higher complexity for Microservices than CleanArchitecture with the same modules (structural, documented)', () => {
+    // Complexity is a deterministic count; Microservices blueprint fixture below carries
+    // more projects/references, so the count — not a vibe — must be higher.
+    const clean: Blueprint = {
+      ...baseBlueprint,
+      architectureStyle: 'CleanArchitecture',
+      projects: [{ id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' }],
+      featureIds: [],
+    };
+    const micro: Blueprint = {
+      ...baseBlueprint,
+      architectureStyle: 'Microservices',
+      projects: [
+        { id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'm', name: 'App.Messaging', type: 'Infrastructure', references: ['c'], description: '' },
+        { id: 's', name: 'App.Service', type: 'API', references: ['m', 'c'], description: '' },
+      ],
+      featureIds: [],
+    };
+
+    expect(AdvisorService.calculateScores(micro).complexityScore).toBeGreaterThan(
+      AdvisorService.calculateScores(clean).complexityScore
+    );
   });
 
   it('applies a real penalty when a recommended feature is explicitly disabled', () => {
@@ -76,5 +100,16 @@ describe('AdvisorService.calculateScores', () => {
     const scoresDisabled = AdvisorService.calculateScores(withDisabled);
 
     expect(scoresDisabled.securityScore).toBeLessThan(scoresDefault.securityScore);
+  });
+
+  it('traces every validation penalty to a real code/ruleId in the rationale (Phase 11 regression)', () => {
+    const violating: Blueprint = { ...baseBlueprint, featureIds: ['feat-docker'], disabledAutoFeatures: ['feat-healthchecks'] };
+    const scores = AdvisorService.calculateScores(violating);
+    const arch = scores.rationale.find((r) => r.category === 'Architecture Score');
+    const scal = scores.rationale.find((r) => r.category === 'Scalability Score');
+    const combined = `${arch?.reason || ''} • ${scal?.reason || ''}`;
+    // rule-6 docker-without-healthchecks must appear with its real code, not a vague warning.
+    expect(combined).toContain('rule-6');
+    expect(combined).toContain('DEP_RULE_006');
   });
 });

@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ValidationService } from './validationService';
+import { ProjectService } from './projectService';
 import { profileRepository } from './repositories/profile.repository';
 import type { Blueprint } from '../types/factory';
+import type { SolutionTreeNode } from './projectService';
 
 const baseBlueprint: Blueprint = {
   id: 'bp-validation-test',
@@ -147,5 +149,76 @@ describe('ValidationService.validateBlueprint', () => {
       featureIds: ['feat-docker', 'feat-healthchecks', 'feat-postgres-ef'],
     });
     expect(messages.some((m) => m.code === 'SEC_JWT_EXPIRE_HIGH' && m.type === 'warning')).toBe(true);
+  });
+});
+
+describe('ValidationService.validateGeneratedTree (Phase 9 golden path)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  const csFile = (id: string, path: string, contentSnippet: string): SolutionTreeNode => ({
+    id, name: path.split('/').pop() || id, type: 'file', path, language: 'csharp', contentSnippet,
+  });
+
+  it('returns [] when the tree has no C# files (not applicable, not fake-passing)', () => {
+    const tree: SolutionTreeNode[] = [csFile('f1', 'src/app/index.ts', 'export const x = 1;')];
+    tree[0].language = 'typescript';
+    expect(ValidationService.validateGeneratedTree(tree)).toEqual([]);
+  });
+
+  it('passes the golden C# template with zero rule-2..5 violations', () => {
+    const preview = ProjectService.generateSolutionPreview(
+      {
+        id: 'bp-golden', name: 'Golden', description: '', architectureStyle: 'CleanArchitecture',
+        techStackId: 'stack-dotnet9',
+        projects: [
+          { id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' },
+          { id: 'a', name: 'App.Application', type: 'Application', references: ['c'], description: '' },
+          { id: 'i', name: 'App.Infrastructure', type: 'Infrastructure', references: ['a', 'c'], description: '' },
+          { id: 'api', name: 'App.Api', type: 'API', references: ['i', 'a'], description: '' },
+          { id: 't', name: 'App.Tests', type: 'Tests', references: ['a', 'c'], description: '' },
+        ],
+        featureIds: [], disabledAutoFeatures: [], ruleSetId: 'ruleset-clean-arch',
+        profiles: {
+          securityProfileId: 'sec-prof-jwt', databaseProfileId: 'db-prof-pg',
+          dockerProfileId: 'docker-prof-prod', cacheProfileId: 'cache-prof-redis',
+          loggingProfileId: 'log-prof-opentelemetry',
+        },
+      },
+      'Acme.Golden',
+      true
+    );
+    const messages = ValidationService.validateGeneratedTree(preview.solutionTree);
+    expect(messages.filter((m) => m.ruleId === 'rule-2')).toEqual([]);
+    expect(messages.filter((m) => m.ruleId === 'rule-3')).toEqual([]);
+    expect(messages.filter((m) => m.ruleId === 'rule-4')).toEqual([]);
+    expect(messages.filter((m) => m.ruleId === 'rule-5')).toEqual([]);
+  });
+
+  it('flags DateTime.Now (rule-4) and Console.WriteLine (rule-5) per offending file', () => {
+    const tree = [
+      csFile('bad', 'src/App.Api/Bad.cs', 'var t = DateTime.Now; Console.WriteLine(t);'),
+    ];
+    const messages = ValidationService.validateGeneratedTree(tree);
+    expect(messages.some((m) => m.ruleId === 'rule-4' && m.type === 'warning')).toBe(true);
+    expect(messages.some((m) => m.ruleId === 'rule-5' && m.type === 'warning')).toBe(true);
+  });
+
+  it('flags a controller that does not inherit BaseApiController (rule-2)', () => {
+    const tree = [
+      csFile('base', 'src/App.Api/Controllers/BaseApiController.cs', 'public abstract class BaseApiController : ControllerBase {}'),
+      csFile('rogue', 'src/App.Api/Controllers/RogueController.cs', 'public class RogueController : ControllerBase {}'),
+    ];
+    const messages = ValidationService.validateGeneratedTree(tree);
+    expect(messages.some((m) => m.ruleId === 'rule-2' && m.type === 'error' && m.affectedComponent.includes('Rogue'))).toBe(true);
+  });
+
+  it('flags a repository interface without an Infrastructure implementation (rule-3)', () => {
+    const tree = [
+      csFile('iface', 'src/App.Application/Common/IRepository.cs', 'public interface IOrderRepository { }'),
+    ];
+    const messages = ValidationService.validateGeneratedTree(tree);
+    expect(messages.some((m) => m.ruleId === 'rule-3' && m.type === 'error')).toBe(true);
   });
 });

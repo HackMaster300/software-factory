@@ -865,6 +865,71 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
     bestPractices: ['Ensure all event consumers are idempotent.'],
     impactScores: { security: 15, architecture: 35, performance: 25, scalability: 35, maintainability: 20, complexity: 20 },
   },
+
+  // Phase 9 RPA — Worker + Quartz, reutilizando o mesmo template .NET (não nova stack).
+  {
+    id: 'feat-worker-service',
+    name: 'Worker Service (IHostedService) + File Watcher',
+    description: 'Background worker with HostedService lifecycle and FileSystemWatcher for RPA file automation.',
+    category: 'Architecture',
+    tags: ['worker', 'hosted-service', 'rpa', 'file-watcher'],
+    dependencies: [],
+    optionalDependencies: [],
+    recommendedDependencies: ['feat-healthchecks'],
+    conflictingFeatures: [],
+    questions: [],
+    configuration: { pollIntervalMs: 5000, watchPath: './inbox' },
+    generatedFiles: [
+      {
+        path: 'src/App.Infrastructure/Workers/RpaWorker.cs',
+        language: 'csharp',
+        templateSnippet: `using Microsoft.Extensions.Hosting;\nusing Microsoft.Extensions.Logging;\n\nnamespace App.Infrastructure.Workers;\n\npublic sealed class RpaWorker : BackgroundService {\n    private readonly ILogger<RpaWorker> _logger;\n    private readonly TimeProvider _time;\n\n    public RpaWorker(ILogger<RpaWorker> logger, TimeProvider time) {\n        _logger = logger;\n        _time = time;\n    }\n\n    protected override async Task ExecuteAsync(CancellationToken ct) {\n        _logger.LogInformation("RPA worker started at {Time}", _time.GetUtcNow());\n        while (!ct.IsCancellationRequested) {\n            await Task.Delay(TimeSpan.FromSeconds(5), ct);\n        }\n    }\n}`,
+        description: 'IHostedService worker for RPA file automation',
+      },
+    ],
+    generatedPackages: [{ name: 'Microsoft.Extensions.Hosting', version: '9.0.0', packageManager: 'nuget' }],
+    generatedProjects: ['Infrastructure'],
+    documentation: 'Runs as an IHostedService inside the API host or as a standalone Worker. Register via AddHostedService<RpaWorker>().',
+    aiRecommendations: ['Use FileSystemWatcher with debounced buffer for file arrival detection.'],
+    securityWarnings: ['Restrict FileSystemWatcher root to an allowlisted directory; validate file names to prevent Zip Slip.'],
+    architectureImpact: 'Decouples file/RPA ingestion from HTTP request threads.',
+    performanceImpact: 'Negligible when idle; respects CancellationToken for graceful shutdown.',
+    maintainabilityImpact: 'Isolates RPA lifecycle from API controllers.',
+    bestPractices: ['Inject TimeProvider, not DateTime.Now; use ILogger<T>.'],
+    impactScores: { security: 10, architecture: 25, performance: 10, scalability: 15, maintainability: 20, complexity: 10 },
+  },
+
+  {
+    id: 'feat-quartz-scheduler',
+    name: 'Quartz.NET Scheduler',
+    description: 'Durable job scheduling with Quartz.NET (cron, intervals, persistence).',
+    category: 'Infrastructure',
+    tags: ['quartz', 'scheduler', 'cron', 'rpa'],
+    dependencies: [],
+    optionalDependencies: [],
+    recommendedDependencies: ['feat-worker-service'],
+    conflictingFeatures: [],
+    questions: [],
+    configuration: { cron: '0 0/15 * * * ?', storeType: 'RAMJobStore' },
+    generatedFiles: [
+      {
+        path: 'src/App.Infrastructure/Scheduling/RpaJob.cs',
+        language: 'csharp',
+        templateSnippet: `using Quartz;\nusing Microsoft.Extensions.Logging;\n\nnamespace App.Infrastructure.Scheduling;\n\n[DisallowConcurrentExecution]\npublic sealed class RpaJob : IJob {\n    private readonly ILogger<RpaJob> _logger;\n\n    public RpaJob(ILogger<RpaJob> logger) {\n        _logger = logger;\n    }\n\n    public Task Execute(IJobExecutionContext context) {\n        _logger.LogInformation("RPA job triggered at {Time}", DateTimeOffset.UtcNow);\n        return Task.CompletedTask;\n    }\n}`,
+        description: 'Quartz IJob for scheduled RPA runs',
+      },
+    ],
+    generatedPackages: [{ name: 'Quartz', version: '3.13.1', packageManager: 'nuget' }],
+    generatedProjects: ['Infrastructure'],
+    documentation: 'Register via AddQuartz() + AddQuartzHostedService(); use cron or simple triggers.',
+    aiRecommendations: ['Use DisallowConcurrentExecution for file-processing jobs.'],
+    securityWarnings: ['Persist Quartz store securely if using database backing.'],
+    architectureImpact: 'Adds durable scheduling without external orchestrator dependency.',
+    performanceImpact: 'Millisecond trigger overhead; RAMJobStore has no I/O.',
+    maintainabilityImpact: 'Isolates job logic behind IJob interface.',
+    bestPractices: ['Keep Execute() idempotent; use retry policies.'],
+    impactScores: { security: 10, architecture: 20, performance: 10, scalability: 20, maintainability: 20, complexity: 10 },
+  },
 ];
 
 export const initialBlueprints: Blueprint[] = [
@@ -919,7 +984,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-07-28',
     tags: ['.NET 9', 'Clean Architecture', 'CQRS', 'PostgreSQL', 'Redis', 'Docker'],
     isOfficial: true,
-    downloadCount: 1420,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-java-spring',
@@ -939,7 +1004,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-08-02',
     tags: ['Java 21', 'Spring Boot 3', 'Hexagonal', 'Hibernate', 'PostgreSQL', 'Maven'],
     isOfficial: true,
-    downloadCount: 1850,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-node-nestjs',
@@ -959,7 +1024,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-08-01',
     tags: ['TypeScript', 'NestJS', 'Prisma', 'PostgreSQL', 'Swagger', 'Redis'],
     isOfficial: true,
-    downloadCount: 1980,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-gofiber-mesh',
@@ -979,7 +1044,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-07-20',
     tags: ['Go', 'gRPC', 'Fiber', 'PostgreSQL', 'Microservices'],
     isOfficial: true,
-    downloadCount: 890,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-python-fastapi',
@@ -999,7 +1064,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-07-31',
     tags: ['Python', 'FastAPI', 'Pydantic', 'AsyncIO', 'Gemini AI', 'Poetry'],
     isOfficial: true,
-    downloadCount: 1620,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-rust-axum',
@@ -1019,7 +1084,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-07-25',
     tags: ['Rust', 'Axum', 'Tokio', 'SQLx', 'PostgreSQL', 'Cargo'],
     isOfficial: true,
-    downloadCount: 1140,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-nextjs-saas',
@@ -1039,7 +1104,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-08-01',
     tags: ['Next.js 15', 'React 19', 'TypeScript', 'Tailwind', 'Prisma'],
     isOfficial: true,
-    downloadCount: 2310,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-kotlin-ktor',
@@ -1059,7 +1124,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-07-29',
     tags: ['Kotlin', 'Ktor', 'Coroutines', 'Exposed', 'Gradle'],
     isOfficial: true,
-    downloadCount: 760,
+    downloadCount: 0,
   },
   {
     id: 'tmpl-flutter-client',
@@ -1079,7 +1144,7 @@ export const initialTemplates: Template[] = [
     updatedAt: '2026-07-30',
     tags: ['Flutter', 'Dart', 'BLoC', 'Clean Architecture', 'Cross-Platform'],
     isOfficial: true,
-    downloadCount: 1540,
+    downloadCount: 0,
   },
 ];
 
@@ -1090,14 +1155,16 @@ export const initialProjects: Project[] = [];
 export const initialDecisionLogs: DecisionLogItem[] = [];
 
 export const initialAIProviders: AIProviderConfig[] = [
+  // Phase 7 (zero simulado): custo/latência não medidos — "n/a" honesto em vez de
+  // placeholders ilustrativos. Preencher só com medição real do playground (Phase 11).
   {
     id: 'ai-gemini',
     name: 'Google Gemini 2.5 Flash',
     model: 'gemini-2.5-flash',
     provider: 'Google Gemini',
     status: 'active',
-    costPer1k: '$0.00015',
-    latency: '180ms',
+    costPer1k: 'n/a',
+    latency: 'n/a',
   },
   {
     id: 'ai-openai',
@@ -1105,8 +1172,8 @@ export const initialAIProviders: AIProviderConfig[] = [
     model: 'gpt-4o',
     provider: 'OpenAI',
     status: 'configured',
-    costPer1k: '$0.0025',
-    latency: '320ms',
+    costPer1k: 'n/a',
+    latency: 'n/a',
   },
   {
     id: 'ai-claude',
@@ -1114,8 +1181,8 @@ export const initialAIProviders: AIProviderConfig[] = [
     model: 'claude-3-5-sonnet-20241022',
     provider: 'Anthropic',
     status: 'configured',
-    costPer1k: '$0.0030',
-    latency: '290ms',
+    costPer1k: 'n/a',
+    latency: 'n/a',
   },
   {
     id: 'ai-deepseek',
@@ -1123,8 +1190,8 @@ export const initialAIProviders: AIProviderConfig[] = [
     model: 'deepseek-chat',
     provider: 'DeepSeek',
     status: 'configured',
-    costPer1k: '$0.00014',
-    latency: '210ms',
+    costPer1k: 'n/a',
+    latency: 'n/a',
   },
 ];
 

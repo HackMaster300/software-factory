@@ -1,174 +1,133 @@
 import { Blueprint, AdvisorScores, ScoreRationale } from '../types/factory';
-import { featureManifestRepository } from './repositories/featureManifest.repository';
 import { techStackRepository } from './repositories/techStack.repository';
 import { FeatureService } from './featureService';
+import { ValidationService } from './validationService';
+import type { ValidationMessage } from '../types/factory';
 
 /**
- * Applies a gain/penalty with diminishing returns as the score nears its 0-100 bound,
- * instead of a flat sum. A blueprint with many well-scored features would otherwise
- * saturate every dimension to 100 regardless of which stack/architecture is chosen
- * (10+ active features each contributing 10-35 points per category trivially exceeds
- * 100 on their own) — making the score insensitive to real configuration differences.
+ * Phase 11 — scores traceable, não vibes.
+ *
+ * Cada ponto tem origem auditável: (1) penalidades vindas de
+ * `ValidationService.validateBlueprint()` (error −15, warning −7, citando code/ruleId);
+ * (2) bônus de checklist verificável (feature presente = +N, citando o feature id);
+ * (3) propriedades estruturais documentadas (estilo de arquitetura);
+ * (4) complexidade determinística por contagem (projetos/features/referências).
+ *
+ * Removido: bônus por estereótipo de linguagem (ex. "Rust +25 performance") — não
+ * verificável. O ponto de partida 60 é baseline heurística declarada na UI
+ * ("heuristic estimate"), nunca medição.
  */
 function applyDelta(current: number, delta: number): number {
   if (delta === 0) return current;
   return delta > 0 ? current + delta * (1 - current / 100) : current + delta * (current / 100);
 }
 
+type Dimension = 'Security' | 'Architecture' | 'Performance' | 'Scalability' | 'Maintainability';
+
+function dimensionForValidation(m: ValidationMessage): Dimension {
+  if (m.code === 'DEP_RULE_006') return 'Scalability';
+  if (m.code === 'SEC_JWT_EXPIRE_HIGH' || m.code === 'TREE_RULE_005') return 'Security';
+  if (m.code === 'TREE_RULE_004') return 'Maintainability';
+  if (m.code === 'RECOMMENDED_FEATURE_DISABLED') {
+    if (m.id.includes('feat-env-vars')) return 'Security';
+    if (m.id.includes('feat-healthchecks')) return 'Architecture';
+    return 'Maintainability';
+  }
+  // ARCH_RULE_001, TREE_RULE_002, TREE_RULE_003, DB_PROVIDER_MISMATCH + default
+  return 'Architecture';
+}
+
+const CHECKLIST: Array<{ featureId: string; dimension: Dimension; points: number; label: string }> = [
+  { featureId: 'feat-jwt-auth', dimension: 'Security', points: 6, label: 'JWT Bearer authentication present' },
+  { featureId: 'feat-secrets', dimension: 'Security', points: 8, label: 'Vault secrets management present' },
+  { featureId: 'feat-fluent-validation', dimension: 'Security', points: 5, label: 'FluentValidation DTO sanitization present' },
+  { featureId: 'feat-postgres-ef', dimension: 'Architecture', points: 5, label: 'EF Core persistence layer present' },
+  { featureId: 'feat-mediatr-cqrs', dimension: 'Architecture', points: 5, label: 'MediatR CQRS handlers present' },
+  { featureId: 'feat-redis-cache', dimension: 'Performance', points: 6, label: 'Redis distributed cache present' },
+  { featureId: 'feat-docker', dimension: 'Scalability', points: 5, label: 'Docker packaging present' },
+  { featureId: 'feat-healthchecks', dimension: 'Scalability', points: 8, label: 'Container health probes present' },
+  { featureId: 'feat-opentelemetry', dimension: 'Maintainability', points: 5, label: 'OpenTelemetry tracing present' },
+];
+
 export class AdvisorService {
   static calculateScores(blueprint: Blueprint): AdvisorScores {
-    const allFeatures = featureManifestRepository.getFeatureManifests();
     const techStacks = techStackRepository.getTechStacks();
     const selectedStack = techStacks.find((s) => s.id === blueprint.techStackId) || techStacks[0];
 
-    const { activeFeatureIds, disabledRecommendedFeatures } = FeatureService.resolveBlueprintFeatures(blueprint);
-    const activeFeatures = allFeatures.filter((f) => activeFeatureIds.includes(f.id));
+    const { activeFeatureIds } = FeatureService.resolveBlueprintFeatures(blueprint);
+    const validation = ValidationService.validateBlueprint(blueprint);
 
-    let securityScore = 50;
-    let architectureScore = 55;
+    // Heuristic baseline, declarada como tal na UI.
+    let securityScore = 60;
+    let architectureScore = 60;
     let performanceScore = 60;
-    let scalabilityScore = 50;
-    let maintainabilityScore = 55;
-    let complexityScore = 30;
+    let scalabilityScore = 60;
+    let maintainabilityScore = 60;
 
-    const rationaleMap: Record<string, { score: number; reasons: string[]; recommendations: string[] }> = {
-      Security: { score: 50, reasons: [], recommendations: [] },
-      Architecture: { score: 55, reasons: [], recommendations: [] },
-      Performance: { score: 60, reasons: [], recommendations: [] },
-      Scalability: { score: 50, reasons: [], recommendations: [] },
-      Maintainability: { score: 55, reasons: [], recommendations: [] },
-      Complexity: { score: 30, reasons: [], recommendations: [] },
+    const reasons: Record<Dimension | 'Complexity', string[]> = {
+      Security: [], Architecture: [], Performance: [], Scalability: [], Maintainability: [], Complexity: [],
+    };
+    const recommendations: Record<Dimension | 'Complexity', string[]> = {
+      Security: [], Architecture: [], Performance: [], Scalability: [], Maintainability: [], Complexity: [],
     };
 
-    // Stack-specific score impacts & rationale
-    if (selectedStack) {
-      const lang = selectedStack.language;
-      if (lang === 'rust') {
-        performanceScore = applyDelta(performanceScore, 25);
-        securityScore = applyDelta(securityScore, 15);
-        scalabilityScore = applyDelta(scalabilityScore, 20);
-        rationaleMap.Performance.reasons.push('Rust Tokio/Axum zero-cost abstractions deliver sub-millisecond API execution (+25 performance)');
-        rationaleMap.Security.reasons.push('Rust compile-time memory safety eliminates null pointers and data races (+15 security)');
-      } else if (lang === 'go') {
-        performanceScore = applyDelta(performanceScore, 20);
-        scalabilityScore = applyDelta(scalabilityScore, 20);
-        maintainabilityScore = applyDelta(maintainabilityScore, 10);
-        rationaleMap.Performance.reasons.push('Go goroutines and fast compile times maximize throughput (+20 performance)');
-        rationaleMap.Scalability.reasons.push('Low footprint container runtime allows dense pod packing (+20 scalability)');
-      } else if (lang === 'java') {
-        architectureScore = applyDelta(architectureScore, 20);
-        securityScore = applyDelta(securityScore, 15);
-        maintainabilityScore = applyDelta(maintainabilityScore, 15);
-        rationaleMap.Architecture.reasons.push('Java Spring Boot enterprise Ecosystem provides battle-tested DI & modularity (+20 architecture)');
-        rationaleMap.Security.reasons.push('Spring Security delivers production RBAC and OAuth2 integration (+15 security)');
-      } else if (lang === 'typescript') {
-        maintainabilityScore = applyDelta(maintainabilityScore, 20);
-        architectureScore = applyDelta(architectureScore, 15);
-        rationaleMap.Maintainability.reasons.push('Full-stack TypeScript enables shared DTO types between backend and frontend (+20 maintainability)');
-      } else if (lang === 'python') {
-        maintainabilityScore = applyDelta(maintainabilityScore, 15);
-        performanceScore = applyDelta(performanceScore, 10);
-        rationaleMap.Maintainability.reasons.push('FastAPI Pydantic v2 offers fast development velocity and AI pipeline readiness (+15 maintainability)');
-      } else if (lang === 'csharp') {
-        architectureScore = applyDelta(architectureScore, 20);
-        performanceScore = applyDelta(performanceScore, 15);
-        maintainabilityScore = applyDelta(maintainabilityScore, 15);
-        rationaleMap.Architecture.reasons.push('.NET 9 ASP.NET Core native Dependency Injection and C# 13 features (+20 architecture)');
-      } else if (lang === 'kotlin') {
-        architectureScore = applyDelta(architectureScore, 15);
-        maintainabilityScore = applyDelta(maintainabilityScore, 15);
-        rationaleMap.Architecture.reasons.push('Kotlin Coroutines deliver non-blocking async execution without callback complexity (+15 architecture)');
-      } else if (lang === 'dart') {
-        maintainabilityScore = applyDelta(maintainabilityScore, 20);
-        scalabilityScore = applyDelta(scalabilityScore, 10);
-        rationaleMap.Maintainability.reasons.push('Flutter cross-platform Dart runtime unifies Mobile, Web, and Desktop UI codebases (+20 maintainability)');
-      }
+    const adjust = (dim: Dimension, points: number, reason: string): void => {
+      if (dim === 'Security') securityScore = applyDelta(securityScore, points);
+      else if (dim === 'Architecture') architectureScore = applyDelta(architectureScore, points);
+      else if (dim === 'Performance') performanceScore = applyDelta(performanceScore, points);
+      else if (dim === 'Scalability') scalabilityScore = applyDelta(scalabilityScore, points);
+      else maintainabilityScore = applyDelta(maintainabilityScore, points);
+      reasons[dim].push(`${points >= 0 ? '+' : ''}${points} — ${reason}`);
+    };
+
+    // 1. Validation penalties — cada ponto rastreável a code/ruleId.
+    for (const m of validation) {
+      if (m.type === 'info') continue;
+      const penalty = m.type === 'error' ? -15 : -7;
+      const dim = dimensionForValidation(m);
+      const ref = m.ruleId ? `${m.code}/${m.ruleId}` : m.code;
+      adjust(dim, penalty, `[validation ${m.type} ${ref}] ${m.title}`);
+      if (m.consequenceIfIgnored) recommendations[dim].push(m.consequenceIfIgnored);
+      else if (m.ruleId) recommendations[dim].push(`Remediate per rule ${m.ruleId}: ${m.title}.`);
     }
 
-    // Architecture Style impact
+    // 2. Verifiable checklist — feature presente ou não, sem meio-termo.
+    for (const item of CHECKLIST) {
+      if (activeFeatureIds.includes(item.featureId)) {
+        adjust(item.dimension, item.points, `[checklist ${item.featureId}] ${item.label}`);
+      }
+    }
+    if (blueprint.projects.some((p) => p.type === 'Tests')) {
+      adjust('Maintainability', 5, '[checklist] dedicated Tests project present');
+    }
+
+    // 3. Structural properties (documented trade-offs, still heuristic — UI-labeled).
     const archStyle = blueprint.architectureStyle;
-    if (archStyle === 'CleanArchitecture') {
-      architectureScore = applyDelta(architectureScore, 20);
-      maintainabilityScore = applyDelta(maintainabilityScore, 20);
-      rationaleMap.Architecture.reasons.push('Clean Architecture enforces strict Domain isolation and Dependency Inversion (+20 architecture)');
-    } else if (archStyle === 'Hexagonal') {
-      architectureScore = applyDelta(architectureScore, 20);
-      maintainabilityScore = applyDelta(maintainabilityScore, 15);
-      rationaleMap.Architecture.reasons.push('Hexagonal Ports & Adapters isolate core business domain from HTTP and DB drivers (+20 architecture)');
-    } else if (archStyle === 'Microservices') {
-      scalabilityScore = applyDelta(scalabilityScore, 25);
-      complexityScore = applyDelta(complexityScore, 20);
-      rationaleMap.Scalability.reasons.push('Microservices allow independent deployment and horizontal node scaling (+25 scalability)');
-    } else if (archStyle === 'CQRS') {
-      architectureScore = applyDelta(architectureScore, 25);
-      performanceScore = applyDelta(performanceScore, 15);
-      rationaleMap.Architecture.reasons.push('CQRS decouples read queries from transactional write commands (+25 architecture)');
+    if (archStyle === 'Microservices') {
+      adjust('Scalability', 8, '[structure] Microservices: independent deploy/scale units');
     } else if (archStyle === 'ModularMonolith') {
-      maintainabilityScore = applyDelta(maintainabilityScore, 25);
-      complexityScore = applyDelta(complexityScore, -10);
-      rationaleMap.Maintainability.reasons.push('Modular Monolith delivers clean boundaries without distributed network complexity (+25 maintainability)');
+      adjust('Maintainability', 5, '[structure] Modular Monolith: boundaries without network hops');
+    } else if (archStyle === 'CleanArchitecture' || archStyle === 'Hexagonal' || archStyle === 'CQRS') {
+      adjust('Architecture', 5, `[structure] ${archStyle}: enforced layer/port separation`);
     }
 
-    // Evaluate features
-    for (const feat of activeFeatures) {
-      const scores = feat.impactScores;
-      if (scores) {
-        securityScore = applyDelta(securityScore, scores.security || 0);
-        architectureScore = applyDelta(architectureScore, scores.architecture || 0);
-        performanceScore = applyDelta(performanceScore, scores.performance || 0);
-        scalabilityScore = applyDelta(scalabilityScore, scores.scalability || 0);
-        maintainabilityScore = applyDelta(maintainabilityScore, scores.maintainability || 0);
-        complexityScore = applyDelta(complexityScore, scores.complexity || 0);
-      }
+    // 4. Complexity — deterministic count, zero vibes.
+    const refCount = blueprint.projects.reduce((n, p) => n + p.references.length, 0);
+    const complexityScore = Math.min(
+      100,
+      Math.max(0, Math.round(20 + 3 * blueprint.projects.length + 2 * activeFeatureIds.length + 2 * refCount))
+    );
+    reasons.Complexity.push(
+      `Deterministic count: ${blueprint.projects.length} projects, ${activeFeatureIds.length} active features, ${refCount} references → 20 + 3n + 2n + 2n`
+    );
+    recommendations.Complexity.push('Keep handler functions concise and under 50 lines.');
 
-      if (feat.id === 'feat-jwt-auth') {
-        rationaleMap.Security.reasons.push('JWT Bearer authentication protects endpoints with token verification (+25 security)');
-      }
-      if (feat.id === 'feat-secrets') {
-        rationaleMap.Security.reasons.push('Vault secrets management prevents hardcoded connection credentials (+25 security)');
-      }
-      if (feat.id === 'feat-redis-cache') {
-        rationaleMap.Performance.reasons.push('Redis distributed caching speeds up API responses up to 10x (+25 performance)');
-        rationaleMap.Scalability.reasons.push('Distributed state allows stateless horizontal API node scaling (+25 scalability)');
-      }
-      if (feat.id === 'feat-docker') {
-        rationaleMap.Scalability.reasons.push('Docker packaging enables container orchestration in Kubernetes/Cloud Run (+20 scalability)');
-        rationaleMap.Maintainability.reasons.push('Environment parity eliminates host configuration mismatches (+20 maintainability)');
-      }
-      if (feat.id === 'feat-mediatr-cqrs') {
-        rationaleMap.Architecture.reasons.push('CQRS architecture enforces Command/Query handler isolation (+30 architecture)');
-        rationaleMap.Maintainability.reasons.push('Decoupled request handlers obey Open-Closed principle (+25 maintainability)');
-      }
-      if (feat.id === 'feat-fluent-validation') {
-        rationaleMap.Security.reasons.push('FluentValidation sanitizes and validates incoming DTO payloads (+15 security)');
-      }
-    }
-
-    // Deduce penalties for disabled recommended features
-    for (const disabled of disabledRecommendedFeatures) {
-      if (disabled.id === 'feat-healthchecks') {
-        securityScore = applyDelta(securityScore, -10);
-        architectureScore = applyDelta(architectureScore, -15);
-        rationaleMap.Architecture.reasons.push('WARNING: Health checks disabled despite Docker containerization (-15 architecture)');
-        rationaleMap.Architecture.recommendations.push('Re-enable Health Checks & Diagnostics to ensure container health probe accuracy.');
-      }
-      if (disabled.id === 'feat-env-vars') {
-        securityScore = applyDelta(securityScore, -20);
-        rationaleMap.Security.reasons.push('WARNING: Environment variables feature disabled, risking hardcoded config files (-20 security)');
-        rationaleMap.Security.recommendations.push('Re-enable Environment Variables Config Provider to comply with Twelve-Factor config isolation.');
-      }
-    }
-
-    // Round and clamp 0-100 (the diminishing-returns math above keeps every dimension inside
-    // this range already, mathematically, but the clamp stays as a defensive final guard).
     securityScore = Math.min(100, Math.max(0, Math.round(securityScore)));
     architectureScore = Math.min(100, Math.max(0, Math.round(architectureScore)));
     performanceScore = Math.min(100, Math.max(0, Math.round(performanceScore)));
     scalabilityScore = Math.min(100, Math.max(0, Math.round(scalabilityScore)));
     maintainabilityScore = Math.min(100, Math.max(0, Math.round(maintainabilityScore)));
-    complexityScore = Math.min(100, Math.max(0, Math.round(complexityScore)));
 
-    // Calculate Overall Quality Score (weighted average)
     const qualityScore = Math.round(
       securityScore * 0.25 +
         architectureScore * 0.25 +
@@ -181,38 +140,38 @@ export class AdvisorService {
       {
         category: 'Security Score',
         score: securityScore,
-        reason: rationaleMap.Security.reasons.join(' • ') || 'Standard security baseline established.',
-        recommendations: rationaleMap.Security.recommendations.length > 0 ? rationaleMap.Security.recommendations : ['Ensure secrets and signing keys are rotated via Vault.'],
+        reason: reasons.Security.join(' • ') || 'Heuristic baseline 60, no security adjustments measured.',
+        recommendations: recommendations.Security.length > 0 ? recommendations.Security : ['Ensure secrets and signing keys are rotated via Vault.'],
       },
       {
         category: 'Architecture Score',
         score: architectureScore,
-        reason: rationaleMap.Architecture.reasons.join(' • ') || 'Architecture layer separation active.',
-        recommendations: rationaleMap.Architecture.recommendations.length > 0 ? rationaleMap.Architecture.recommendations : ['Maintain strict boundary rules preventing domain from referencing infrastructure.'],
+        reason: reasons.Architecture.join(' • ') || 'Heuristic baseline 60, no architecture adjustments measured.',
+        recommendations: recommendations.Architecture.length > 0 ? recommendations.Architecture : ['Maintain strict boundary rules preventing domain from referencing infrastructure.'],
       },
       {
         category: 'Performance Score',
         score: performanceScore,
-        reason: rationaleMap.Performance.reasons.join(' • ') || 'Standard response latency targets met.',
+        reason: reasons.Performance.join(' • ') || 'Heuristic baseline 60, no performance adjustments measured.',
         recommendations: ['Utilize connection pooling and async non-blocking query execution.'],
       },
       {
         category: 'Scalability Score',
         score: scalabilityScore,
-        reason: rationaleMap.Scalability.reasons.join(' • ') || 'Stateless API architecture ready for auto-scaling.',
+        reason: reasons.Scalability.join(' • ') || 'Heuristic baseline 60, no scalability adjustments measured.',
         recommendations: ['Deploy behind Cloud Run or Kubernetes HPA auto-scaler.'],
       },
       {
         category: 'Maintainability Score',
         score: maintainabilityScore,
-        reason: rationaleMap.Maintainability.reasons.join(' • ') || 'Strong typing and modular folder structure in place.',
+        reason: reasons.Maintainability.join(' • ') || 'Heuristic baseline 60, no maintainability adjustments measured.',
         recommendations: ['Enforce unit tests for all domain logic handlers.'],
       },
       {
         category: 'Complexity Score',
         score: complexityScore,
-        reason: `System complexity rating is ${complexityScore}/100 based on selected ${selectedStack?.name || 'stack'} and ${activeFeatures.length} active feature modules.`,
-        recommendations: ['Keep handler functions concise and under 50 lines.'],
+        reason: reasons.Complexity.join(' • ') || `Complexity for ${selectedStack?.name || 'stack'}.`,
+        recommendations: recommendations.Complexity,
       },
     ];
 

@@ -41,9 +41,8 @@ describe('ImpactService.analyzeFeatureToggle', () => {
     expect(dockerfileImpact?.action).toBe('Removed');
   });
 
-  it('returns a generic feature-module impact for a non-Docker feature name', () => {
+  it('returns an honest empty list for a non-Docker feature name (no computable diff)', () => {
     const impacts = ImpactService.analyzeFeatureToggle('JWT Authentication', true);
-    expect(impacts.some((i) => i.name.includes('JWT Authentication'))).toBe(true);
-    expect(impacts.every((i) => i.action === 'Added')).toBe(true);
+    expect(impacts).toEqual([]);
   });
 });

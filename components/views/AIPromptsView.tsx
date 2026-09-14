@@ -34,6 +34,7 @@ import { StorageService, useAIAgents, useAIProviders } from '../../services/stor
 import { aiAgentRepository, aiProviderRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
 import { DEFAULT_BASE_URLS, getVendorDisplayLabel } from '../../services/aiProviderRouting';
+import { buildGroundedPrompt, getGroundedSystemInstruction } from '../../lib/ai-grounding';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -120,7 +121,6 @@ export const AIPromptsView: React.FC = () => {
     inputTokens: number;
     outputTokens: number;
     estimatedCost: string;
-    qualityScore: number;
   } | null>(null);
 
   const [copiedOutput, setCopiedOutput] = useState<boolean>(false);
@@ -184,9 +184,24 @@ export const AIPromptsView: React.FC = () => {
     // Role dropdown silently changed what role the next Playground
     // execution sent, even without saving the template.
     const role = 'Software Architect';
+    // Phase 10 grounded playground: se houver um blueprint selecionado no storage,
+    // ancora o prompt no padrão real (cite ruleId). Sem blueprint, usa o prompt cru.
+    let groundedPrompt = finalPrompt;
+    let groundedSystem = finalSystem;
+    try {
+      const { StorageService } = await import('../../services/storageService');
+      const templates = StorageService.getTemplates();
+      const blueprint = templates[0]?.blueprint;
+      if (blueprint) {
+        groundedPrompt = buildGroundedPrompt(blueprint, finalPrompt);
+        groundedSystem = `${getGroundedSystemInstruction()}\n\n${finalSystem}`;
+      }
+    } catch {
+      // storage indisponível em SSR/test — segue com prompt cru
+    }
 
     try {
-      const res = await AIService.requestAnalysis(finalPrompt, role, finalSystem);
+      const res = await AIService.requestAnalysis(groundedPrompt, role, groundedSystem);
 
       const endTime = performance.now();
       const duration = Math.round(endTime - startTime);
@@ -194,21 +209,21 @@ export const AIPromptsView: React.FC = () => {
       const inTokens = Math.round((finalPrompt.length + finalSystem.length) / 4);
       const outTokens = Math.round(res.text.length / 4);
 
-      let costNum = 0.00015;
-      if (selectedProv?.costPer1k) {
-        const parsedCost = parseFloat(selectedProv.costPer1k.replace('$', ''));
-        if (!isNaN(parsedCost)) costNum = parsedCost;
+      // Phase 7: custo só é calculado se o provider tiver costPer1k numérico real.
+      // Seed usa "n/a" (não medido) — nesse caso mostra honesto em vez de chutar $0.00015.
+      let estimatedCost = 'n/a (custo não medido)';
+      const rawCost = selectedProv?.costPer1k?.trim() ?? '';
+      const parsedCost = parseFloat(rawCost.replace('$', ''));
+      if (rawCost && rawCost !== 'n/a' && !isNaN(parsedCost)) {
+        estimatedCost = `$${(((inTokens + outTokens) / 1000) * parsedCost).toFixed(5)}`;
       }
-
-      const totalCost = (((inTokens + outTokens) / 1000) * costNum).toFixed(5);
 
       setExecutionOutput(res.text);
       setExecMetrics({
         latencyMs: duration,
         inputTokens: inTokens,
         outputTokens: outTokens,
-        estimatedCost: `$${totalCost}`,
-        qualityScore: Math.min(99, 88 + Math.floor(Math.random() * 11)),
+        estimatedCost,
       });
     } catch (err) {
       setExecutionOutput(`Execution failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -358,8 +373,8 @@ export const AIPromptsView: React.FC = () => {
       provider: providerVendor,
       model: providerModel.trim(),
       status: editingProvider ? editingProvider.status : 'active',
-      costPer1k: providerCost.trim() || '$0.001',
-      latency: providerLatency.trim() || '200ms',
+      costPer1k: providerCost.trim() || 'n/a',
+      latency: providerLatency.trim() || 'n/a',
       apiKey: providerApiKey.trim() || undefined,
       baseUrl: providerBaseUrl.trim() || undefined,
       isActiveDefault: editingProvider ? editingProvider.isActiveDefault : false,
@@ -727,7 +742,6 @@ export const AIPromptsView: React.FC = () => {
                 <div className="flex items-center justify-between border-b border-[#232838] pb-2.5 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-xs text-white">AI Model Evaluation Output</span>
-                    {execMetrics && <Badge tone="success">Score: {execMetrics.qualityScore}/100</Badge>}
                   </div>
 
                   <div className="flex items-center gap-2">

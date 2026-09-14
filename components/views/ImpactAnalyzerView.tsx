@@ -10,9 +10,14 @@ import {
   ArrowRight,
   TrendingUp,
   Activity,
+  ShieldAlert,
 } from 'lucide-react';
-import { Blueprint } from '../../types/factory';
+import { Blueprint, ArchitectureStyle } from '../../types/factory';
 import { AdvisorService } from '../../services/advisorService';
+import { ValidationService } from '../../services/validationService';
+import { FeatureService } from '../../services/featureService';
+import { BlueprintService } from '../../services/blueprintService';
+import { buildGroundedPrompt } from '../../lib/ai-grounding';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -23,117 +28,156 @@ interface ImpactAnalyzerViewProps {
   openAIRefactor: (prompt: string) => void;
 }
 
+/**
+ * Phase 11 — what-if com diff REAL, não deltas inventados (+8/-4).
+ * Toda mudança do target-state é mutação genuína do blueprint (estilo + toggles de
+ * features do catálogo) reavaliada pelo mesmo engine; módulos vêm do layout real
+ * (BlueprintService) e violações do ValidationService. Sem diff computável, vazio honesto.
+ */
+const TOGGLEABLE_FEATURES = [
+  { id: 'feat-healthchecks', label: 'Health Checks & Diagnostics' },
+  { id: 'feat-secrets', label: 'Secrets Vault Integration' },
+  { id: 'feat-redis-cache', label: 'Redis Distributed Cache' },
+] as const;
+
 export const ImpactAnalyzerView: React.FC<ImpactAnalyzerViewProps> = ({ blueprint, openAIRefactor }) => {
-  const [simTargetStyle, setSimTargetStyle] = useState<string>('Microservices');
-  const [simAuthMechanism, setSimAuthMechanism] = useState<string>('mTLS + JWT');
-  const [simDatabaseProvider, setSimDatabaseProvider] = useState<string>('CockroachDB');
-  const [simContainerStrategy, setSimContainerStrategy] = useState<string>('K8s Helm + Istio Service Mesh');
+  const [simTargetStyle, setSimTargetStyle] = useState<ArchitectureStyle>(blueprint.architectureStyle);
+  const [toggles, setToggles] = useState<Record<string, boolean>>(() => {
+    const active = FeatureService.resolveBlueprintFeatures(blueprint).activeFeatureIds;
+    return Object.fromEntries(TOGGLEABLE_FEATURES.map((f) => [f.id, active.includes(f.id)]));
+  });
+
+  const currentActive = FeatureService.resolveBlueprintFeatures(blueprint).activeFeatureIds;
+
+  // Target-state = mutação real do blueprint atual.
+  const toggledOn: string[] = TOGGLEABLE_FEATURES.filter((f) => toggles[f.id] && !blueprint.featureIds.includes(f.id)).map((f) => f.id);
+  const toggledOff: string[] = TOGGLEABLE_FEATURES.filter((f) => !toggles[f.id]).map((f) => f.id);
+  const simulated: Blueprint = {
+    ...blueprint,
+    architectureStyle: simTargetStyle,
+    featureIds: [...blueprint.featureIds.filter((id) => !toggledOff.includes(id)), ...toggledOn],
+    disabledAutoFeatures: [...new Set([...blueprint.disabledAutoFeatures, ...toggledOff])],
+  };
+  const simActive = FeatureService.resolveBlueprintFeatures(simulated).activeFeatureIds;
 
   const currentScores = AdvisorService.calculateScores(blueprint);
+  const simScores = AdvisorService.calculateScores(simulated);
 
-  const isSimMicroservices = simTargetStyle === 'Microservices';
-  const isSimCockroach = simDatabaseProvider === 'CockroachDB';
-  const isSimMTLS = simAuthMechanism.includes('mTLS');
-  const isSimK8sMesh = simContainerStrategy.includes('K8s');
-  const isSimManagedFargate = simContainerStrategy === 'AWS ECS Fargate';
+  // Diff de módulos — layout real para o target style vs. projetos atuais (por nome).
+  const targetModules = BlueprintService.getProjectsForTechStackAndArchStyle(blueprint.techStackId, simTargetStyle);
+  const currentNames = new Set(blueprint.projects.map((p) => p.name));
+  const targetNames = new Set(targetModules.map((p) => p.name));
+  const addedModules = targetModules.filter((p) => !currentNames.has(p.name));
+  const removedModules = blueprint.projects.filter((p) => !targetNames.has(p.name));
 
-  const simSecurityScore = Math.min(100, Math.max(0, currentScores.securityScore + (isSimMTLS ? 8 : -4)));
-  const simArchScore = Math.min(100, Math.max(0, currentScores.architectureScore + (isSimMicroservices ? 10 : 2)));
-  const simPerfScore = Math.max(50, currentScores.performanceScore + (isSimMicroservices ? -6 : 8));
-  const simScalabilityScore = Math.min(
-    100,
-    Math.max(0, currentScores.scalabilityScore + (isSimCockroach ? 12 : 5) + (isSimK8sMesh ? 6 : isSimManagedFargate ? 4 : -8))
-  );
-  const simComplexityScore = Math.min(
-    100,
-    Math.max(0, currentScores.complexityScore + (isSimMicroservices ? 15 : 0) + (isSimK8sMesh ? 10 : isSimManagedFargate ? 4 : -10))
-  );
+  // Diff de features — nomes reais do catálogo.
+  const addedFeatures = simActive.filter((id) => !currentActive.includes(id));
+  const removedFeatures = currentActive.filter((id) => !simActive.includes(id));
+  const featureName = (id: string): string => FeatureService.getFeatureById(id)?.name || id;
 
-  const simQualityScore = Math.round(
-    (simSecurityScore + simArchScore + simPerfScore + simScalabilityScore) / 4
-  );
+  // Diff de validação — códigos reais, novos vs. resolvidos.
+  const currentCodes = new Set(ValidationService.validateBlueprint(blueprint).map((m) => m.code));
+  const simCodes = new Set(ValidationService.validateBlueprint(simulated).map((m) => m.code));
+  const newViolations = [...simCodes].filter((c) => !currentCodes.has(c) && c !== 'ALL_PASSING');
+  const resolvedViolations = [...currentCodes].filter((c) => !simCodes.has(c) && c !== 'ALL_PASSING');
 
-  const qualityDelta = simQualityScore - currentScores.qualityScore;
+  const styleChanged = simTargetStyle !== blueprint.architectureStyle;
+  const hasAnyChange = styleChanged || toggledOn.length > 0 || toggledOff.length > 0;
+  const qualityDelta = simScores.qualityScore - currentScores.qualityScore;
+
+  const rows = [
+    { label: 'Security Score', current: currentScores.securityScore, sim: simScores.securityScore, icon: Shield },
+    { label: 'Architecture Score', current: currentScores.architectureScore, sim: simScores.architectureScore, icon: Cpu },
+    { label: 'Performance Score', current: currentScores.performanceScore, sim: simScores.performanceScore, icon: Zap },
+    { label: 'Scalability Score', current: currentScores.scalabilityScore, sim: simScores.scalabilityScore, icon: TrendingUp },
+    { label: 'Complexity Index', current: currentScores.complexityScore, sim: simScores.complexityScore, icon: Activity },
+  ];
+
+  const handleAIReport = (): void => {
+    const diffSummary = [
+      `Architecture: ${blueprint.architectureStyle} → ${simTargetStyle}${styleChanged ? '' : ' (unchanged)'}`,
+      `Modules added: ${addedModules.map((m) => m.name).join(', ') || '(none)'}`,
+      `Modules removed: ${removedModules.map((m) => m.name).join(', ') || '(none)'}`,
+      `Features added: ${addedFeatures.map(featureName).join(', ') || '(none)'}`,
+      `Features removed: ${removedFeatures.map(featureName).join(', ') || '(none)'}`,
+      `New violations: ${newViolations.join(', ') || '(none)'}`,
+      `Resolved violations: ${resolvedViolations.join(', ') || '(none)'}`,
+      `Quality: ${currentScores.qualityScore} → ${simScores.qualityScore} (${qualityDelta >= 0 ? '+' : ''}${qualityDelta})`,
+    ].join('\n');
+    openAIRefactor(
+      `${buildGroundedPrompt(simulated, 'Analyze the target-state impact below.')}\n\n## TARGET-STATE DIFF (computed, ground truth)\n${diffSummary}\n\nAnalyze refactoring cost, breaking risks, and team impact of this exact diff.`
+    );
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-xs text-gray-200">
       <Card className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Badge tone="brand">What-If Simulation Engine</Badge>
+            <Badge tone="brand">What-If Analyzer</Badge>
             <span className="text-gray-500">•</span>
-            <span className="text-gray-400 font-mono">Live Architectural Setting Diff Analyzer</span>
+            <span className="text-gray-400 font-mono">Target state recomputed by the real engine (heuristic)</span>
           </div>
           <h1 className="text-lg font-bold text-white tracking-tight">Setting Change Compatibility & Impact Radar</h1>
         </div>
 
-        <Button
-          variant="secondary"
-          onClick={() =>
-            openAIRefactor(
-              `Simulate impact of changing blueprint architecture from '${blueprint.architectureStyle}' to '${simTargetStyle}' with Database '${simDatabaseProvider}', Auth '${simAuthMechanism}', and Container Orchestration '${simContainerStrategy}'. Analyze refactoring cost, breaking risks, and team impact.`
-            )
-          }
-          className="shrink-0"
-        >
-          <Sparkles className="w-3.5 h-3.5" /> AI What-If Simulation Report
+        <Button variant="secondary" onClick={handleAIReport} className="shrink-0">
+          <Sparkles className="w-3.5 h-3.5" /> AI What-If Impact Report
         </Button>
       </Card>
 
       <Card className="space-y-3">
         <div className="font-semibold text-gray-200 text-xs flex items-center justify-between">
-          <span>Simulated Architectural Setting Changes</span>
-          <span className="text-gray-400 font-mono text-[11px]">Compare current blueprint vs target state</span>
+          <span>Target-State Changes (applied to your real blueprint)</span>
+          <span className="text-gray-400 font-mono text-[11px]">Current vs recomputed target</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <div className="space-y-1">
             <label className="text-gray-400 text-[11px]">Target Architecture Pattern</label>
-            <Select value={simTargetStyle} onChange={(e) => setSimTargetStyle(e.target.value)}>
+            <Select value={simTargetStyle} onChange={(e) => setSimTargetStyle(e.target.value as ArchitectureStyle)}>
               <option value="CleanArchitecture">Clean Architecture</option>
-              <option value="Microservices">Microservices (gRPC Mesh)</option>
+              <option value="Microservices">Microservices</option>
               <option value="ModularMonolith">Modular Monolith</option>
               <option value="Hexagonal">Hexagonal Ports & Adapters</option>
               <option value="CQRS">CQRS & Event Sourcing</option>
+              <option value="EventDriven">Event Driven</option>
             </Select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-gray-400 text-[11px]">Database Infrastructure</label>
-            <Select value={simDatabaseProvider} onChange={(e) => setSimDatabaseProvider(e.target.value)}>
-              <option value="PostgreSQL 16">PostgreSQL 16</option>
-              <option value="CockroachDB">CockroachDB Distributed SQL</option>
-              <option value="MongoDB Enterprise">MongoDB Enterprise</option>
-              <option value="Azure Cosmos DB">Azure Cosmos DB</option>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-gray-400 text-[11px]">Security & Authentication</label>
-            <Select value={simAuthMechanism} onChange={(e) => setSimAuthMechanism(e.target.value)}>
-              <option value="OAuth2 JWT">OAuth2 JWT Bearer Tokens</option>
-              <option value="mTLS + JWT">mTLS + JWT (Zero-Trust)</option>
-              <option value="SAML 2.0 Enterprise">SAML 2.0 Enterprise SSO</option>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-gray-400 text-[11px]">Container & Orchestration</label>
-            <Select value={simContainerStrategy} onChange={(e) => setSimContainerStrategy(e.target.value)}>
-              <option value="K8s Helm + Istio Service Mesh">K8s Helm + Istio Mesh</option>
-              <option value="Docker Compose Dev">Docker Compose Dev Only</option>
-              <option value="AWS ECS Fargate">AWS ECS Fargate</option>
-            </Select>
-          </div>
+          {TOGGLEABLE_FEATURES.map((f) => (
+            <div key={f.id} className="space-y-1">
+              <label className="text-gray-400 text-[11px]">{f.label}</label>
+              <div className="flex items-center gap-2 pt-1.5">
+                <button
+                  role="switch"
+                  aria-checked={toggles[f.id]}
+                  onClick={() => setToggles((t) => ({ ...t, [f.id]: !t[f.id] }))}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${toggles[f.id] ? 'bg-blue-600' : 'bg-[#2b303d]'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${toggles[f.id] ? 'left-[18px]' : 'left-0.5'}`} />
+                </button>
+                <span className="font-mono text-[11px] text-gray-300">{toggles[f.id] ? 'ON' : 'OFF'}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
+
+      {!hasAnyChange && (
+        <Card className="border-[#2b303d]">
+          <div className="text-xs text-gray-400">
+            No changes vs. current blueprint — target state is identical. Change the architecture or toggle a feature to compute a diff.
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="space-y-4">
           <div className="flex items-center justify-between border-b border-[#2b303d] pb-3">
             <div>
               <div className="font-bold text-sm text-white">Quality Metric Score Shifts</div>
-              <div className="text-[11px] text-gray-400">Baseline vs Simulated State Delta</div>
+              <div className="text-[11px] text-gray-400">Baseline vs recomputed target delta</div>
             </div>
 
             <div className="flex items-center gap-2 font-mono">
@@ -145,13 +189,7 @@ export const ImpactAnalyzerView: React.FC<ImpactAnalyzerViewProps> = ({ blueprin
           </div>
 
           <div className="space-y-3">
-            {[
-              { label: 'Security Score', current: currentScores.securityScore, sim: simSecurityScore, icon: Shield },
-              { label: 'Architecture Score', current: currentScores.architectureScore, sim: simArchScore, icon: Cpu },
-              { label: 'Performance Score', current: currentScores.performanceScore, sim: simPerfScore, icon: Zap },
-              { label: 'Scalability Score', current: currentScores.scalabilityScore, sim: simScalabilityScore, icon: TrendingUp },
-              { label: 'Complexity Index', current: currentScores.complexityScore, sim: simComplexityScore, icon: Activity },
-            ].map((m) => {
+            {rows.map((m) => {
               const Icon = m.icon;
               const diff = m.sim - m.current;
               return (
@@ -182,42 +220,82 @@ export const ImpactAnalyzerView: React.FC<ImpactAnalyzerViewProps> = ({ blueprin
 
         <Card className="space-y-4">
           <div className="font-bold text-sm text-white border-b border-[#2b303d] pb-3">
-            Refactoring Effort & Breaking Risk Analysis
+            Real Diff: Modules, Features & Rule Violations
           </div>
 
           <div className="space-y-3">
             <div className="p-3.5 bg-[#13151b] border border-[#2b303d] rounded-lg space-y-2">
               <div className="flex items-center justify-between font-semibold text-xs">
-                <span className="text-gray-200">Estimated Refactoring Effort</span>
-                <span className="text-amber-400 font-mono">2 - 3 Sprint Cycles</span>
+                <span className="text-gray-200">Module Layout ({blueprint.architectureStyle} → {simTargetStyle})</span>
+                <span className="font-mono text-[11px] text-gray-400">
+                  +{addedModules.length} / −{removedModules.length}
+                </span>
               </div>
-              <p className="text-gray-400 text-[11px] leading-relaxed">
-                Transitioning to <span className="text-blue-300 font-mono">{simTargetStyle}</span> requires extracting domain services into bounded contexts, adding event handlers, and updating CI/CD pipelines.
-              </p>
+              {addedModules.length === 0 && removedModules.length === 0 ? (
+                <p className="text-gray-400 text-[11px]">Module layout unchanged.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1 text-[10px] font-mono">
+                  {addedModules.map((m) => (
+                    <Badge key={m.id} tone="success" className="normal-case">+ {m.name} ({m.type})</Badge>
+                  ))}
+                  {removedModules.map((m) => (
+                    <Badge key={m.id} tone="danger" className="normal-case">− {m.name} ({m.type})</Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-3.5 bg-[#13151b] border border-[#2b303d] rounded-lg space-y-2">
               <div className="flex items-center justify-between font-semibold text-xs">
-                <span className="text-gray-200">Affected Code Files</span>
-                <span className="text-gray-400 font-mono">~34 Files Across 4 Projects</span>
+                <span className="text-gray-200">Features Toggled</span>
+                <span className="font-mono text-[11px] text-gray-400">
+                  +{addedFeatures.length} / −{removedFeatures.length}
+                </span>
               </div>
-              <div className="flex flex-wrap gap-1 text-[10px] font-mono text-gray-300">
-                <Badge className="normal-case">Program.cs</Badge>
-                <Badge className="normal-case">Dockerfile</Badge>
-                <Badge className="normal-case">DbContext.cs</Badge>
-                <Badge className="normal-case">helm/values.yaml</Badge>
-              </div>
+              {addedFeatures.length === 0 && removedFeatures.length === 0 ? (
+                <p className="text-gray-400 text-[11px]">No feature changes.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1 text-[10px] font-mono">
+                  {addedFeatures.map((id) => (
+                    <Badge key={id} tone="success" className="normal-case">+ {featureName(id)}</Badge>
+                  ))}
+                  {removedFeatures.map((id) => (
+                    <Badge key={id} tone="danger" className="normal-case">− {featureName(id)}</Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-1">
-              <div className="flex items-center gap-2 font-semibold text-emerald-400 text-xs">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>Zero Architectural Rule Policy Violations</span>
+            {newViolations.length === 0 && resolvedViolations.length === 0 ? (
+              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-1">
+                <div className="flex items-center gap-2 font-semibold text-emerald-400 text-xs">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>No rule-violation change (verified, not assumed)</span>
+                </div>
+                <p className="text-emerald-200/80 text-[11px]">
+                  Target state introduces and resolves zero rule violations vs. current blueprint.
+                </p>
               </div>
-              <p className="text-emerald-200/80 text-[11px]">
-                The simulated target state satisfies all active Enterprise Rule Engine constraints without breaching layer isolation rules.
-              </p>
-            </div>
+            ) : (
+              <div className="p-3.5 bg-[#13151b] border border-amber-500/30 rounded-lg space-y-1">
+                <div className="flex items-center gap-2 font-semibold text-amber-300 text-xs">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <span>Rule-violation delta (real codes)</span>
+                </div>
+                {newViolations.length > 0 && (
+                  <p className="text-[11px] text-gray-300 font-mono">New: {newViolations.join(', ')}</p>
+                )}
+                {resolvedViolations.length > 0 && (
+                  <p className="text-[11px] text-gray-300 font-mono">Resolved: {resolvedViolations.join(', ')}</p>
+                )}
+              </div>
+            )}
+
+            <p className="text-gray-500 text-[11px] font-mono">
+              Honest sizing: {addedModules.length + removedModules.length} module changes,{' '}
+              {addedFeatures.length + removedFeatures.length} feature toggles, {newViolations.length} new
+              violations — size the sprint from these counts, not from estimates.
+            </p>
           </div>
         </Card>
       </div>

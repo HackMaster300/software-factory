@@ -26,33 +26,12 @@ const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
 const GEMINI_FALLBACK_MODEL = 'gemini-2.0-flash';
 
 function defaultSystemInstruction(role: string): string {
-  return `You are an expert ${role} in an enterprise Software Factory platform. Provide direct, highly technical, actionable analysis covering Pros, Cons, Risks, Alternatives, and Recommendations.`;
+  // Phase 10 grounded: toda análise sem systemInstruction explícita ainda cita ruleId.
+  return `You are the Software Factory Standard Consultant (${role}). Ground every finding in the provided Blueprint/RuleSet/Validation context and cite ruleId (e.g. rule-1) when flagging governance violations. Cover Pros, Cons, Risks, Alternatives, Recommendations. Final decisions belong to the human Architect.`;
 }
 
-function simulatedResponse(role: string): string {
-  return `### ${role} Architectural Analysis
-
-**Overview:**
-Evaluating the requested architectural configuration against software factory standards.
-
-**Pros:**
-- Strict layer separation enforces the Dependency Inversion Principle.
-- High maintainability and clear team boundaries across domain, application, and infrastructure projects.
-- Containerization ensures environment parity across dev, staging, and production.
-
-**Cons & Tradeoffs:**
-- Additional boilerplate files and mapping layers between Domain Entities and API DTOs.
-- Slight initial setup overhead for small-scale CRUD applications.
-
-**Security & Operational Risks:**
-- Ensure all connection strings and JWT signing keys are loaded strictly from environment secrets/Vault.
-- Health check probes must be configured to prevent Kubernetes/Cloud Run from sending traffic to uninitialized instances.
-
-**Recommendations:**
-1. Enable Redis distributed caching for user sessions and idempotency checks.
-2. Implement MediatR validation pipeline behaviors for automatic request validation.
-3. Keep Domain project completely free of external ORM or framework dependencies.`;
-}
+// Phase 7 (zero simulado): nenhum texto inventado. Sem key real a rota falha alto (400/502)
+// em vez de retornar análise fake. O client deve exibir o erro honestamente.
 
 async function callGemini(
   apiKey: string,
@@ -169,10 +148,12 @@ export async function POST(req: NextRequest) {
       const resolvedKey = (apiKey as string | undefined) || process.env.GEMINI_API_KEY;
 
       if (!resolvedKey || resolvedKey === 'MY_GEMINI_API_KEY') {
-        // No real key configured anywhere (request body or server env) — same honest
-        // simulated-response fallback the app has always had for Gemini, preserved here so
-        // the AI Assistant drawer keeps working with zero setup.
-        return NextResponse.json({ text: simulatedResponse(role), isSimulated: true });
+        // Phase 7: sem key real não há fallback simulado. Falha alto para a UI
+        // exibir "configure uma API key" em vez de análise inventada.
+        return NextResponse.json(
+          { error: 'Nenhuma API key configurada para Google Gemini. Configure uma key no painel AI Providers ou defina GEMINI_API_KEY no servidor.' },
+          { status: 400 }
+        );
       }
 
       try {

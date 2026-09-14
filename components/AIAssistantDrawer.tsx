@@ -22,6 +22,7 @@ import { AIService } from '../services/aiService';
 import { getVendorDisplayLabel } from '../services/aiProviderRouting';
 import { Blueprint } from '../types/factory';
 import { useAIAgents, useAIProviders } from '../services/storageService';
+import { buildGroundedPrompt, getGroundedSystemInstruction } from '../lib/ai-grounding';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Badge } from './ui/Badge';
@@ -98,31 +99,43 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({
     setInputPrompt('');
     setIsLoading(true);
 
-    const contextPrompt = `
-Context: Software Factory Blueprint '${blueprint.name}'
-Architecture Style: ${blueprint.architectureStyle}
-Active Feature IDs: ${blueprint.featureIds.join(', ')}
+    // Phase 10 grounded: blueprint + ruleSet + validation (com ruleId) sempre enviados.
+    const contextPrompt = buildGroundedPrompt(blueprint, currentPrompt);
+    const systemInstruction = getGroundedSystemInstruction(selectedCustomAgent?.systemPromptStyle);
 
-User Request: ${currentPrompt}
-`;
+    try {
+      const response = await AIService.requestAnalysis(
+        contextPrompt,
+        selectedRole,
+        systemInstruction
+      );
 
-    const response = await AIService.requestAnalysis(
-      contextPrompt,
-      selectedRole,
-      selectedCustomAgent?.systemPromptStyle
-    );
+      const aiMsg: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        sender: 'ai',
+        role: selectedRole,
+        text: response.text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isSimulated: response.isSimulated,
+      };
 
-    const aiMsg: ChatMessage = {
-      id: `ai-${Date.now()}`,
-      sender: 'ai',
-      role: selectedRole,
-      text: response.text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isSimulated: response.isSimulated,
-    };
-
-    setMessages((prev) => [...prev, aiMsg]);
-    setIsLoading(false);
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown AI error';
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-err-${Date.now()}`,
+          sender: 'ai',
+          role: selectedRole,
+          text: `Falha na análise de IA: ${message}\n\nConfigure uma API key válida em AI & Prompts → Providers e tente novamente.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isSimulated: false,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopy = (id: string, text: string) => {
@@ -148,7 +161,7 @@ User Request: ${currentPrompt}
           <div>
             <div className="font-semibold text-white text-xs">AI Architect Assistant</div>
             <div className="text-[10px] text-gray-400 font-mono">
-              {activeProvider ? `${activeProvider.name} (${getVendorDisplayLabel(activeProvider)})` : 'Server-Side Gemini • Simulated until a provider key is configured'}
+              {activeProvider ? `${activeProvider.name} (${getVendorDisplayLabel(activeProvider)})` : 'No provider key configured — set one in AI & Prompts → Providers'}
             </div>
           </div>
         </div>
@@ -197,7 +210,7 @@ User Request: ${currentPrompt}
                 <>
                   <Bot className="w-3 h-3 text-blue-400" />
                   <span className="font-semibold text-blue-300">{msg.role}</span>
-                  {msg.isSimulated && <Badge tone="warning">Offline Mode</Badge>}
+                  {msg.id.startsWith('ai-err-') && <Badge tone="warning">Offline — configure a key</Badge>}
                 </>
               )}
               <span>• {msg.timestamp}</span>

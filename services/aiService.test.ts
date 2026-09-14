@@ -25,15 +25,15 @@ describe('AIService.requestAnalysis', () => {
     vi.unstubAllGlobals();
   });
 
-  it('routes to Google Gemini with no key when no provider is marked active', async () => {
+  it('routes to Google Gemini with no key when no provider is marked active (server decides)', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
-      json: async () => ({ text: 'simulated output', isSimulated: true }),
+      json: async () => ({ text: 'live output', isSimulated: false }),
     });
 
     const result = await AIService.requestAnalysis('Design a caching layer');
 
-    expect(result).toEqual({ text: 'simulated output', isSimulated: true });
+    expect(result).toEqual({ text: 'live output', isSimulated: false });
     const [, options] = (global.fetch as any).mock.calls[0];
     const body = JSON.parse(options.body);
     expect(body.provider).toBe('Google Gemini');
@@ -59,24 +59,20 @@ describe('AIService.requestAnalysis', () => {
     expect(body.role).toBe('Backend Engineer');
   });
 
-  it('falls back to a canned Fallback Analysis (isSimulated: true) when the request throws', async () => {
+  // Phase 7 (zero simulado): falha propaga como throw para a UI exibir honestamente.
+  it('throws with the real error when the request throws', async () => {
     (global.fetch as any).mockRejectedValue(new Error('network error'));
 
-    const result = await AIService.requestAnalysis('Design a caching layer', 'DBA');
-
-    expect(result.isSimulated).toBe(true);
-    expect(result.text).toContain('DBA Fallback Analysis');
+    await expect(AIService.requestAnalysis('Design a caching layer', 'DBA')).rejects.toThrow('network error');
   });
 
-  it('falls back when the response body contains an error field even on an ok HTTP status', async () => {
+  it('throws when the response body contains an error field even on an ok HTTP status', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
       json: async () => ({ error: 'No API key configured for OpenAI.' }),
     });
 
-    const result = await AIService.requestAnalysis('Design a caching layer');
-
-    expect(result.isSimulated).toBe(true);
+    await expect(AIService.requestAnalysis('Design a caching layer')).rejects.toThrow('No API key configured');
   });
 });
 
