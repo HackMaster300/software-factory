@@ -562,6 +562,18 @@ Terceira linguagem da fila (após C# e TypeScript): **Python 3.12 FastAPI**.
 
 ---
 
+## Phase 19 — 5 stacks restantes: manifests + bootstraps válidos (sem toolchain nativo) — DONE 2026-09-14
+
+Runner só tem JRE 8 (sem javac/mvn) e nada de go/cargo — nível honesto: manifests corretos + bootstraps sem deps + zero fallback TS.
+
+- [x] Java: `pom.xml` por módulo (Java 21, deps `group:artifact` parseadas) + `Application.java` plain no API + `TransactionRepository` sem Spring obrigatório.
+- [x] Go: `main.go` stdlib (`net/http`) no API + handler sem `fiber`; sem `package.json` por módulo (`go.mod` fica na raiz).
+- [x] Rust: typo `pub font` eliminado (`InMemoryRepository` std) + `Cargo.toml` por crate; sem `package.json`.
+- [x] Kotlin: `build.gradle.kts` + `Application.kt` por projeto; sem `package.json`.
+- [x] Dart: `main.dart` no UI com path relativo (`lib/presentation/main.dart`); fix de prefixo `src/` duplicado/ausente centralizado em `projBasePath`; `pubspec.yaml` na raiz.
+- [x] `scaffoldOtherStacks.test.ts` (5): manifests + bootstraps + ausência de fallback TS; quando JDK/Go/Rust instalarem, viram E2E nativos.
+- [x] Verified: `lint` clean, `test` 217/217, `build` clean (C#/TS/Python E2E seguem verdes).
+
 ## Phase 18 — 3 linguagens a 100% (wiring TS/Python + testes) — DONE 2026-09-14
 
 Critério 100%: mesma paridade do C# — bootstrap executável + wiring condicional por feature + checklist + manifest + teste que prova.

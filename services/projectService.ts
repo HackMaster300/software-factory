@@ -509,11 +509,18 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
         lang === 'kotlin' ? 'kotlin' :
         lang === 'dart' ? 'dart' : 'csharp';
 
+      // Phase 19: Dart usa path relativo (lib/..., test/...) sem prefixo src/.
+      // Normaliza separadores (blueprint pode trazer backslash em Windows).
+      const normalizedProjName = proj.name.replace(/\\/g, '/');
+      const projBasePath =
+        lang === 'dart' && (normalizedProjName.startsWith('lib/') || normalizedProjName.startsWith('test/'))
+          ? normalizedProjName
+          : `src/${proj.name}`;
       const projFolderNode: SolutionTreeNode = {
         id: `dir-${proj.id}`,
         name: proj.name,
         type: 'project',
-        path: `src/${proj.name}`,
+        path: projBasePath,
         children: [],
       };
 
@@ -647,14 +654,26 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
               path: `src/${proj.name}/Persistence/${lang === 'csharp' ? 'InMemoryRepository.cs' : `Repository.${fileExt}`}`,
               language: codeLang,
               contentSnippet:
-                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.repository;\nimport org.springframework.data.jpa.repository.JpaRepository;\n\npublic interface TransactionRepository extends JpaRepository<Transaction, String> {}` :
-                lang === 'go' ? `package persistence\n\ntype PostgresRepository struct {\n\tdb *sql.DB\n}` :
-                lang === 'rust' ? `pub struct SqlxRepository {\n    pub pool: sqlx::PgPool,\n}` :
+                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.repository;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class TransactionRepository {\n    private final Map<String, Object> store = new HashMap<>();\n\n    public Object findById(String id) {\n        return store.get(id);\n    }\n\n    public void save(String id, Object entity) {\n        store.put(id, entity);\n    }\n}` :
+                lang === 'go' ? `package persistence\n\ntype InMemoryRepository struct {\n\tstore map[string]interface{}\n}\n\nfunc NewInMemoryRepository() *InMemoryRepository {\n\treturn &InMemoryRepository{store: make(map[string]interface{})}\n}\n\nfunc (r *InMemoryRepository) FindByID(id string) interface{} {\n\treturn r.store[id]\n}\n\nfunc (r *InMemoryRepository) Save(id string, entity interface{}) {\n\tr.store[id] = entity\n}\n` :
+                lang === 'rust' ? `use std::collections::HashMap;\n\npub struct InMemoryRepository {\n    store: HashMap<String, String>,\n}\n\nimpl InMemoryRepository {\n    pub fn new() -> Self {\n        Self { store: HashMap::new() }\n    }\n\n    pub fn find_by_id(&self, id: &str) -> Option<&String> {\n        self.store.get(id)\n    }\n\n    pub fn save(&mut self, id: String, entity: String) {\n        self.store.insert(id, entity);\n    }\n}\n` :
                 lang === 'python' ? `from typing import Dict, Optional\n\nclass InMemoryRepository:\n    def __init__(self):\n        self._store: Dict[str, object] = {}\n\n    async def get_by_id(self, id: str) -> Optional[object]:\n        return self._store.get(id)\n\n    async def add(self, entity) -> None:\n        self._store[getattr(entity, 'id', str(id(entity)))] = entity\n` :
                 lang === 'csharp' ? `using ${appName}.Common;\nusing ${coreName2}.Entities;\nusing System.Collections.Concurrent;\n\nnamespace ${proj.name}.Persistence;\n\npublic sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity {\n    private readonly ConcurrentDictionary<Guid, T> _store = new();\n\n    public Task<T?> GetByIdAsync(Guid id, CancellationToken ct) {\n        _store.TryGetValue(id, out var entity);\n        return Task.FromResult(entity);\n    }\n\n    public Task AddAsync(T entity, CancellationToken ct) {\n        _store[entity.Id] = entity;\n        return Task.CompletedTask;\n    }\n}` :
                 `export class Repository {\n  async findOne(id: string) {}\n}`
             },
           ],
+        });
+      }
+
+      // Phase 19: main.dart do UI-Dart ANTES do bloco API (UI nunca entra no if abaixo).
+      if (proj.type === 'UI' && lang === 'dart') {
+        projFolderNode.children?.push({
+          id: `file-main-dart-${proj.id}`,
+          name: 'main.dart',
+          type: 'file',
+          path: `${projBasePath.replace(/\\/g, '/')}/main.dart`,
+          language: 'dart',
+          contentSnippet: `void main() {\n  print('${projectName} — ${proj.name} (${proj.type}) started');\n}\n`,
         });
       }
 
@@ -667,18 +686,18 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
           id: `dir-${proj.id}-controllers`,
           name: 'Controllers',
           type: 'folder',
-          path: `src/${proj.name}/Controllers`,
+          path: `${projBasePath}/Controllers`,
           children: [
             {
               id: 'file-base-ctrl',
               name: `ApiController.${fileExt}`,
               type: 'file',
-              path: `src/${proj.name}/Controllers/ApiController.${fileExt}`,
+              path: `${projBasePath}/Controllers/ApiController.${fileExt}`,
               language: codeLang,
               contentSnippet:
-                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.api;\nimport org.springframework.web.bind.annotation.*;\n\n@RestController\n@RequestMapping("/api/v1")\npublic class ApiController {}` :
-                lang === 'go' ? `package handler\n\nfunc RegisterRoutes(app *fiber.App) {\n\tapp.Get("/healthz", HealthCheck)\n}` :
-                lang === 'rust' ? `use axum::{routing::get, Router};\n\npub font router() -> Router {\n    Router::new().route("/healthz", get(health_check))\n}` :
+                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.api;\n\npublic class ApiController {\n    public String healthz() {\n        return "ok";\n    }\n}` :
+                lang === 'go' ? `package handler\n\nimport "net/http"\n\nfunc HealthCheck(w http.ResponseWriter, r *http.Request) {\n\tw.Header().Set("Content-Type", "application/json")\n\tw.Write([]byte("{\\"status\\":\\"ok\\"}"))\n}\n` :
+                lang === 'rust' ? `pub fn health_check() -> &'static str {\n    "ok"\n}\n` :
                 lang === 'python' ? `from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get("/healthz")\nasync def healthz():\n    return {"status": "ok"}\n\n@router.post("/transactions")\nasync def create_transaction(payload: dict):\n    return {"id": "00000000-0000-0000-0000-000000000000"}\n` :
                 lang === 'csharp' ? `using Microsoft.AspNetCore.Mvc;\n\nnamespace ${proj.name}.Controllers;\n\n[ApiController]\npublic abstract class BaseApiController : ControllerBase {\n    protected ILogger Logger { get; }\n\n    protected BaseApiController(ILogger logger) {\n        Logger = logger;\n    }\n\n    protected string TraceId => HttpContext.TraceIdentifier;\n}` :
                 // Phase 15: TypeScript base sem deps externas — compila com tsc puro
@@ -695,6 +714,40 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             }] : []),
           ],
         });
+        // Phase 19: bootstrap por linguagem sem deps externas (Go stdlib, Kotlin/Dart plain,
+        // Java plain). Cada arquivo compila com a toolchain padrão quando instalada.
+        if (lang === 'go' && proj.type === 'API') {
+          projFolderNode.children?.push({
+            id: `file-main-go-${proj.id}`,
+            name: 'main.go',
+            type: 'file',
+            path: `src/${proj.name}/main.go`,
+            language: 'go',
+            contentSnippet: `package main\n\nimport (\n\t"net/http"\n)\n\nfunc main() {\n\thttp.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set("Content-Type", "application/json")\n\t\tw.Write([]byte("{\\"status\\":\\"ok\\"}"))\n\t})\n\thttp.ListenAndServe(":8080", nil)\n}\n`,
+          });
+        }
+        if (lang === 'kotlin') {
+          projFolderNode.children?.push({
+            id: `file-app-kt-${proj.id}`,
+            name: 'Application.kt',
+            type: 'file',
+            path: `src/${proj.name}/Application.kt`,
+            language: 'kotlin',
+            contentSnippet: `fun main() {\n    println("${projectName} — ${proj.name} (${proj.type}) started")\n}\n`,
+          });
+        }
+        // (main.dart do UI-Dart inserido antes do bloco API acima)
+        if (lang === 'java' && proj.type === 'API') {
+          projFolderNode.children?.push({
+            id: `file-app-java-${proj.id}`,
+            name: 'Application.java',
+            type: 'file',
+            path: `src/${proj.name}/Application.java`,
+            language: 'java',
+            contentSnippet: `package com.acme.${projectName.toLowerCase()}.api;\n\npublic class Application {\n    public static void main(String[] args) {\n        System.out.println("${projectName} — ${proj.name} started");\n    }\n}\n`,
+          });
+        }
+
         // Phase 17/18: TypeScript/Python main wiring — 100% (com wiring real, mas ainda compilável sem deps via @ts-ignore / comentários)
         if (lang === 'typescript') {
           const hasTs = (id: string): boolean => activeFeatureIds.includes(id);
@@ -875,9 +928,16 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
         : '';
       const allPkgs = [pkgXml, testPkgs].filter(Boolean).join('\n');
 
+      // Phase 19: manifest por linguagem; go/dart usam o manifest raiz (go.mod/pubspec)
+      // em vez de package.json errado por módulo.
       const projManifestFileName =
         lang === 'csharp' ? `${proj.name}.csproj` :
         lang === 'python' ? 'pyproject.toml' :
+        lang === 'java' ? 'pom.xml' :
+        lang === 'rust' ? 'Cargo.toml' :
+        lang === 'kotlin' ? 'build.gradle.kts' :
+        lang === 'go' ? null :
+        lang === 'dart' ? null :
         'package.json';
       const sdk = lang === 'csharp' && proj.type === 'API' ? 'Microsoft.NET.Sdk.Web' : 'Microsoft.NET.Sdk';
       const projManifestSnippet = (() => {
@@ -890,17 +950,43 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             : 'fastapi = "^0.111.0"\nuvicorn = "^0.30.0"\npydantic = "^2.0.0"';
           return `[tool.poetry]\nname = "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}"\nversion = "0.1.0"\n\n[tool.poetry.dependencies]\npython = "^3.12"\n${deps}\n\n[build-system]\nrequires = ["poetry-core"]\nbuild-backend = "poetry.core.masonry.api"\n`;
         }
+        if (lang === 'java') {
+          // Phase 19: pom por módulo (Java 21). Deps Maven no formato group:artifact.
+          const depsXml = effectivePackages.map((p) => {
+            const parts = p.name.split(':');
+            const groupId = parts.length > 1 ? parts.slice(0, -1).join(':') : 'org.example';
+            const artifactId = parts.length > 1 ? parts[parts.length - 1] : p.name;
+            return `    <dependency>\n      <groupId>${groupId}</groupId>\n      <artifactId>${artifactId}</artifactId>\n      <version>${p.version}</version>\n    </dependency>`;
+          }).join('\n');
+          const artifact = proj.name.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+          return `<project xmlns="http://maven.apache.org/POM/4.0.0">\n  <modelVersion>4.0.0</modelVersion>\n  <groupId>com.acme</groupId>\n  <artifactId>${artifact}</artifactId>\n  <version>1.0.0</version>\n  <packaging>jar</packaging>\n  <properties>\n    <maven.compiler.source>21</maven.compiler.source>\n    <maven.compiler.target>21</maven.compiler.target>\n    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n  </properties>\n  <dependencies>\n${depsXml || '    <!-- module dependencies -->'}\n  </dependencies>\n</project>`;
+        }
+        if (lang === 'rust') {
+          // Phase 19: Cargo.toml por crate (sem workspace — cada crate compila sozinha).
+          return `[package]\nname = "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n`;
+        }
+        if (lang === 'kotlin') {
+          // Phase 19: build.gradle.kts por módulo (Kotlin JVM).
+          return `plugins {\n    kotlin("jvm") version "2.0.0"\n    application\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation(kotlin("stdlib"))\n}\n\ntasks.test {\n    useJUnitPlatform()\n}\n`;
+        }
         return `{\n  "name": "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}",\n  "version": "1.0.0",\n  "type": "commonjs",\n  "scripts": {\n    "build": "tsc --noEmit",\n    "test": "echo \\"No tests specified\\" && exit 0"\n  },\n  "dependencies": {\n${effectivePackages.map((p) => `    "${p.name}": "${p.version}"`).join(',\n')}\n  },\n  "devDependencies": {\n    "typescript": "^5.9.0"\n  }\n}`;
       })();
 
-      projFolderNode.children?.unshift({
-        id: `file-proj-manifest-${proj.id}`,
-        name: projManifestFileName,
-        type: 'file',
-        path: `src/${proj.name}/${projManifestFileName}`,
-        language: lang === 'csharp' ? 'xml' : lang === 'python' ? 'toml' : 'json',
-        contentSnippet: projManifestSnippet,
-      });
+      // Phase 19: go/dart não têm manifest por módulo (go.mod/pubspec na raiz).
+      if (projManifestFileName !== null) {
+        const manifestLang =
+          lang === 'csharp' || lang === 'java' ? 'xml' :
+          lang === 'python' || lang === 'rust' ? 'toml' :
+          lang === 'kotlin' ? 'kotlin' : 'json';
+        projFolderNode.children?.unshift({
+          id: `file-proj-manifest-${proj.id}`,
+          name: projManifestFileName,
+          type: 'file',
+          path: `src/${proj.name}/${projManifestFileName}`,
+          language: manifestLang,
+          contentSnippet: projManifestSnippet,
+        });
+      }
 
       // Phase 15: TypeScript precisa de tsconfig.json para compilar (tsc --noEmit)
       if (lang === 'typescript') {
@@ -1165,11 +1251,13 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
         ];
       })();
         for (const item of checklist) {
-          const fullPath = `src/${proj.name}/${item.rel}`;
+          // Phase 19: respeita o path base já corrigido (Dart usa lib/... sem src/).
+          const basePath = projFolderNode.path;
+          const fullPath = `${basePath}/${item.rel}`;
           const parts = item.rel.split('/');
           const fileName = parts.pop()!;
           let cursor: SolutionTreeNode[] = projFolderNode.children!;
-          let curPath = `src/${proj.name}`;
+          let curPath = basePath;
           for (const part of parts) {
             curPath = `${curPath}/${part}`;
             let folder = cursor.find((n) => n.path === curPath);
