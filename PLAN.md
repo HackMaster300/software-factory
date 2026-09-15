@@ -432,6 +432,7 @@ Decisão: SQLite é legítimo para uso solo (teu caso) — Postgres continua com
   segredo → GET sem `api_key` em lugar nenhum. `lint` clean, `test` 175/175, `build` clean.
 - [x] Backup round-trip 2026-09-14: `POST /api/v1/admin/import` + `GET /api/v1/admin/export` (mesmo shape, sem segredos). Verificado ao vivo. `lib/admin-import.test.ts` (4). `lint/test` 191/191, `build` clean.
 - [x] Phase 8-full 2026-09-14: `services/repositories/api/*` (async seam, `fetch` para `/api/v1/*`, mantém `I*Repository` síncrono intacto), `lib/auth.ts` (Bearer `API_TOKEN`, libera quando não configurado — honesto para solo). `lint` clean. Pg/Prisma ficam para quando registry permitir — one-liner `npm i pg prisma` + `prisma/schema.prisma` já documentado.
+- [x] Phase 21 2026-09-14: `app/api/v1/integration.test.ts` (4, SQLite isolado por teste via `SQLITE_PATH` temp + `vi.resetModules()` — health, org/workspaces FK 400, ai-providers redact, seed-catalog, import/export round-trip + idempotência) + `lib/auth.test.ts` (4: sem token libera, com token exige Bearer, schema-mssql contém 6 tabelas T-SQL, seam `Api*Repository` existe). `lint` clean, `test` 229/229, `build` clean.
 - [ ] Phase-8-full (pendente, precisa registry): `npm i pg|prisma`, wire `lib/sql.ts`→Postgres,
   `Api*Repository` implementando `I*Repository` (services viram async), auth mínima.
 
