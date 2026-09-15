@@ -551,6 +551,28 @@ Refinamento pedido: checklist 20 itens agora é por framework — csharp mantém
 
 ---
 
+## Phase 16 — Python FastAPI compilável — DONE 2026-09-14
+
+Terceira linguagem da fila (após C# e TypeScript): **Python 3.12 FastAPI**.
+
+- [x] Gaps mapeados: `Infrastructure` e `API` usavam fallback `export class Repository` (TS) — inválido em `py_compile`; faltava `__init__.py`; manifest per-project era `package.json`.
+- [x] Fix: `projectService.ts:640` — `InMemoryRepository` python válido, `projectService.ts:668` — `APIRouter` FastAPI, `__init__.py` por projeto, manifest `pyproject.toml` por projeto (poetry) + root `pyproject.toml` já existente, checklist continua `public` (20 itens) só para `API`/`UI`.
+- [x] E2E `scaffoldPythonBuild.test.ts` — `python -m py_compile` em todos os `.py` de `stack-python-fastapi` verde.
+- [x] Verified: `lint` clean, `test` 209/209 (1 novo Python), `build` clean, `dotnet`/`tsc` seguem verdes.
+
+---
+
+## Phase 15 — Refinamento por framework + TypeScript compilável — DONE 2026-09-14
+
+Refinamento pedido: checklist 20 itens agora é por framework — csharp mantém `wwwroot` html, typescript gera estáticos em `public` (sem JSX para não exigir @types/react em NestJS, que é backend). Próxima linguagem escolhida: **TypeScript (NestJS + Next.js)** como segunda golden path após C#.
+
+- [x] Checklist refinado por `lang` em `projectService.ts:836` (branch typescript vs csharp vs fallback).
+- [x] Scaffold TS compilável: `package.json` com `type:commonjs` + scripts `build: tsc --noEmit` + `devDependencies: typescript`, `tsconfig.json` com `jsx:react-jsx` (quando TSX) ou `jsx:preserve`, e `ApiController` sem `@nestjs/common` para compilar puro. Tests ganham `example.test.ts` sem `vitest` import.
+- [x] E2E `scaffoldTypescriptBuild.test.ts` (2): `stack-node-nestjs` e `stack-nextjs` compilam com `tsc --noEmit` por projeto (tsc bin local, sem npx). `lint` clean, `build` clean.
+- [x] Verified: `test` 208/208 (2 novos TS), `build` clean, `dotnet build/new` seguem verdes (checklist csharp inalterado, snapshot 56 arquivos).
+
+---
+
 ## Progress log
 
 (Newest entry on top. One line per phase milestone, with commit hash.)

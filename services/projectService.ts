@@ -517,6 +517,18 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
         children: [],
       };
 
+      // Phase 16: Python packages need __init__.py
+      if (lang === 'python') {
+        projFolderNode.children?.push({
+          id: `file-init-${proj.id}`,
+          name: '__init__.py',
+          type: 'file',
+          path: `src/${proj.name}/__init__.py`,
+          language: 'python',
+          contentSnippet: `# ${proj.name} — package marker\n`,
+        });
+      }
+
       if (proj.type === 'Core') {
         projFolderNode.children?.push({
           id: `dir-${proj.id}-entities`,
@@ -638,6 +650,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
                 lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.repository;\nimport org.springframework.data.jpa.repository.JpaRepository;\n\npublic interface TransactionRepository extends JpaRepository<Transaction, String> {}` :
                 lang === 'go' ? `package persistence\n\ntype PostgresRepository struct {\n\tdb *sql.DB\n}` :
                 lang === 'rust' ? `pub struct SqlxRepository {\n    pub pool: sqlx::PgPool,\n}` :
+                lang === 'python' ? `from typing import Dict, Optional\n\nclass InMemoryRepository:\n    def __init__(self):\n        self._store: Dict[str, object] = {}\n\n    async def get_by_id(self, id: str) -> Optional[object]:\n        return self._store.get(id)\n\n    async def add(self, entity) -> None:\n        self._store[getattr(entity, 'id', str(id(entity)))] = entity\n` :
                 lang === 'csharp' ? `using ${appName}.Common;\nusing ${coreName2}.Entities;\nusing System.Collections.Concurrent;\n\nnamespace ${proj.name}.Persistence;\n\npublic sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity {\n    private readonly ConcurrentDictionary<Guid, T> _store = new();\n\n    public Task<T?> GetByIdAsync(Guid id, CancellationToken ct) {\n        _store.TryGetValue(id, out var entity);\n        return Task.FromResult(entity);\n    }\n\n    public Task AddAsync(T entity, CancellationToken ct) {\n        _store[entity.Id] = entity;\n        return Task.CompletedTask;\n    }\n}` :
                 `export class Repository {\n  async findOne(id: string) {}\n}`
             },
@@ -666,6 +679,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
                 lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.api;\nimport org.springframework.web.bind.annotation.*;\n\n@RestController\n@RequestMapping("/api/v1")\npublic class ApiController {}` :
                 lang === 'go' ? `package handler\n\nfunc RegisterRoutes(app *fiber.App) {\n\tapp.Get("/healthz", HealthCheck)\n}` :
                 lang === 'rust' ? `use axum::{routing::get, Router};\n\npub font router() -> Router {\n    Router::new().route("/healthz", get(health_check))\n}` :
+                lang === 'python' ? `from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get("/healthz")\nasync def healthz():\n    return {"status": "ok"}\n\n@router.post("/transactions")\nasync def create_transaction(payload: dict):\n    return {"id": "00000000-0000-0000-0000-000000000000"}\n` :
                 lang === 'csharp' ? `using Microsoft.AspNetCore.Mvc;\n\nnamespace ${proj.name}.Controllers;\n\n[ApiController]\npublic abstract class BaseApiController : ControllerBase {\n    protected ILogger Logger { get; }\n\n    protected BaseApiController(ILogger logger) {\n        Logger = logger;\n    }\n\n    protected string TraceId => HttpContext.TraceIdentifier;\n}` :
                 // Phase 15: TypeScript base sem deps externas — compila com tsc puro
                 `export class ApiController {\n  handle(): string {\n    return 'ok';\n  }\n}`
@@ -788,18 +802,30 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
         : '';
       const allPkgs = [pkgXml, testPkgs].filter(Boolean).join('\n');
 
-      const projManifestFileName = lang === 'csharp' ? `${proj.name}.csproj` : 'package.json';
+      const projManifestFileName =
+        lang === 'csharp' ? `${proj.name}.csproj` :
+        lang === 'python' ? 'pyproject.toml' :
+        'package.json';
       const sdk = lang === 'csharp' && proj.type === 'API' ? 'Microsoft.NET.Sdk.Web' : 'Microsoft.NET.Sdk';
-      const projManifestSnippet = lang === 'csharp'
-        ? `<Project Sdk="${sdk}">\n  <PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n    <ImplicitUsings>enable</ImplicitUsings>\n    <Nullable>enable</Nullable>\n  </PropertyGroup>\n\n  <ItemGroup>\n${refXml || '    <!-- No Outbound Project References -->'}\n  </ItemGroup>\n\n  <ItemGroup>\n${allPkgs || '    <!-- Core Packages -->'}\n  </ItemGroup>\n</Project>`
-        : `{\n  "name": "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}",\n  "version": "1.0.0",\n  "type": "commonjs",\n  "scripts": {\n    "build": "tsc --noEmit",\n    "test": "echo \\"No tests specified\\" && exit 0"\n  },\n  "dependencies": {\n${effectivePackages.map((p) => `    "${p.name}": "${p.version}"`).join(',\n')}\n  },\n  "devDependencies": {\n    "typescript": "^5.9.0"\n  }\n}`;
+      const projManifestSnippet = (() => {
+        if (lang === 'csharp') {
+          return `<Project Sdk="${sdk}">\n  <PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n    <ImplicitUsings>enable</ImplicitUsings>\n    <Nullable>enable</Nullable>\n  </PropertyGroup>\n\n  <ItemGroup>\n${refXml || '    <!-- No Outbound Project References -->'}\n  </ItemGroup>\n\n  <ItemGroup>\n${allPkgs || '    <!-- Core Packages -->'}\n  </ItemGroup>\n</Project>`;
+        }
+        if (lang === 'python') {
+          const deps = effectivePackages.length > 0
+            ? effectivePackages.map((p) => `${p.name} = "^${p.version}"`).join('\n')
+            : 'fastapi = "^0.111.0"\nuvicorn = "^0.30.0"\npydantic = "^2.0.0"';
+          return `[tool.poetry]\nname = "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}"\nversion = "0.1.0"\n\n[tool.poetry.dependencies]\npython = "^3.12"\n${deps}\n\n[build-system]\nrequires = ["poetry-core"]\nbuild-backend = "poetry.core.masonry.api"\n`;
+        }
+        return `{\n  "name": "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}",\n  "version": "1.0.0",\n  "type": "commonjs",\n  "scripts": {\n    "build": "tsc --noEmit",\n    "test": "echo \\"No tests specified\\" && exit 0"\n  },\n  "dependencies": {\n${effectivePackages.map((p) => `    "${p.name}": "${p.version}"`).join(',\n')}\n  },\n  "devDependencies": {\n    "typescript": "^5.9.0"\n  }\n}`;
+      })();
 
       projFolderNode.children?.unshift({
         id: `file-proj-manifest-${proj.id}`,
         name: projManifestFileName,
         type: 'file',
         path: `src/${proj.name}/${projManifestFileName}`,
-        language: lang === 'csharp' ? 'xml' : 'json',
+        language: lang === 'csharp' ? 'xml' : lang === 'python' ? 'toml' : 'json',
         contentSnippet: projManifestSnippet,
       });
 
