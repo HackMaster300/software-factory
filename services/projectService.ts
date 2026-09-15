@@ -695,6 +695,46 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             }] : []),
           ],
         });
+        // Phase 17: TypeScript/Python main wiring (sem deps externas no base, com wiring quando feature ativa)
+        if (lang === 'typescript') {
+          const hasTs = (id: string): boolean => activeFeatureIds.includes(id);
+          let moduleExtra = '';
+          if (hasTs('feat-postgres-ef')) moduleExtra += '// PostgreSQL via TypeORM — configure DataSource with Npgsql\n';
+          if (hasTs('feat-redis-cache')) moduleExtra += '// Redis cache — configure CacheModule\n';
+          if (hasTs('feat-jwt-auth')) moduleExtra += '// JWT — configure JwtModule\n';
+          projFolderNode.children?.push({
+            id: `file-main-ts-${proj.id}`,
+            name: 'main.ts',
+            type: 'file',
+            path: `src/${proj.name}/main.ts`,
+            language: 'typescript',
+            contentSnippet: `import { ApiController } from './Controllers/ApiController';\n\nexport async function bootstrap(): Promise<void> {\n  const controller = new ApiController();\n  console.log('Bootstrapping ${projectName} — ApiController:', controller.handle());\n}\nbootstrap();\n`,
+          });
+          projFolderNode.children?.push({
+            id: `file-appmodule-ts-${proj.id}`,
+            name: 'app.module.ts',
+            type: 'file',
+            path: `src/${proj.name}/app.module.ts`,
+            language: 'typescript',
+            contentSnippet: `${moduleExtra}export class AppModule {}\n`,
+          });
+        }
+        if (lang === 'python') {
+          const hasPy = (id: string): boolean => activeFeatureIds.includes(id);
+          let extraPy = '';
+          if (hasPy('feat-postgres-ef')) extraPy += '# PostgreSQL — configure SQLAlchemy async engine\n';
+          if (hasPy('feat-redis-cache')) extraPy += '# Redis — configure redis.asyncio\n';
+          if (hasPy('feat-jwt-auth')) extraPy += '# JWT — configure OAuth2PasswordBearer\n';
+          projFolderNode.children?.push({
+            id: `file-main-py-${proj.id}`,
+            name: 'main.py',
+            type: 'file',
+            path: `src/${proj.name}/main.py`,
+            language: 'python',
+            contentSnippet: `from fastapi import FastAPI\nfrom .Controllers.ApiController import router\n${extraPy}\napp = FastAPI(title="${projectName}")\napp.include_router(router)\n\n@app.get("/healthz")\nasync def healthz():\n    return {"status": "ok"}\n`,
+          });
+        }
+
         if (lang === 'csharp') {
           // Phase 13: Program.cs wiring real das Features ativas (pacotes viram código).
           const has = (id: string): boolean => activeFeatureIds.includes(id);
