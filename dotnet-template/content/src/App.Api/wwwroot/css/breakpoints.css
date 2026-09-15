@@ -1,0 +1,6 @@
+/* Breakpoints móveis — mobile-first */
+:root { --content-max: 1120px; }
+.container { max-width: var(--content-max); margin: 0 auto; padding: 0 1rem; }
+@media (min-width: 640px) { .container { padding: 0 1.5rem; } }
+@media (min-width: 1024px) { .container { padding: 0 2rem; } }
+@media (min-width: 1280px) { .container { max-width: 1280px; } }

@@ -527,6 +527,19 @@ Gap 3/4: `dotnet new` com símbolo `enableWorker` + `dotnet-template/README` atu
 
 ---
 
+## Phase 14 — Checklist web completo (20 itens) por tipo de projeto — DONE 2026-09-14
+
+Itens: 404 custom, meta title/description, CTA above-fold, favicon, robots, sitemap, OG image, alt em imagens, breakpoints móveis, CTA fixo mobile, loading, error, thank-you, privacy, terms, cookie banner, analytics, endereço real, imagens comprimidas.
+
+Regra: apenas projetos web (`API`/`UI`) recebem os 20 arquivos sob `wwwroot` (csharp) ou `public` (outros); `Core/Application/Infrastructure/Tests/Worker` não recebem (não fazem sentido).
+
+- [x] Geração condicional por tipo em `projectService.ts:805` (20 arquivos por projeto API/UI, 0 para Core/Tests etc.), com `projectName` interpolado e snippets acessíveis (alt, aria, viewport, LGPD).
+- [x] Teste `projectService.test.ts` cobre 20 em API + 0 em Core/Tests.
+- [x] Snapshot `dotnet-template/` re-exportado com os 20 itens (56 arquivos vs 36); `dotnet build`/`dotnet new` continuam verdes.
+- [x] Verified: `lint` clean, `test` 206/206, `build` clean.
+
+---
+
 ## Progress log
 
 (Newest entry on top. One line per phase milestone, with commit hash.)

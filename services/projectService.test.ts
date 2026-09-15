@@ -294,6 +294,41 @@ describe('ProjectService.generateSolutionPreview', () => {
     expect(apiProgram).toContain('AddQuartz');
   });
 
+  it('injects the 20-item web checklist only into API/UI projects (Phase 14)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      projects: [
+        { id: 'c', name: 'App.Core', type: 'Core', references: [], description: '' },
+        { id: 'a', name: 'App.Api', type: 'API', references: ['c'], description: '' },
+        { id: 't', name: 'App.Tests', type: 'Tests', references: ['c'], description: '' },
+      ],
+      featureIds: [],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test');
+    const allFiles = (nodes: typeof preview.solutionTree): string[] => {
+      const out: string[] = [];
+      const walk = (ns: typeof preview.solutionTree): void => {
+        for (const n of ns) {
+          if (n.type === 'file') out.push(n.path);
+          if (n.children) walk(n.children);
+        }
+      };
+      walk(nodes);
+      return out;
+    };
+    const files = allFiles(preview.solutionTree);
+    // API deve ter os 20 checklist files sob wwwroot
+    expect(files.filter((p) => p.includes('App.Api/wwwroot/'))).toHaveLength(20);
+    expect(files).toContain('src/App.Api/wwwroot/404.html');
+    expect(files).toContain('src/App.Api/wwwroot/robots.txt');
+    expect(files).toContain('src/App.Api/wwwroot/sitemap.xml');
+    expect(files).toContain('src/App.Api/wwwroot/privacy.html');
+    // Core e Tests não devem ter checklist
+    expect(files.filter((p) => p.includes('App.Core/wwwroot/'))).toHaveLength(0);
+    expect(files.filter((p) => p.includes('App.Tests/wwwroot/'))).toHaveLength(0);
+  });
+
   it('uses custom env vars over the language defaults when provided', () => {
     const blueprint: Blueprint = { ...baseBlueprint, projects: [] };
     const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Test', true, [
