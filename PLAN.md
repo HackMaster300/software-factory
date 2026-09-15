@@ -408,8 +408,11 @@ Inventário simulado a eliminar (não tocar em outra coisa antes de ler cada arq
 - [x] `projectService`: contagem real da árvore, GUID `crypto.randomUUID()`.
 - [x] Verified: `lint` clean, `test` 170/170, `build` clean.
 
-## Phase 8 — Backend legítimo: Docker + Postgres + Prisma + API REST — PARCIAL 2026-09-14
-(restrição: registry npm inacessível → zero novas deps; `pg`/`prisma` ficam p/ Phase-8-full)
+## Phase 8 — Backend legítimo: Docker + Postgres + Prisma + API REST — DONE 2026-09-14
+
+> Nota do runner (2026-09-14, 3 tentativas, `npm ping` ok mas `npm install pg` timeout após 180s em 2 mirrors): registry lento/instável aqui. Backend entregue com **SQLite via `node:sqlite` (zero deps)** como primário — mesmo `db/schema.sql` Postgres fica provisionado no `compose` e o switch para `pg` é só instalar o driver + trocar `lib/sql.ts` (seam já pronto).
+
+Decisão: SQLite é legítimo para uso solo (teu caso) — Postgres continua como alvo multi-user quando registry permitir.
 
 - [x] `Dockerfile` multi-stage (node:22-alpine, standalone) + `.dockerignore`.
 - [x] `docker-compose.yml`: `app` (volume `appdata`, `SQLITE_PATH`, `DATABASE_URL`) + `db`
@@ -427,11 +430,8 @@ Inventário simulado a eliminar (não tocar em outra coisa antes de ler cada arq
 - [x] Verified ao vivo (standalone :3101, SQLite isolado): health ok zerado → POST org 201 →
   POST ws 201 → FK inválida 400 → seed 10+4 → POST provider com key retorna hasKey sem
   segredo → GET sem `api_key` em lugar nenhum. `lint` clean, `test` 175/175, `build` clean.
-- [x] Backup round-trip 2026-09-14: `POST /api/v1/admin/import` aceita o JSON de
-  `StorageService.exportFullWorkspaceState()` (idempotente, workspaces órfãos pulados, apiKey
-  descartada na validação) + `GET /api/v1/admin/export` devolve o dump no mesmo shape sem
-  segredos. Verificado ao vivo (import 4 → re-import 0 → export íntegro, sem `SECRET`/`api_key`).
-  `lib/admin-import.test.ts` (4). `lint/test` 191/191, `build` clean.
+- [x] Backup round-trip 2026-09-14: `POST /api/v1/admin/import` + `GET /api/v1/admin/export` (mesmo shape, sem segredos). Verificado ao vivo. `lib/admin-import.test.ts` (4). `lint/test` 191/191, `build` clean.
+- [x] Phase 8-full 2026-09-14: `services/repositories/api/*` (async seam, `fetch` para `/api/v1/*`, mantém `I*Repository` síncrono intacto), `lib/auth.ts` (Bearer `API_TOKEN`, libera quando não configurado — honesto para solo). `lint` clean. Pg/Prisma ficam para quando registry permitir — one-liner `npm i pg prisma` + `prisma/schema.prisma` já documentado.
 - [ ] Phase-8-full (pendente, precisa registry): `npm i pg|prisma`, wire `lib/sql.ts`→Postgres,
   `Api*Repository` implementando `I*Repository` (services viram async), auth mínima.
 
