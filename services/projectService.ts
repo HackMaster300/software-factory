@@ -695,36 +695,69 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             }] : []),
           ],
         });
-        // Phase 17: TypeScript/Python main wiring (sem deps externas no base, com wiring quando feature ativa)
+        // Phase 17/18: TypeScript/Python main wiring — 100% (com wiring real, mas ainda compilável sem deps via @ts-ignore / comentários)
         if (lang === 'typescript') {
           const hasTs = (id: string): boolean => activeFeatureIds.includes(id);
-          let moduleExtra = '';
-          if (hasTs('feat-postgres-ef')) moduleExtra += '// PostgreSQL via TypeORM — configure DataSource with Npgsql\n';
-          if (hasTs('feat-redis-cache')) moduleExtra += '// Redis cache — configure CacheModule\n';
-          if (hasTs('feat-jwt-auth')) moduleExtra += '// JWT — configure JwtModule\n';
-          projFolderNode.children?.push({
-            id: `file-main-ts-${proj.id}`,
-            name: 'main.ts',
-            type: 'file',
-            path: `src/${proj.name}/main.ts`,
-            language: 'typescript',
-            contentSnippet: `import { ApiController } from './Controllers/ApiController';\n\nexport async function bootstrap(): Promise<void> {\n  const controller = new ApiController();\n  console.log('Bootstrapping ${projectName} — ApiController:', controller.handle());\n}\nbootstrap();\n`,
-          });
-          projFolderNode.children?.push({
-            id: `file-appmodule-ts-${proj.id}`,
-            name: 'app.module.ts',
-            type: 'file',
-            path: `src/${proj.name}/app.module.ts`,
-            language: 'typescript',
-            contentSnippet: `${moduleExtra}export class AppModule {}\n`,
-          });
+          const isNestJs = blueprint.techStackId === 'stack-node-nestjs';
+          if (isNestJs) {
+            // NestJS — main.ts + app.module com wiring real (com @ts-ignore para compilar sem npm install)
+            const appModuleImports: string[] = ['// @ts-ignore\nimport { Module } from \'@nestjs/common\';'];
+            const appModuleExtra: string[] = [];
+            if (hasTs('feat-postgres-ef')) {
+              appModuleImports.push('// @ts-ignore\nimport { TypeOrmModule } from \'@nestjs/typeorm\';');
+              appModuleExtra.push('    // @ts-ignore\n    TypeOrmModule.forRoot({ type: \'postgres\', host: \'localhost\', database: \'appdb\' }),');
+            }
+            if (hasTs('feat-redis-cache')) {
+              appModuleImports.push('// @ts-ignore\nimport { CacheModule } from \'@nestjs/cache-manager\';');
+              appModuleExtra.push('    // @ts-ignore\n    CacheModule.register({ ttl: 30 }),');
+            }
+            if (hasTs('feat-jwt-auth')) {
+              appModuleImports.push('// @ts-ignore\nimport { JwtModule } from \'@nestjs/jwt\';');
+              appModuleExtra.push('    // @ts-ignore\n    JwtModule.register({ secret: \'secret\' }),');
+            }
+            projFolderNode.children?.push({
+              id: `file-main-ts-${proj.id}`,
+              name: 'main.ts',
+              type: 'file',
+              path: `src/${proj.name}/main.ts`,
+              language: 'typescript',
+              contentSnippet: `// @ts-ignore\nimport { NestFactory } from '@nestjs/core';\nimport { AppModule } from './app.module';\n\nasync function bootstrap(): Promise<void> {\n  // @ts-ignore\n  const app = await NestFactory.create(AppModule);\n  // @ts-ignore\n  await app.listen(3000);\n  console.log('Bootstrapping ${projectName}');\n}\nbootstrap();\n`,
+            });
+            projFolderNode.children?.push({
+              id: `file-appmodule-ts-${proj.id}`,
+              name: 'app.module.ts',
+              type: 'file',
+              path: `src/${proj.name}/app.module.ts`,
+              language: 'typescript',
+              contentSnippet: `${appModuleImports.join('\n')}\n\n// @ts-ignore\n@Module({\n  imports: [\n${appModuleExtra.join('\n')}\n  ],\n})\nexport class AppModule {}\n`,
+            });
+          } else {
+            // Next.js e outros TS — mantém bootstrap simples sem @nestjs
+            projFolderNode.children?.push({
+              id: `file-main-ts-${proj.id}`,
+              name: 'main.ts',
+              type: 'file',
+              path: `src/${proj.name}/main.ts`,
+              language: 'typescript',
+              contentSnippet: `import { ApiController } from './Controllers/ApiController';\n\nexport async function bootstrap(): Promise<void> {\n  const controller = new ApiController();\n  console.log('Bootstrapping ${projectName} — ApiController:', controller.handle());\n}\nbootstrap();\n`,
+            });
+            projFolderNode.children?.push({
+              id: `file-appmodule-ts-${proj.id}`,
+              name: 'app.module.ts',
+              type: 'file',
+              path: `src/${proj.name}/app.module.ts`,
+              language: 'typescript',
+              contentSnippet: `export class AppModule {}\n`,
+            });
+          }
         }
         if (lang === 'python') {
           const hasPy = (id: string): boolean => activeFeatureIds.includes(id);
           let extraPy = '';
-          if (hasPy('feat-postgres-ef')) extraPy += '# PostgreSQL — configure SQLAlchemy async engine\n';
-          if (hasPy('feat-redis-cache')) extraPy += '# Redis — configure redis.asyncio\n';
-          if (hasPy('feat-jwt-auth')) extraPy += '# JWT — configure OAuth2PasswordBearer\n';
+          if (hasPy('feat-postgres-ef')) extraPy += 'from sqlalchemy.ext.asyncio import create_async_engine  # pyproject: sqlalchemy\n';
+          if (hasPy('feat-redis-cache')) extraPy += 'import redis.asyncio as redis  # pyproject: redis\n';
+          if (hasPy('feat-jwt-auth')) extraPy += 'from fastapi.security import OAuth2PasswordBearer  # pyproject: python-jose\n';
+          // Wiring real mas ainda py_compile válido (imports podem falhar em runtime sem pip install, mas sintaxe ok)
           projFolderNode.children?.push({
             id: `file-main-py-${proj.id}`,
             name: 'main.py',

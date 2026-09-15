@@ -294,6 +294,91 @@ describe('ProjectService.generateSolutionPreview', () => {
     expect(apiProgram).toContain('AddQuartz');
   });
 
+  it('generates NestJS main.ts + app.module with feature wiring (Phase 18)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      techStackId: 'stack-node-nestjs',
+      projects: [
+        { id: 'a', name: 'src/api', type: 'API', references: [], description: '' },
+      ],
+      featureIds: ['feat-postgres-ef', 'feat-jwt-auth'],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Nest');
+    const apiFolder = preview.solutionTree
+      .find((n) => n.name === 'src')
+      ?.children?.find((n) => n.name === 'src/api');
+    const main = apiFolder?.children?.find((n) => n.name === 'main.ts')?.contentSnippet || '';
+    const appModule = apiFolder?.children?.find((n) => n.name === 'app.module.ts')?.contentSnippet || '';
+    expect(main).toContain('NestFactory');
+    expect(main).toContain('AppModule');
+    expect(appModule).toContain('TypeOrmModule');
+    expect(appModule).toContain('JwtModule');
+    expect(appModule).not.toContain('CacheModule');
+  });
+
+  it('generates plain bootstrap for non-NestJS TypeScript (Phase 18)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      techStackId: 'stack-nextjs',
+      projects: [
+        { id: 'a', name: 'app', type: 'API', references: [], description: '' },
+      ],
+      featureIds: [],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Next');
+    const apiFolder = preview.solutionTree
+      .find((n) => n.name === 'src')
+      ?.children?.find((n) => n.name === 'app');
+    const main = apiFolder?.children?.find((n) => n.name === 'main.ts')?.contentSnippet || '';
+    expect(main).toContain('ApiController');
+    expect(main).not.toContain('NestFactory');
+  });
+
+  it('generates Python main.py with feature wiring (Phase 18)', () => {
+    const blueprint: Blueprint = {
+      ...baseBlueprint,
+      techStackId: 'stack-python-fastapi',
+      projects: [
+        { id: 'a', name: 'app/api', type: 'API', references: [], description: '' },
+      ],
+      featureIds: ['feat-redis-cache', 'feat-jwt-auth'],
+    };
+
+    const preview = ProjectService.generateSolutionPreview(blueprint, 'Acme.Py');
+    const apiFolder = preview.solutionTree
+      .find((n) => n.name === 'src')
+      ?.children?.find((n) => n.name === 'app/api');
+    // proj.name 'app/api' cria pasta aninhada — busca recursiva
+    const allFiles: string[] = [];
+    const walk = (ns: typeof preview.solutionTree): void => {
+      for (const n of ns) {
+        if (n.type === 'file') allFiles.push(n.path);
+        if (n.children) walk(n.children);
+      }
+    };
+    walk(preview.solutionTree);
+    expect(allFiles.some((p) => p.endsWith('/main.py'))).toBe(true);
+    const mainPath = allFiles.find((p) => p.endsWith('/main.py'))!;
+    const findFile = (nodes: typeof preview.solutionTree): string => {
+      for (const n of nodes) {
+        if (n.type === 'file' && n.path === mainPath) return n.contentSnippet || '';
+        if (n.children) {
+          const r = findFile(n.children);
+          if (r) return r;
+        }
+      }
+      return '';
+    };
+    const main = findFile(preview.solutionTree);
+    expect(main).toContain('FastAPI');
+    expect(main).toContain('redis.asyncio');
+    expect(main).toContain('OAuth2PasswordBearer');
+    expect(main).not.toContain('sqlalchemy');
+    expect(apiFolder).toBeDefined();
+  });
+
   it('injects the 20-item web checklist only into API/UI projects (Phase 14)', () => {
     const blueprint: Blueprint = {
       ...baseBlueprint,

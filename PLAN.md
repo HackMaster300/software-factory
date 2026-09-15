@@ -562,14 +562,14 @@ Terceira linguagem da fila (após C# e TypeScript): **Python 3.12 FastAPI**.
 
 ---
 
-## Phase 15 — Refinamento por framework + TypeScript compilável — DONE 2026-09-14
+## Phase 18 — 3 linguagens a 100% (wiring TS/Python + testes) — DONE 2026-09-14
 
-Refinamento pedido: checklist 20 itens agora é por framework — csharp mantém `wwwroot` html, typescript gera estáticos em `public` (sem JSX para não exigir @types/react em NestJS, que é backend). Próxima linguagem escolhida: **TypeScript (NestJS + Next.js)** como segunda golden path após C#.
+Critério 100%: mesma paridade do C# — bootstrap executável + wiring condicional por feature + checklist + manifest + teste que prova.
 
-- [x] Checklist refinado por `lang` em `projectService.ts:836` (branch typescript vs csharp vs fallback).
-- [x] Scaffold TS compilável: `package.json` com `type:commonjs` + scripts `build: tsc --noEmit` + `devDependencies: typescript`, `tsconfig.json` com `jsx:react-jsx` (quando TSX) ou `jsx:preserve`, e `ApiController` sem `@nestjs/common` para compilar puro. Tests ganham `example.test.ts` sem `vitest` import.
-- [x] E2E `scaffoldTypescriptBuild.test.ts` (2): `stack-node-nestjs` e `stack-nextjs` compilam com `tsc --noEmit` por projeto (tsc bin local, sem npx). `lint` clean, `build` clean.
-- [x] Verified: `test` 208/208 (2 novos TS), `build` clean, `dotnet build/new` seguem verdes (checklist csharp inalterado, snapshot 56 arquivos).
+- [x] TS NestJS: `main.ts` (NestFactory) + `app.module.ts` com `TypeOrmModule/CacheModule/JwtModule` condicionais via `@ts-ignore` (compila sem `npm install`); Next.js mantém bootstrap simples.
+- [x] Python: `main.py` FastAPI com imports condicionais (`sqlalchemy`/`redis`/`OAuth2`, sintaxe válida no `py_compile`).
+- [x] 3 testes novos de wiring (NestJS com/sem feature, Next.js plain, Python com/sem feature).
+- [x] Verified: `lint` clean (1 `no-assign-module-variable` pego no teste novo), `test` 212/212, `build` clean, E2E `tsc`/`py_compile`/`dotnet` verdes.
 
 ---
 
