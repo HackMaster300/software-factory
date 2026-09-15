@@ -189,8 +189,10 @@ export class ProjectService {
       buildFileSnippet = `module github.com/acme/${projectName.toLowerCase()}\n\ngo 1.22`;
       buildFileLang = 'plaintext';
     } else if (lang === 'rust') {
+      // Phase 20: virtual manifest — membros explícitos (cada projeto tem Cargo.toml
+      // próprio + src/lib.rs). Sem deps externas: build offline-capaz.
       buildFileName = 'Cargo.toml';
-      buildFileSnippet = `[package]\nname = "${projectName.toLowerCase()}"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\ntokio = { version = "1.38", features = ["full"] }\naxum = "0.7"`;
+      buildFileSnippet = `[workspace]\nresolver = "2"\nmembers = [${blueprint.projects.map((p) => `"src/${p.name}"`).join(', ')}]\n`;
       buildFileLang = 'toml';
     } else if (lang === 'python') {
       buildFileName = 'pyproject.toml';
@@ -555,6 +557,8 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
                 lang === 'rust' ? `pub struct BaseEntity {\n    pub id: String,\n    pub created_at: i64,\n}` :
                 lang === 'python' ? `from pydantic import BaseModel\nfrom datetime import datetime\n\nclass BaseEntity(BaseModel):\n    id: str\n    created_at: datetime` :
                 lang === 'typescript' ? `export abstract class BaseEntity {\n  id!: string;\n  createdAt!: Date;\n}` :
+                lang === 'kotlin' ? `abstract class BaseEntity {\n    var id: String = ""\n}` :
+                lang === 'dart' ? `abstract class BaseEntity {\n  String id = '';\n}` :
                 `namespace ${proj.name}.Entities;\n\npublic abstract class BaseEntity {\n    public Guid Id { get; set; }\n}`
             },
             // Phase 9 golden path: entidade concreta para o handler/template compilarem.
@@ -594,6 +598,8 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
                 lang === 'rust' ? `pub struct CreateTransactionCommand {\n    pub amount: f64,\n    pub currency: String,\n}` :
                 lang === 'python' ? `class CreateTransactionCommand(BaseModel):\n    amount: float\n    currency: str` :
                 lang === 'typescript' ? `export interface CreateTransactionCommand {\n  amount: number;\n  currency: string;\n}` :
+                lang === 'kotlin' ? `data class CreateTransactionCommand(val amount: Double, val currency: String)\n\nclass CreateTransactionHandler {\n    private val store = mutableMapOf<String, CreateTransactionCommand>()\n\n    fun handle(command: CreateTransactionCommand): String {\n        val id = java.util.UUID.randomUUID().toString()\n        store[id] = command\n        return id\n    }\n\n    fun findById(id: String): CreateTransactionCommand? = store[id]\n}` :
+                lang === 'dart' ? `class CreateTransactionCommand {\n  final double amount;\n  final String currency;\n  const CreateTransactionCommand({required this.amount, required this.currency});\n}\n\nclass CreateTransactionHandler {\n  final Map<String, CreateTransactionCommand> _store = {};\n\n  String handle(CreateTransactionCommand command) {\n    final id = DateTime.now().microsecondsSinceEpoch.toString();\n    _store[id] = command;\n    return id;\n  }\n\n  CreateTransactionCommand? findById(String id) => _store[id];\n}` :
                 `namespace ${proj.name}.Commands;\n\npublic sealed record CreateTransactionCommand(decimal Amount, string Currency);`
             },
             ...(lang === 'csharp' ? [{
@@ -658,6 +664,8 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
                 lang === 'go' ? `package persistence\n\ntype InMemoryRepository struct {\n\tstore map[string]interface{}\n}\n\nfunc NewInMemoryRepository() *InMemoryRepository {\n\treturn &InMemoryRepository{store: make(map[string]interface{})}\n}\n\nfunc (r *InMemoryRepository) FindByID(id string) interface{} {\n\treturn r.store[id]\n}\n\nfunc (r *InMemoryRepository) Save(id string, entity interface{}) {\n\tr.store[id] = entity\n}\n` :
                 lang === 'rust' ? `use std::collections::HashMap;\n\npub struct InMemoryRepository {\n    store: HashMap<String, String>,\n}\n\nimpl InMemoryRepository {\n    pub fn new() -> Self {\n        Self { store: HashMap::new() }\n    }\n\n    pub fn find_by_id(&self, id: &str) -> Option<&String> {\n        self.store.get(id)\n    }\n\n    pub fn save(&mut self, id: String, entity: String) {\n        self.store.insert(id, entity);\n    }\n}\n` :
                 lang === 'python' ? `from typing import Dict, Optional\n\nclass InMemoryRepository:\n    def __init__(self):\n        self._store: Dict[str, object] = {}\n\n    async def get_by_id(self, id: str) -> Optional[object]:\n        return self._store.get(id)\n\n    async def add(self, entity) -> None:\n        self._store[getattr(entity, 'id', str(id(entity)))] = entity\n` :
+                lang === 'kotlin' ? `class InMemoryRepository {\n    private val store = mutableMapOf<String, Any>()\n\n    fun findById(id: String): Any? = store[id]\n\n    fun save(id: String, entity: Any) {\n        store[id] = entity\n    }\n}` :
+                lang === 'dart' ? `class InMemoryRepository {\n  final Map<String, Object> _store = {};\n\n  Object? findById(String id) => _store[id];\n\n  void save(String id, Object entity) {\n    _store[id] = entity;\n  }\n}` :
                 lang === 'csharp' ? `using ${appName}.Common;\nusing ${coreName2}.Entities;\nusing System.Collections.Concurrent;\n\nnamespace ${proj.name}.Persistence;\n\npublic sealed class InMemoryRepository<T> : IRepository<T> where T : BaseEntity {\n    private readonly ConcurrentDictionary<Guid, T> _store = new();\n\n    public Task<T?> GetByIdAsync(Guid id, CancellationToken ct) {\n        _store.TryGetValue(id, out var entity);\n        return Task.FromResult(entity);\n    }\n\n    public Task AddAsync(T entity, CancellationToken ct) {\n        _store[entity.Id] = entity;\n        return Task.CompletedTask;\n    }\n}` :
                 `export class Repository {\n  async findOne(id: string) {}\n}`
             },
@@ -700,6 +708,8 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
                 lang === 'rust' ? `pub fn health_check() -> &'static str {\n    "ok"\n}\n` :
                 lang === 'python' ? `from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get("/healthz")\nasync def healthz():\n    return {"status": "ok"}\n\n@router.post("/transactions")\nasync def create_transaction(payload: dict):\n    return {"id": "00000000-0000-0000-0000-000000000000"}\n` :
                 lang === 'csharp' ? `using Microsoft.AspNetCore.Mvc;\n\nnamespace ${proj.name}.Controllers;\n\n[ApiController]\npublic abstract class BaseApiController : ControllerBase {\n    protected ILogger Logger { get; }\n\n    protected BaseApiController(ILogger logger) {\n        Logger = logger;\n    }\n\n    protected string TraceId => HttpContext.TraceIdentifier;\n}` :
+                lang === 'kotlin' ? `class ApiController {\n    fun healthz(): String = "ok"\n}` :
+                lang === 'dart' ? `class ApiController {\n  String healthz() => 'ok';\n}` :
                 // Phase 15: TypeScript base sem deps externas — compila com tsc puro
                 `export class ApiController {\n  handle(): string {\n    return 'ok';\n  }\n}`
             },
@@ -959,15 +969,18 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             return `    <dependency>\n      <groupId>${groupId}</groupId>\n      <artifactId>${artifactId}</artifactId>\n      <version>${p.version}</version>\n    </dependency>`;
           }).join('\n');
           const artifact = proj.name.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
-          return `<project xmlns="http://maven.apache.org/POM/4.0.0">\n  <modelVersion>4.0.0</modelVersion>\n  <groupId>com.acme</groupId>\n  <artifactId>${artifact}</artifactId>\n  <version>1.0.0</version>\n  <packaging>jar</packaging>\n  <properties>\n    <maven.compiler.source>21</maven.compiler.source>\n    <maven.compiler.target>21</maven.compiler.target>\n    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n  </properties>\n  <dependencies>\n${depsXml || '    <!-- module dependencies -->'}\n  </dependencies>\n</project>`;
+          // Phase 20: sourceDirectory=. porque os .java ficam na raiz do módulo
+          // (não em src/main/java). Compila os arquivos gerados em vez de um jar vazio.
+          return `<project xmlns="http://maven.apache.org/POM/4.0.0">\n  <modelVersion>4.0.0</modelVersion>\n  <groupId>com.acme</groupId>\n  <artifactId>${artifact}</artifactId>\n  <version>1.0.0</version>\n  <packaging>jar</packaging>\n  <properties>\n    <maven.compiler.source>21</maven.compiler.source>\n    <maven.compiler.target>21</maven.compiler.target>\n    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n  </properties>\n  <build>\n    <sourceDirectory>.</sourceDirectory>\n  </build>\n  <dependencies>\n${depsXml || '    <!-- module dependencies -->'}\n  </dependencies>\n</project>`;
         }
         if (lang === 'rust') {
           // Phase 19: Cargo.toml por crate (sem workspace — cada crate compila sozinha).
           return `[package]\nname = "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n`;
         }
         if (lang === 'kotlin') {
-          // Phase 19: build.gradle.kts por módulo (Kotlin JVM).
-          return `plugins {\n    kotlin("jvm") version "2.0.0"\n    application\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation(kotlin("stdlib"))\n}\n\ntasks.test {\n    useJUnitPlatform()\n}\n`;
+          // Phase 19/20: build.gradle.kts por módulo (Kotlin JVM). sourceSets aponta para
+          // a raiz do módulo porque os .kt ficam ao lado do manifest (não em src/main/kotlin).
+          return `plugins {\n    kotlin("jvm") version "2.0.0"\n    application\n}\n\nrepositories {\n    mavenCentral()\n}\n\nsourceSets {\n    main {\n        kotlin.srcDir(".")\n    }\n}\n\ndependencies {\n    implementation(kotlin("stdlib"))\n}\n\ntasks.test {\n    useJUnitPlatform()\n}\n`;
         }
         return `{\n  "name": "${proj.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}",\n  "version": "1.0.0",\n  "type": "commonjs",\n  "scripts": {\n    "build": "tsc --noEmit",\n    "test": "echo \\"No tests specified\\" && exit 0"\n  },\n  "dependencies": {\n${effectivePackages.map((p) => `    "${p.name}": "${p.version}"`).join(',\n')}\n  },\n  "devDependencies": {\n    "typescript": "^5.9.0"\n  }\n}`;
       })();
@@ -1285,6 +1298,51 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
 
     // Phase 13: feature src files entram no srcFolderNode (após projetos base)
     insertFeatureSrcFiles();
+
+    // Phase 20: cada crate Rust ganha src/lib.rs com include! de TODOS os .rs do crate
+    // (golden path + features, por isso roda após insertFeatureSrcFiles). Sem isso o
+    // cargo ignora os arquivos (só compila src/lib.rs).
+    if (lang === 'rust') {
+      for (const proj of blueprint.projects) {
+        const crateFolder = srcFolderNode.children?.find(
+          (n) => (n.type === 'project' || n.type === 'folder') && n.path === `src/${proj.name}`
+        );
+        if (!crateFolder?.children) continue;
+        const rsFiles: string[] = [];
+        const collectRs = (nodes: SolutionTreeNode[] | undefined, prefix: string): void => {
+          for (const n of nodes || []) {
+            if (n.type === 'file' && n.name.endsWith('.rs') && n.name !== 'lib.rs') {
+              rsFiles.push(`${prefix}${n.name}`);
+            }
+            if (n.children) {
+              const rel = n.path.startsWith(`src/${proj.name}/`)
+                ? n.path.slice(`src/${proj.name}/`.length)
+                : n.name;
+              collectRs(n.children, `${prefix}${rel}/`);
+            }
+          }
+        };
+        collectRs(crateFolder.children, '');
+        if (rsFiles.length === 0) continue;
+        const libContent = rsFiles.map((f) => `include!("../${f}");`).join('\n') + '\n';
+        let srcFolder = crateFolder.children?.find((n) => n.name === 'src');
+        if (!srcFolder) {
+          srcFolder = {
+            id: `dir-${proj.id}-src`, name: 'src', type: 'folder',
+            path: `src/${proj.name}/src`, children: [],
+          };
+          crateFolder.children?.push(srcFolder);
+        }
+        srcFolder.children?.push({
+          id: `file-lib-${proj.id}`,
+          name: 'lib.rs',
+          type: 'file',
+          path: `src/${proj.name}/src/lib.rs`,
+          language: 'rust',
+          contentSnippet: libContent,
+        });
+      }
+    }
 
     const vscodeFolderNode: SolutionTreeNode = {
       id: 'dir-vscode',

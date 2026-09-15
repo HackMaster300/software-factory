@@ -562,6 +562,17 @@ Terceira linguagem da fila (após C# e TypeScript): **Python 3.12 FastAPI**.
 
 ---
 
+## Phase 20 — Kotlin/Dart próprios + Rust workspace + layout Maven/Gradle — DONE 2026-09-14
+
+Auditoria honesta pós-Phase 19: Go passa, Java passa vazio, Rust/Kotlin/Dart quebravam (fallbacks C#/TS nos arquivos, workspace Cargo sem targets, layout Maven/Gradle errado).
+
+- [x] Kotlin/Dart próprios nos 4 blocos (Core/Application/Infrastructure/API) — stdlib/plain, sem `namespace`/`export`/`import {`.
+- [x] Rust: raiz virou virtual manifest (`[workspace]` + members explícitos, sem tokio/axum órfãos) + `src/lib.rs` por crate com `include!` de todos os `.rs` (golden + features).
+- [x] Java: `<sourceDirectory>.</sourceDirectory>` no pom (compila os `.java` gerados em vez de jar vazio).
+- [x] Kotlin: `sourceSets { kotlin.srcDir(".") }` no gradle (não verificado sem Gradle — documentado).
+- [x] 4 testes novos (Kotlin/Dart sem fallback, workspace+lib.rs, pom sourceDirectory).
+- [x] Verified: `lint` clean, `test` 221/221, `build` clean (C#/TS/Python E2E seguem verdes).
+
 ## Phase 19 — 5 stacks restantes: manifests + bootstraps válidos (sem toolchain nativo) — DONE 2026-09-14
 
 Runner só tem JRE 8 (sem javac/mvn) e nada de go/cargo — nível honesto: manifests corretos + bootstraps sem deps + zero fallback TS.

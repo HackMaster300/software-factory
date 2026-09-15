@@ -87,6 +87,25 @@ describe('other stacks presence + validity (Phase 19, sem toolchain nativo)', ()
     expect(files.filter((f) => f.name === 'package.json')).toHaveLength(0);
   });
 
+  it('Rust: workspace virtual + lib.rs com include! por crate (Phase 20)', () => {
+    const bp = makeBlueprint('stack-rust-axum');
+    const preview = ProjectService.generateSolutionPreview(bp, 'Acme.Rust');
+    const files = collectFiles(preview.solutionTree);
+    const rootCargo = files.find((f) => f.name === 'Cargo.toml' && f.path === 'Cargo.toml');
+    expect(rootCargo?.contentSnippet).toContain('[workspace]');
+    expect(rootCargo?.contentSnippet).not.toContain('[package]');
+    for (const proj of bp.projects) {
+      const manifest = files.find((f) => f.path === `src/${proj.name}/Cargo.toml`);
+      expect(manifest, `Cargo.toml de ${proj.name}`).toBeDefined();
+      const libRs = files.find((f) => f.path === `src/${proj.name}/src/lib.rs`);
+      const crateRs = files.filter((f) => f.path.startsWith(`src/${proj.name}/`) && f.name.endsWith('.rs') && f.name !== 'lib.rs');
+      if (crateRs.length > 0) {
+        expect(libRs, `lib.rs de ${proj.name}`).toBeDefined();
+        expect(libRs?.contentSnippet).toContain('include!("../');
+      }
+    }
+  });
+
   it('Kotlin: build.gradle.kts + Application.kt por projeto', () => {
     const preview = ProjectService.generateSolutionPreview(makeBlueprint('stack-kotlin-ktor'), 'Acme.Kt');
     const files = collectFiles(preview.solutionTree);
@@ -94,6 +113,38 @@ describe('other stacks presence + validity (Phase 19, sem toolchain nativo)', ()
     const app = files.find((f) => f.name === 'Application.kt');
     expect(app?.contentSnippet).toContain('fun main()');
     expect(files.filter((f) => f.name === 'package.json')).toHaveLength(0);
+  });
+
+  it('Kotlin: snippets próprios sem C#/TS + sourceSets no gradle (Phase 20)', () => {
+    const preview = ProjectService.generateSolutionPreview(makeBlueprint('stack-kotlin-ktor'), 'Acme.Kt');
+    const files = collectFiles(preview.solutionTree);
+    for (const f of files.filter((f) => f.name.endsWith('.kt'))) {
+      expect(f.contentSnippet, f.path).not.toContain('namespace ');
+      expect(f.contentSnippet, f.path).not.toContain('export class');
+      expect(f.contentSnippet, f.path).not.toContain('import {');
+    }
+    const gradle = files.find((f) => f.name === 'build.gradle.kts');
+    expect(gradle?.contentSnippet).toContain('kotlin.srcDir(".")');
+  });
+
+  it('Java: pom com sourceDirectory apontando para os .java gerados (Phase 20)', () => {
+    const preview = ProjectService.generateSolutionPreview(makeBlueprint('stack-java-spring', 'Hexagonal'), 'Acme.Java');
+    const files = collectFiles(preview.solutionTree);
+    const poms = files.filter((f) => f.name === 'pom.xml' && f.path.startsWith('src/'));
+    expect(poms.length).toBeGreaterThan(0);
+    for (const pom of poms) {
+      expect(pom.contentSnippet).toContain('<sourceDirectory>.</sourceDirectory>');
+    }
+  });
+
+  it('Dart: snippets próprios sem C#/TS (Phase 20)', () => {
+    const preview = ProjectService.generateSolutionPreview(makeBlueprint('stack-flutter'), 'Acme.Flutter');
+    const files = collectFiles(preview.solutionTree);
+    for (const f of files.filter((f) => f.name.endsWith('.dart'))) {
+      expect(f.contentSnippet, f.path).not.toContain('namespace ');
+      expect(f.contentSnippet, f.path).not.toContain('export class');
+      expect(f.contentSnippet, f.path).not.toContain('import {');
+    }
   });
 
   it('Dart: main.dart por projeto, pubspec na raiz', () => {
