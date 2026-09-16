@@ -1231,10 +1231,10 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             language: 'html',
             snippet: `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Obrigado — ${projectName}</title></head><body><main style="max-width:600px;margin:4rem auto;text-align:center"><h1>Obrigado!</h1><p>Recebemos o seu contacto. Responderemos em até 1 dia útil.</p><a href="/">Voltar ao início</a></main></body></html>`,
           },
-          {
-            rel: `${staticFolder}/privacy.html`,
-            language: 'html',
-            snippet: `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Política de Privacidade — ${projectName}</title><meta name="robots" content="noindex"></head><body><main style="max-width:720px;margin:2rem auto;padding:0 1rem"><h1>Política de Privacidade</h1><p>Esta é uma página de exemplo. Substitua pelo texto jurídico real conforme LGPD/GDPR.</p><p>Última atualização: ${new Date().toISOString().slice(0, 10)}</p></main></body></html>`,
+{
+              rel: `${staticFolder}/privacy.html`,
+              language: 'html',
+              snippet: `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Política de Privacidade — ${projectName}</title><meta name="robots" content="noindex"></head><body><main style="max-width:720px;margin:2rem auto;padding:0 1rem"><h1>Política de Privacidade</h1><p>Esta é uma página de exemplo. Substitua pelo texto jurídico real conforme LGPD/GDPR.</p><p>Última atualização: {{LAST_UPDATED}}</p></main></body></html>`,
           },
           {
             rel: `${staticFolder}/terms.html`,

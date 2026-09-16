@@ -12,7 +12,7 @@ services:
       SQLITE_PATH: /app/data/factory.db
       # Connection strings de exemplo (usadas quando o driver real for plugado):
       DATABASE_URL: postgresql://factory:factory@db:5432/factory
-      MSSQL_CONNECTION_STRING: "Server=mssql,1433;Database=factory;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Factory123!};TrustServerCertificate=True;"
+      MSSQL_CONNECTION_STRING: "Server=mssql,1434;Database=factory;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Factory123!};TrustServerCertificate=True;"
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Factory123!}
     volumes:
@@ -32,7 +32,7 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Factory123!}
       MSSQL_PID: Developer
     ports:
-      - "1433:1433"
+      - "1434:1433"
     volumes:
       - mssqldata:/var/opt/mssql
       - ./db/schema-mssql.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
