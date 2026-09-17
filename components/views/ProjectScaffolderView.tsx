@@ -33,6 +33,8 @@ import {
   FolderCheck,
   GitBranch,
   Globe,
+  Loader2,
+  Send,
 } from 'lucide-react';
 import { Blueprint, Project, ArchitectureStyle } from '../../types/factory';
 import { ProjectService, SolutionTreeNode } from '../../services/projectService';
@@ -95,22 +97,29 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
   const [selectedFileNode, setSelectedFileNode] = useState<SolutionTreeNode | null>(null);
   const [isGenerated, setIsGenerated] = useState<boolean>(false);
 
-  // Phase 22: AI Conversation state for Step 4 (AI Chat)
   const [aiConversation, setAiConversation] = useState<{
     messages: Array<{ role: 'user' | 'assistant'; content: string }>;
     isLoading: boolean;
     error: string | null;
-    suggestions: {
-      fileNames: string[];
-      folderStructure: string[];
-      namingConventions: string[];
-    } | null;
-  }>({
-    messages: [],
-    isLoading: false,
-    error: null,
-    suggestions: null,
-  });
+  }>({ messages: [], isLoading: false, error: null });
+  const [aiInput, setAiInput] = useState('');
+
+  const handleSendAiMessage = async () => {
+    if (!aiInput.trim() || aiConversation.isLoading) return;
+    const userMsg = { role: 'user' as const, content: aiInput.trim() };
+    setAiConversation((prev) => ({ ...prev, messages: [...prev.messages, userMsg], isLoading: true, error: null }));
+    setAiInput('');
+    try {
+      const { buildGroundedPrompt, getGroundedSystemInstruction } = await import('../../lib/ai-grounding');
+      const prompt = buildGroundedPrompt(editableBlueprint, userMsg.content);
+      const systemInstruction = getGroundedSystemInstruction();
+      const result = await AIService.requestAnalysis(prompt, 'Software Architect & Naming Consultant', systemInstruction);
+      setAiConversation((prev) => ({ ...prev, messages: [...prev.messages, { role: 'assistant' as const, content: result.text }], isLoading: false }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setAiConversation((prev) => ({ ...prev, isLoading: false, error: msg, messages: [...prev.messages, { role: 'assistant' as const, content: `Falha: ${msg}` }] }));
+    }
+  };
 
   const templates = StorageService.getTemplates();
   const techStacks = StorageService.getTechStacks();
@@ -181,7 +190,7 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
     setTimeout(() => setCopiedCmdText(null), 2000);
   };
 
-  const [localPathInput, setLocalPathInput] = useState<string>('');
+  const [localPathInput, setLocalPathInput] = useState<string>(`C:\\Projects\\${projectName}`);
 
   const formatVSCodePath = (rawPath: string) => {
     let clean = rawPath.trim();
@@ -218,27 +227,30 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
       setWrittenFilesCount(count);
       setDirectDiskStatus('success');
 
-      // Store the directory handle for later use (e.g., opening in VS Code)
-      // Note: We can't get the actual path from FileSystemDirectoryHandle for security reasons
-      // Store the handle for potential future use
-      Object.defineProperty(window, '__sf_dirHandle', { value: dirHandle, writable: true, configurable: true });
-      Object.defineProperty(window, '__sf_dirHandleName', { value: folderName, writable: true, configurable: true });
-      
-      // Update localPathInput with the selected folder name
-      setLocalPathInput(`Selected folder: ${folderName} (opened via File System Access API)`);
-      setSelectedFolderName(folderName);
+      // Update localPathInput with the selected folder name so it matches user choice
+      let currentPath = localPathInput.trim();
+      let updatedPath = currentPath;
+
+      if (!currentPath || (!currentPath.includes(':') && !currentPath.startsWith('/'))) {
+        updatedPath = `C:\\Projects\\${folderName}`;
+      } else {
+        const cleanPath = currentPath.replace(/[\\/]+$/, '');
+        const sep = cleanPath.includes('/') ? '/' : '\\';
+        const parts = cleanPath.split(/[\\/]/);
+        if (parts.length > 0) {
+          parts[parts.length - 1] = folderName;
+          updatedPath = parts.join(sep);
+        } else {
+          updatedPath = `C:\\${folderName}`;
+        }
+      }
+      setLocalPathInput(updatedPath);
 
       if (autoLaunchVSCode) {
-        // Can't reliably open VS Code with FileSystemDirectoryHandle path
-        // Show instructions instead
-        alert(
-          `Files written to "${dirHandle.name}" folder.\\n\\n` +
-          `To open in VS Code:\\n` +
-          `1. Open VS Code\\n` +
-          `2. File > Open Folder...\\n` +
-          `3. Select the folder you just chose\\n\\n` +
-          `Or use the ZIP download option instead.`
-        );
+        const formattedPath = formatVSCodePath(updatedPath);
+        if (formattedPath) {
+          window.open(`vscode://file/${formattedPath}`, '_self');
+        }
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
@@ -253,27 +265,14 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
   };
 
   const handleLaunchVSCodeDirectly = () => {
-    // Try to open the folder in VS Code using the stored directory handle
-    const globalWindow = window as unknown as { __sf_dirHandle?: FileSystemDirectoryHandle };
-    const dirHandle = globalWindow.__sf_dirHandle;
-    
-    if (dirHandle) {
-      // Try to open in VS Code using the File System Access API
-      // We need to get the folder path and use vscode:// protocol
-      // Since we can't get the actual path from FileSystemDirectoryHandle,
-      // we'll use the vscode:// protocol with the folder name
-      const folderName = (window as any).__sf_dirHandleName || selectedFolderName || projectName;
-      const vscodeUrl = `vscode://file/${encodeURIComponent(selectedFolderName || folderName)}`;
-      window.open(`vscode://file/${encodeURIComponent(selectedFolderName || folderName)}`, '_blank');
-    } else {
-      // Fallback: show instructions
-      alert(
-        `To open the generated solution in VS Code:\n\n` +
-        `1. Open VS Code\n` +
-        `2. File > Open Folder...\n` +
-        `3. Select the folder you chose during export\n\n` +
-        `The generated solution was written to the folder you selected during export.`
-      );
+    let path = localPathInput.trim();
+    if (!path) {
+      path = `C:\\Projects\\${selectedFolderName || projectName}`;
+      setLocalPathInput(path);
+    }
+    const formattedPath = formatVSCodePath(path);
+    if (formattedPath) {
+      window.open(`vscode://file/${formattedPath}`, '_self');
     }
   };
 
@@ -1536,143 +1535,53 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
             </Button>
 
             <Button variant="primary" onClick={() => setStep(4)}>
-              <span>Next: AI Suggestions</span>
+              <span>Next: Live Code & Solution Preview</span>
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </Card>
       )}
 
-      {/* Step 4: AI Suggestions — new step for AI to suggest file names, folder structure, naming conventions */}
       {step === 4 && (
-        <div className="space-y-5">
-          {/* Solution Estimates Bar — Phase 9: contagem real da árvore, não estimativa */}
-          <Card className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Files (real count)</div>
-              <div className="text-lg font-bold text-blue-400 font-mono">{solutionPreview.estimatedFileCount}</div>
-            </div>
-            <div>
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Directories (real)</div>
-              <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.estimatedFolderCount}</div>
-            </div>
-            <div>
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Project References</div>
-              <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.projectReferencesCount}</div>
-            </div>
-            <div>
-              <div className="text-[10px] text-gray-400 uppercase font-mono">Package Dependencies</div>
-              <div className="text-lg font-bold text-gray-100 font-mono">{solutionPreview.packageDependenciesCount}</div>
-            </div>
-          </Card>
-
-          {/* Tree validation (Phase 9) — honesto, sem fake-pass */}
-          {treeValidation.length > 0 ? (
-            <Card className="border-amber-500/30 bg-amber-500/5">
-              <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
-                <ShieldAlert className="w-4 h-4" aria-hidden="true" />
-                <span>Tree validation: {treeValidation.length} issue(s) in generated code</span>
+        <Card className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-white">Step 4: AI Conversation — Define File Names, Folder Structure & Naming Conventions</h2>
+            <p className="text-gray-400 text-xs">Converse com o AI Architect para decidir nomes de arquivos, estrutura de pastas e convenções antes de gerar o preview.</p>
+          </div>
+          <div className="max-h-[380px] overflow-y-auto space-y-3 p-3 rounded-lg bg-[#0f1115] border border-[#2b303d]">
+            {aiConversation.messages.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 text-xs">
+                <Sparkles className="w-8 h-8 mx-auto mb-2 text-blue-400" aria-hidden="true" />
+                <p>Descreva seu projeto ou peça sugestões sobre nomes de arquivos e pastas.</p>
               </div>
-              <ul className="mt-2 space-y-1 text-xs text-gray-300">
-                {treeValidation.map((m) => (
-                  <li key={m.id} className="flex gap-2">
-                    <Badge tone={m.type === 'error' ? 'danger' : 'warning'} className="shrink-0">{m.code}</Badge>
-                    <span><span className="text-gray-100">{m.title}</span> — {m.description} {m.ruleId && <span className="font-mono text-[11px] text-gray-400">({m.ruleId})</span>}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : (
-            <Card className="border-emerald-500/20 bg-emerald-500/5">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
-                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
-                <span>Generated code: no rule 2-5 violations detected</span>
-              </div>
-            </Card>
-          )}
-
-          {/* Main Solution Explorer & Monaco Code Inspector */}
-          <Card className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left 4 Cols: Virtual Solution Tree */}
-            <Card flat className="lg:col-span-4 border border-[#2b303d] space-y-2 max-h-[500px] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-[#232838] pb-2 text-xs font-semibold text-gray-200">
-                <div className="flex items-center gap-1.5 text-blue-400">
-                  <FolderGit2 className="w-4 h-4" aria-hidden="true" />
-                  <span>{solutionPreview.solutionName}</span>
-                </div>
-              </div>
-
-              {renderTree(solutionPreview.solutionTree)}
-            </Card>
-
-            {/* Right 8 Cols: Monaco Code Inspector */}
-            <Card flat className="lg:col-span-8 border border-[#2b303d] overflow-hidden flex flex-col h-[500px] p-0">
-              <div className="px-4 py-2 bg-[#13151b] border-b border-[#2b303d] flex items-center justify-between text-xs font-mono text-gray-300">
-                <span>{selectedFileNode ? selectedFileNode.path : 'Select a file from the tree to inspect code'}</span>
-                {selectedFileNode?.language && (
-                  <Badge tone="brand" className="normal-case">{selectedFileNode.language}</Badge>
-                )}
-              </div>
-
-              <div className="flex-1 bg-[#1e1e1e]">
-                {selectedFileNode ? (
-                  <Editor
-                    height="100%"
-                    language={selectedFileNode.language || 'plaintext'}
-                    theme="vs-dark"
-                    value={selectedFileNode.contentSnippet || '// Empty file'}
-                    options={{
-                      readOnly: true,
-                      minimap: { enabled: false },
-                      fontSize: 12,
-                      scrollBeyondLastLine: false,
-                    }}
-                  />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-500 font-mono text-xs">
-                    Click any generated file to preview code.
+            ) : (
+              <div className="space-y-3">
+                {aiConversation.messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${msg.role === 'assistant' ? 'bg-[#1e222d] border border-[#2e3342] text-gray-200' : 'bg-blue-600 text-white'}`}>
+                      <div className="whitespace-pre-wrap text-[11px] leading-relaxed">{msg.content}</div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </Card>
-          </Card>
-
-          {/* Action Bar */}
-          <Card className="flex flex-wrap items-center justify-between gap-3">
-            <Button variant="secondary" onClick={() => setStep(3)}>
-              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-              <span>Back</span>
-            </Button>
-
-            <div className="flex items-center gap-3">
-              {/* IDE Export & Direct Launch Button */}
-              <Button
-                variant="secondary"
-                onClick={() => setShowIdeExportModal(true)}
-                title="Open in VS Code, Visual Studio, JetBrains Rider, or launch CLI"
-              >
-                <Laptop className="w-4 h-4" aria-hidden="true" />
-                <span>IDE Export & Launch</span>
-              </Button>
-
-              {/* Download ZIP Button (Item 5 - Always Preserved) */}
-              <Button
-                variant="primary"
-                onClick={handleDownloadSolutionZip}
-                disabled={isDownloadingZip}
-                title="Export complete solution as a compressed .ZIP file containing all projects, manifests, Dockerfile & .env"
-              >
-                <Download className="w-4 h-4" aria-hidden="true" />
-                <span>{isDownloadingZip ? 'Zipping...' : 'Download Solution ZIP'}</span>
-              </Button>
-
-              <Button variant="primary" onClick={() => setStep(6)}>
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                <span>Next: Live Code & Solution Preview</span>
-              </Button>
-            </div>
-          </Card>
-        </div>
+            )}
+            {aiConversation.isLoading && (
+              <div className="flex items-center gap-2 text-blue-400 text-xs">
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <span>AI Architect is thinking...</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 pt-2 border-t border-[#232838]">
+            <Input type="text" placeholder="Pergunte sobre nomes de arquivos, pastas, convenções..." value={aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendAiMessage()} className="flex-1" disabled={aiConversation.isLoading} />
+            <Button variant="primary" onClick={handleSendAiMessage} disabled={aiConversation.isLoading || !aiInput.trim()}><Send className="w-4 h-4" aria-hidden="true" /><span>Send</span></Button>
+          </div>
+          {aiConversation.error && <div className="text-xs text-red-400">{aiConversation.error}</div>}
+          <div className="flex justify-between pt-3 border-t border-[#2b303d]">
+            <Button variant="secondary" onClick={() => setStep(3)}><ArrowLeft className="w-4 h-4" aria-hidden="true" /><span>Back</span></Button>
+            <Button variant="primary" onClick={() => setStep(5)}><span>Next: Preview & Generate</span><ArrowRight className="w-4 h-4" aria-hidden="true" /></Button>
+          </div>
+        </Card>
       )}
 
       {step === 5 && (
@@ -1859,14 +1768,13 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 </Button>
               </div>
 
-{/* Success status with launch to VS Code */}
               {directDiskStatus === 'success' && (
-                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300 flex-wrap gap-2">
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300">
                   <span className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
-                    Successfully written <strong className="text-white">{writtenFilesCount} files</strong> to <code className="text-emerald-200">&#34;{selectedFolderName}&#34;</code>!
+                    Successfully written <strong className="text-white">{writtenFilesCount} files</strong> to <code className="text-emerald-200">&quot;{selectedFolderName}&quot;</code>!
                   </span>
-                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title="Open folder in VS Code" className="shrink-0">
+                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title={`Open ${localPathInput} in VS Code`} className="shrink-0">
                     <ExternalLink className="w-3 h-3" aria-hidden="true" /> Open in VS Code
                   </Button>
                 </div>
