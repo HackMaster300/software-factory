@@ -164,7 +164,7 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
     setTimeout(() => setCopiedCmdText(null), 2000);
   };
 
-  const [localPathInput, setLocalPathInput] = useState<string>(`C:\\Projects\\${projectName}`);
+  const [localPathInput, setLocalPathInput] = useState<string>('');
 
   const formatVSCodePath = (rawPath: string) => {
     let clean = rawPath.trim();
