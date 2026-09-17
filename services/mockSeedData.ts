@@ -1193,6 +1193,15 @@ export const initialAIProviders: AIProviderConfig[] = [
     costPer1k: 'n/a',
     latency: 'n/a',
   },
+  {
+    id: 'ai-together',
+    name: 'Together AI Ternary Bonsai',
+    model: 'Prism-ML/Ternary-Bonsai-27B',
+    provider: 'Together AI',
+    status: 'configured',
+    costPer1k: 'n/a',
+    latency: 'n/a',
+  },
 ];
 
 export const initialPromptTemplates: PromptTemplate[] = [

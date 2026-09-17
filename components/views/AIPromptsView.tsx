@@ -49,6 +49,7 @@ const MODEL_ID_PLACEHOLDERS: Record<string, string> = {
   DeepSeek: 'deepseek-chat',
   'Azure OpenAI': 'your-deployment-name',
   Ollama: 'llama3.1',
+  'Together AI': 'Prism-ML/Ternary-Bonsai-27B',
 };
 
 /**
@@ -141,7 +142,7 @@ export const AIPromptsView: React.FC = () => {
   const [isProviderModalOpen, setIsProviderModalOpen] = useState<boolean>(false);
   const [editingProvider, setEditingProvider] = useState<AIProviderConfig | null>(null);
   const [providerName, setProviderName] = useState<string>('');
-  const [providerVendor, setProviderVendor] = useState<'Google Gemini' | 'OpenAI' | 'Anthropic' | 'DeepSeek' | 'Azure OpenAI' | 'Ollama' | 'OpenRouter'>('Google Gemini');
+  const [providerVendor, setProviderVendor] = useState<'Google Gemini' | 'OpenAI' | 'Anthropic' | 'DeepSeek' | 'Azure OpenAI' | 'Ollama' | 'OpenRouter' | 'Together AI'>('Google Gemini');
   const [providerModel, setProviderModel] = useState<string>('gemini-2.5-flash');
   const [providerCost, setProviderCost] = useState<string>('$0.00015');
   const [providerLatency, setProviderLatency] = useState<string>('180ms');
@@ -1259,6 +1260,7 @@ export const AIPromptsView: React.FC = () => {
                     <option value="Google Gemini">Google Gemini</option>
                     <option value="OpenAI">OpenAI-Compatible (OpenAI, Mistral, opencode.ai, etc.)</option>
                     <option value="OpenRouter">OpenRouter</option>
+                    <option value="Together AI">Together AI</option>
                     <option value="Anthropic">Anthropic</option>
                     <option value="DeepSeek">DeepSeek</option>
                     <option value="Azure OpenAI">Azure OpenAI</option>
@@ -1354,7 +1356,7 @@ export const AIPromptsView: React.FC = () => {
                       />
                     </div>
                   )}
-                  {(providerVendor === 'OpenAI' || providerVendor === 'DeepSeek' || providerVendor === 'OpenRouter') && (
+                  {(providerVendor === 'OpenAI' || providerVendor === 'DeepSeek' || providerVendor === 'OpenRouter' || providerVendor === 'Together AI') && (
                     <div className="mt-2">
                       <label className="text-[10px] text-gray-400 block mb-1">
                         Base URL (optional override — set this to point at OpenRouter, Mistral,
