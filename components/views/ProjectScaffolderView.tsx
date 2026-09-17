@@ -95,6 +95,23 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
   const [selectedFileNode, setSelectedFileNode] = useState<SolutionTreeNode | null>(null);
   const [isGenerated, setIsGenerated] = useState<boolean>(false);
 
+  // Phase 22: AI Conversation state for Step 4 (AI Chat)
+  const [aiConversation, setAiConversation] = useState<{
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+    isLoading: boolean;
+    error: string | null;
+    suggestions: {
+      fileNames: string[];
+      folderStructure: string[];
+      namingConventions: string[];
+    } | null;
+  }>({
+    messages: [],
+    isLoading: false,
+    error: null,
+    suggestions: null,
+  });
+
   const templates = StorageService.getTemplates();
   const techStacks = StorageService.getTechStacks();
 
@@ -663,7 +680,7 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
           <div className="flex items-center gap-2">
             <Badge tone="brand">Autonomous Engineering Flow</Badge>
             <span className="text-gray-500">•</span>
-            <span className="text-gray-400 font-mono">Step {step} of 4</span>
+            <span className="text-gray-400 font-mono">Step {step} of 5</span>
           </div>
           <h1 className="text-lg font-bold text-white tracking-tight">Project Scaffolding & Solution Builder Wizard</h1>
         </div>
@@ -674,7 +691,8 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
             { num: 1, name: 'Tech Stack & Name' },
             { num: 2, name: 'Architecture & Rules' },
             { num: 3, name: 'Scores & Profiles' },
-            { num: 4, name: 'Preview & Generate' },
+            { num: 4, name: 'AI Suggestions' },
+            { num: 5, name: 'Preview & Generate' },
           ].map((s) => (
             <button
               key={s.num}
