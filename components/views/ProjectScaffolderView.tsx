@@ -236,14 +236,28 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
   };
 
   const handleLaunchVSCodeDirectly = () => {
-    const folderName = (window as any).__sf_dirHandleName || selectedFolderName || projectName;
-    alert(
-      `To open the generated solution in VS Code:\n\n` +
-      `1. Open VS Code\n` +
-      `2. File > Open Folder...\n` +
-      `3. Select the folder you chose during export\n\n` +
-      `The generated solution was written to the folder you selected during export.`
-    );
+    // Try to open the folder in VS Code using the stored directory handle
+    const globalWindow = window as unknown as { __sf_dirHandle?: FileSystemDirectoryHandle };
+    const dirHandle = globalWindow.__sf_dirHandle;
+    
+    if (dirHandle) {
+      // Try to open in VS Code using the File System Access API
+      // We need to get the folder path and use vscode:// protocol
+      // Since we can't get the actual path from FileSystemDirectoryHandle,
+      // we'll use the vscode:// protocol with the folder name
+      const folderName = (window as any).__sf_dirHandleName || selectedFolderName || projectName;
+      const vscodeUrl = `vscode://file/${encodeURIComponent(selectedFolderName || folderName)}`;
+      window.open(`vscode://file/${encodeURIComponent(selectedFolderName || folderName)}`, '_blank');
+    } else {
+      // Fallback: show instructions
+      alert(
+        `To open the generated solution in VS Code:\n\n` +
+        `1. Open VS Code\n` +
+        `2. File > Open Folder...\n` +
+        `3. Select the folder you chose during export\n\n` +
+        `The generated solution was written to the folder you selected during export.`
+      );
+    }
   };
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) || templates[0];
@@ -1827,15 +1841,15 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 </Button>
               </div>
 
-{/* Success status with instruction to open in VS Code manually */}
+{/* Success status with launch to VS Code */}
               {directDiskStatus === 'success' && (
                 <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300 flex-wrap gap-2">
                   <span className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
                     Successfully written <strong className="text-white">{writtenFilesCount} files</strong> to <code className="text-emerald-200">&#34;{selectedFolderName}&#34;</code>!
                   </span>
-                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title="Click for instructions on how to open in VS Code" className="shrink-0">
-                    <ExternalLink className="w-3 h-3" aria-hidden="true" /> How to Open in VS Code
+                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title="Open folder in VS Code" className="shrink-0">
+                    <ExternalLink className="w-3 h-3" aria-hidden="true" /> Open in VS Code
                   </Button>
                 </div>
               )}
