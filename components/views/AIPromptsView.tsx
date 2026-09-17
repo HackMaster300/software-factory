@@ -411,9 +411,19 @@ export const AIPromptsView: React.FC = () => {
   };
 
   const handleTestConnection = async (provider: AIProviderConfig) => {
+    console.log('[TestConnection] Sending:', {
+      id: provider.id,
+      name: provider.name,
+      provider: provider.provider,
+      model: provider.model,
+      baseUrl: provider.baseUrl || '(default)',
+      hasKey: !!provider.apiKey,
+      keyPrefix: provider.apiKey ? `${provider.apiKey.slice(0, 7)}…${provider.apiKey.slice(-4)}` : '(none)',
+    });
     setConnectionTests((prev) => ({ ...prev, [provider.id]: { status: 'testing', message: 'Testing…' } }));
     try {
       const result = await AIService.testConnection(provider);
+      console.log('[TestConnection] Result:', result);
       setConnectionTests((prev) => ({
         ...prev,
         [provider.id]: {

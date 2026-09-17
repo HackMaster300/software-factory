@@ -144,6 +144,15 @@ export async function POST(req: NextRequest) {
     // the provider's own display name (sent by the client as providerLabel) in user-facing error
     // text; fall back to the vendor family only when no display name was provided.
     const displayName = (providerLabel as string | undefined)?.trim() || typedProvider;
+    console.log('[AI Generate] Incoming:', {
+      provider: typedProvider,
+      providerLabel: displayName,
+      model: model || '(default)',
+      baseUrl: (baseUrl as string) || '(default)',
+      hasKey: !!(apiKey as string),
+      keyPrefix: (apiKey as string) ? `${(apiKey as string).slice(0, 7)}…${(apiKey as string).slice(-4)}` : '(none)',
+      promptLen: (prompt as string).length,
+    });
 
     if (typedProvider === 'Google Gemini') {
       const resolvedKey = (apiKey as string | undefined) || process.env.GEMINI_API_KEY;
@@ -176,8 +185,10 @@ export async function POST(req: NextRequest) {
     });
 
     if ('error' in built) {
+      console.log('[AI Generate] Build error:', built.error);
       return NextResponse.json({ error: built.error }, { status: 400 });
     }
+    console.log('[AI Generate] Outgoing:', { url: built.url, hasAuth: !!built.headers.Authorization, model: (built.body as Record<string, unknown>).model });
 
     let res: Response;
     try {
