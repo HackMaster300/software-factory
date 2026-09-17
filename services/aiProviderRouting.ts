@@ -123,8 +123,10 @@ export function buildProviderRequest(
             'Azure OpenAI requires a baseUrl (your deployment endpoint, e.g. https://{resource}.openai.azure.com/openai/deployments/{deployment}).',
         };
       }
+      const normalizedBase = stripTrailingSlash(base);
+      const url = normalizedBase.endsWith('/chat/completions') ? normalizedBase : `${normalizedBase}/chat/completions`;
       return {
-        url: `${stripTrailingSlash(base)}/chat/completions`,
+        url,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
