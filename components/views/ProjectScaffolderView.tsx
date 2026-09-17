@@ -201,30 +201,27 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
       setWrittenFilesCount(count);
       setDirectDiskStatus('success');
 
-      // Update localPathInput with the selected folder name so it matches user choice
-      let currentPath = localPathInput.trim();
-      let updatedPath = currentPath;
-
-      if (!currentPath || (!currentPath.includes(':') && !currentPath.startsWith('/'))) {
-        updatedPath = `C:\\Projects\\${folderName}`;
-      } else {
-        const cleanPath = currentPath.replace(/[\\/]+$/, '');
-        const sep = cleanPath.includes('/') ? '/' : '\\';
-        const parts = cleanPath.split(/[\\/]/);
-        if (parts.length > 0) {
-          parts[parts.length - 1] = folderName;
-          updatedPath = parts.join(sep);
-        } else {
-          updatedPath = `C:\\${folderName}`;
-        }
-      }
-      setLocalPathInput(updatedPath);
+      // Store the directory handle for later use (e.g., opening in VS Code)
+      // Note: We can't get the actual path from FileSystemDirectoryHandle for security reasons
+      // Store the handle for potential future use
+      Object.defineProperty(window, '__sf_dirHandle', { value: dirHandle, writable: true, configurable: true });
+      Object.defineProperty(window, '__sf_dirHandleName', { value: folderName, writable: true, configurable: true });
+      
+      // Update localPathInput with the selected folder name
+      setLocalPathInput(`Selected folder: ${folderName} (opened via File System Access API)`);
+      setSelectedFolderName(folderName);
 
       if (autoLaunchVSCode) {
-        const formattedPath = formatVSCodePath(updatedPath);
-        if (formattedPath) {
-          window.open(`vscode://file/${formattedPath}`, '_self');
-        }
+        // Can't reliably open VS Code with FileSystemDirectoryHandle path
+        // Show instructions instead
+        alert(
+          `Files written to "${dirHandle.name}" folder.\\n\\n` +
+          `To open in VS Code:\\n` +
+          `1. Open VS Code\\n` +
+          `2. File > Open Folder...\\n` +
+          `3. Select the folder you just chose\\n\\n` +
+          `Or use the ZIP download option instead.`
+        );
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
@@ -239,15 +236,14 @@ export const ProjectScaffolderView: React.FC<ProjectScaffolderViewProps> = ({
   };
 
   const handleLaunchVSCodeDirectly = () => {
-    let path = localPathInput.trim();
-    if (!path) {
-      path = `C:\\Projects\\${selectedFolderName || projectName}`;
-      setLocalPathInput(path);
-    }
-    const formattedPath = formatVSCodePath(path);
-    if (formattedPath) {
-      window.open(`vscode://file/${formattedPath}`, '_self');
-    }
+    const folderName = (window as any).__sf_dirHandleName || selectedFolderName || projectName;
+    alert(
+      `To open the generated solution in VS Code:\n\n` +
+      `1. Open VS Code\n` +
+      `2. File > Open Folder...\n` +
+      `3. Select the folder you chose during export\n\n` +
+      `The generated solution was written to the folder you selected during export.`
+    );
   };
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId) || templates[0];
@@ -1831,14 +1827,15 @@ Por favor, forneça uma lista detalhada dos pacotes/dependências mais important
                 </Button>
               </div>
 
+{/* Success status with instruction to open in VS Code manually */}
               {directDiskStatus === 'success' && (
-                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300">
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-between font-mono text-[11px] text-emerald-300 flex-wrap gap-2">
                   <span className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
-                    Successfully written <strong className="text-white">{writtenFilesCount} files</strong> to <code className="text-emerald-200">&quot;{selectedFolderName}&quot;</code>!
+                    Successfully written <strong className="text-white">{writtenFilesCount} files</strong> to <code className="text-emerald-200">&#34;{selectedFolderName}&#34;</code>!
                   </span>
-                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title={`Open ${localPathInput} in VS Code`} className="shrink-0">
-                    <ExternalLink className="w-3 h-3" aria-hidden="true" /> Open in VS Code
+                  <Button size="sm" variant="primary" onClick={handleLaunchVSCodeDirectly} title="Click for instructions on how to open in VS Code" className="shrink-0">
+                    <ExternalLink className="w-3 h-3" aria-hidden="true" /> How to Open in VS Code
                   </Button>
                 </div>
               )}
