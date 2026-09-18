@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
+import { ProxyAgent } from 'undici';
 import {
   AIProviderName,
   buildProviderRequest,
@@ -7,6 +8,21 @@ import {
   extractResponseText,
   friendlyProviderErrorMessage,
 } from '../../../../services/aiProviderRouting';
+
+function getProxyDispatcher(targetUrl: string) {
+  const proxy =
+    process.env.HTTPS_PROXY ||
+    process.env.HTTP_PROXY ||
+    process.env.https_proxy ||
+    process.env.http_proxy;
+  if (!proxy) return undefined;
+  if (targetUrl.includes('localhost') || targetUrl.includes('127.0.0.1')) return undefined;
+  try {
+    return new ProxyAgent(proxy);
+  } catch {
+    return undefined;
+  }
+}
 
 const ALLOWED_PROVIDERS: AIProviderName[] = [
   'Google Gemini',
@@ -192,11 +208,14 @@ export async function POST(req: NextRequest) {
 
     let res: Response;
     try {
+      const dispatcher = getProxyDispatcher(built.url);
+      if (dispatcher) console.log('[AI Generate] Using proxy:', process.env.HTTPS_PROXY || process.env.HTTP_PROXY);
       res = await fetch(built.url, {
         method: 'POST',
         headers: built.headers,
         body: JSON.stringify(built.body),
-      });
+        ...(dispatcher ? ({ dispatcher } as unknown as Record<string, unknown>) : {}),
+      } as RequestInit & { dispatcher?: unknown });
     } catch (networkErr) {
       return NextResponse.json(
         { error: friendlyProviderErrorMessage(networkErr, displayName) },
@@ -204,10 +223,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const json = await res.json().catch(() => null);
+    const rawText = await res.text().catch(() => '');
+    let json: unknown = null;
+    try {
+      json = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      json = null;
+    }
+    if (!res.ok && rawText && !json) console.log('[AI Generate] Non-JSON error body:', rawText.slice(0, 1000));
 
     if (!res.ok) {
       const message = extractProviderErrorMessage(json, res.status, res.statusText);
+      if (!json && rawText) console.log('[AI Generate] Fallback message from rawText');
       return NextResponse.json({ error: `${displayName} rejected the request: ${message}` }, { status: res.status });
     }
 
