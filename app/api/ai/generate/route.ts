@@ -210,13 +210,16 @@ export async function POST(req: NextRequest) {
     try {
       const dispatcher = getProxyDispatcher(built.url);
       if (dispatcher) console.log('[AI Generate] Using proxy:', process.env.HTTPS_PROXY || process.env.HTTP_PROXY);
+      else console.log('[AI Generate] No proxy for:', built.url);
       res = await fetch(built.url, {
         method: 'POST',
         headers: built.headers,
         body: JSON.stringify(built.body),
         ...(dispatcher ? ({ dispatcher } as unknown as Record<string, unknown>) : {}),
       } as RequestInit & { dispatcher?: unknown });
+      console.log('[AI Generate] Response:', res.status, res.statusText, 'headers:', Object.fromEntries(res.headers.entries()));
     } catch (networkErr) {
+      console.log('[AI Generate] Network error:', networkErr instanceof Error ? networkErr.message : String(networkErr), 'cause:', (networkErr as Error & { cause?: unknown })?.cause);
       return NextResponse.json(
         { error: friendlyProviderErrorMessage(networkErr, displayName) },
         { status: 502 }
