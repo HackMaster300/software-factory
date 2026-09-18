@@ -206,7 +206,17 @@ export function extractProviderErrorMessage(json: any, status: number, statusTex
   );
 }
 
-const NETWORK_ERROR_CODES = new Set(['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNRESET']);
+const NETWORK_ERROR_CODES = new Set([
+  'ENOTFOUND',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'ECONNRESET',
+  'UNABLE_TO_GET_ISSUER_CERT_LOCALLY',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'CERT_HAS_EXPIRED',
+  'ERR_TLS_CERT_ALTNAME_INVALID',
+]);
 
 /**
  * Node's fetch collapses every low-level connection failure (DNS lookup
@@ -225,6 +235,10 @@ export function isNetworkError(err: unknown): boolean {
 /** Wraps a caught provider-request error into a message that tells network failures apart from provider-side rejections. */
 export function friendlyProviderErrorMessage(err: unknown, providerName: string): string {
   const message = err instanceof Error ? err.message : String(err);
+  const code = (err as Error & { cause?: { code?: string } })?.cause?.code;
+  if (code === 'UNABLE_TO_GET_ISSUER_CERT_LOCALLY' || code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+    return `${providerName} — proxy corporativo interceptou TLS e o Node não confia no CA corporativo. Para dev: feche o next dev e rode com $env:NODE_TLS_REJECT_UNAUTHORIZED="0"; npm run dev (inseguro, só dev). Para prod: configure NODE_EXTRA_CA_CERTS com o CA corporativo. Detalhe: ${message} (cause: ${code})`;
+  }
   if (isNetworkError(err)) {
     return `Could not reach ${providerName} — check your network/internet connection (no outbound access from a sandboxed environment counts as this too).`;
   }
