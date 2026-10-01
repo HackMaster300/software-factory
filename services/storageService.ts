@@ -75,6 +75,10 @@ const STORAGE_KEYS = {
   PLUGINS: 'sf_plugins_v2',
 };
 
+/** sessionStorage key for session-only (non-persisted) AI provider API keys, by provider id. */
+const SESSION_API_KEYS = 'sf_ai_provider_session_keys_v1';
+let providersSnapshot: { base: AIProviderConfig[]; sessionRaw: string | null; merged: AIProviderConfig[] } | null = null;
+
 type StorageListener = () => void;
 const listeners = new Set<StorageListener>();
 
@@ -393,11 +397,53 @@ export class StorageService {
   }
 
   static getAIProviders(): AIProviderConfig[] {
-    return getItem(STORAGE_KEYS.AI_PROVIDERS, initialAIProviders);
+    const base = getItem(STORAGE_KEYS.AI_PROVIDERS, initialAIProviders);
+    if (typeof window === 'undefined') return base;
+    let sessionRaw: string | null = null;
+    try {
+      sessionRaw = window.sessionStorage.getItem(SESSION_API_KEYS);
+    } catch {
+      sessionRaw = null;
+    }
+    // Stable reference for useSyncExternalStore: only re-merge when either source changed.
+    if (providersSnapshot && providersSnapshot.base === base && providersSnapshot.sessionRaw === sessionRaw) {
+      return providersSnapshot.merged;
+    }
+    let sessionKeys: Record<string, string> = {};
+    try {
+      sessionKeys = sessionRaw ? (JSON.parse(sessionRaw) as Record<string, string>) : {};
+    } catch {
+      sessionKeys = {};
+    }
+    const needsMerge = base.some((p) => p.persistKey === false && sessionKeys[p.id]);
+    const merged = needsMerge
+      ? base.map((p) => (p.persistKey === false && sessionKeys[p.id] ? { ...p, apiKey: sessionKeys[p.id] } : p))
+      : base;
+    providersSnapshot = { base, sessionRaw, merged };
+    return merged;
   }
 
+  /**
+   * Providers with `persistKey: false` have their apiKey stripped from the
+   * localStorage payload and kept only in sessionStorage (session-only key).
+   */
   static saveAIProviders(providers: AIProviderConfig[]): void {
-    setItem(STORAGE_KEYS.AI_PROVIDERS, providers);
+    const sessionKeys: Record<string, string> = {};
+    const persisted = providers.map((p) => {
+      if (p.persistKey !== false) return p;
+      if (p.apiKey) sessionKeys[p.id] = p.apiKey;
+      const { apiKey: _sessionOnly, ...rest } = p;
+      return rest;
+    });
+    if (typeof window !== 'undefined') {
+      try {
+        if (Object.keys(sessionKeys).length) window.sessionStorage.setItem(SESSION_API_KEYS, JSON.stringify(sessionKeys));
+        else window.sessionStorage.removeItem(SESSION_API_KEYS);
+      } catch (err) {
+        console.error('Error writing session-only API keys to sessionStorage', err);
+      }
+    }
+    setItem(STORAGE_KEYS.AI_PROVIDERS, persisted);
   }
 
   static getPromptTemplates(): PromptTemplate[] {

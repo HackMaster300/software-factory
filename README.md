@@ -128,6 +128,19 @@ cloud-metadata addresses. To use a local/LAN endpoint (e.g. Ollama), opt in expl
 `AI_PRIVATE_HOST_ALLOWLIST=localhost,127.0.0.1`. Verbose AI request logging is off by default;
 enable with `AI_DEBUG_LOGS=1` (server) / `NEXT_PUBLIC_AI_DEBUG_LOGS=1` (browser).
 
+**API keys at rest.** Provider keys saved through `POST /api/v1/ai-providers` are encrypted in
+SQLite (`ai_providers.api_key`) with AES-256-GCM (`lib/secret-crypto.ts`, stored as
+`enc:v1:<iv>:<tag>:<ciphertext>`). Set `SF_ENCRYPTION_KEY` to 32 random bytes (64 hex chars or
+base64), e.g. `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+In production (`NODE_ENV=production`) saving a key without `SF_ENCRYPTION_KEY` fails with a clear
+error; in development keys are stored in plaintext with a warning. Existing plaintext rows are
+encrypted automatically the first time the database is opened with a key configured. Keep the
+key stable and backed up — losing it makes the stored provider keys unreadable (re-enter them).
+
+**API keys in the browser.** Keys entered in *AI Prompts › Providers* live in this browser's
+localStorage by default. Untick *Remember this key in this browser* to make a key session-only
+(kept in sessionStorage, cleared when the tab closes, never written to localStorage).
+
 ## Licença
 
 MIT

@@ -39,3 +39,34 @@ describe('StorageService array persistence', () => {
     expect(Array.isArray(stacks)).toBe(true);
   });
 });
+
+describe('StorageService session-only AI provider keys', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+
+  it('keeps persistKey:false keys out of localStorage but returns them for this session', () => {
+    const base = StorageService.getAIProviders();
+    const [first, second] = base;
+    StorageService.saveAIProviders([
+      { ...first, apiKey: 'SESSION-ONLY-KEY', persistKey: false },
+      { ...second, apiKey: 'PERSISTED-KEY' },
+      ...base.slice(2),
+    ]);
+
+    const local = window.localStorage.getItem('sf_ai_providers_v2') || '';
+    expect(local).not.toContain('SESSION-ONLY-KEY');
+    expect(local).toContain('PERSISTED-KEY');
+
+    const reread = StorageService.getAIProviders();
+    expect(reread[0].apiKey).toBe('SESSION-ONLY-KEY');
+    expect(reread[1].apiKey).toBe('PERSISTED-KEY');
+    // stable snapshot for useSyncExternalStore
+    expect(StorageService.getAIProviders()).toBe(reread);
+
+    // closing the tab clears sessionStorage -> the key is gone
+    window.sessionStorage.clear();
+    expect(StorageService.getAIProviders()[0].apiKey).toBeUndefined();
+  });
+});

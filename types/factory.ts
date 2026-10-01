@@ -278,6 +278,11 @@ export interface AIProviderConfig {
    * most one provider should have this set to true at a time.
    */
   isActiveDefault?: boolean;
+  /**
+   * `false` = session-only key: kept in sessionStorage (cleared when the tab/browser closes)
+   * and never written to localStorage. Omitted/`true` keeps the legacy behaviour (persisted).
+   */
+  persistKey?: boolean;
 }
 
 export interface PromptTemplate {

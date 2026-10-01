@@ -148,6 +148,7 @@ export const AIPromptsView: React.FC = () => {
   const [providerCost, setProviderCost] = useState<string>('$0.00015');
   const [providerLatency, setProviderLatency] = useState<string>('180ms');
   const [providerApiKey, setProviderApiKey] = useState<string>('');
+  const [providerPersistKey, setProviderPersistKey] = useState<boolean>(true);
   const [providerBaseUrl, setProviderBaseUrl] = useState<string>('');
 
   // Dynamically extract variables from prompt text
@@ -334,6 +335,7 @@ export const AIPromptsView: React.FC = () => {
     setProviderCost('$0.00015');
     setProviderLatency('180ms');
     setProviderApiKey('');
+    setProviderPersistKey(true);
     setProviderBaseUrl('');
     setIsProviderModalOpen(true);
   };
@@ -346,6 +348,7 @@ export const AIPromptsView: React.FC = () => {
     setProviderCost('$0.0000');
     setProviderLatency('250ms');
     setProviderApiKey('');
+    setProviderPersistKey(true);
     setProviderBaseUrl(preset.baseUrl);
     setIsProviderModalOpen(true);
   };
@@ -358,6 +361,7 @@ export const AIPromptsView: React.FC = () => {
     setProviderCost(pr.costPer1k);
     setProviderLatency(pr.latency);
     setProviderApiKey(pr.apiKey || '');
+    setProviderPersistKey(pr.persistKey !== false);
     setProviderBaseUrl(pr.baseUrl || '');
     setIsProviderModalOpen(true);
   };
@@ -380,6 +384,7 @@ export const AIPromptsView: React.FC = () => {
       apiKey: providerApiKey.trim() || undefined,
       baseUrl: providerBaseUrl.trim() || undefined,
       isActiveDefault: editingProvider ? editingProvider.isActiveDefault : false,
+      ...(providerPersistKey ? {} : { persistKey: false }),
     };
 
     let updated: AIProviderConfig[];
@@ -996,7 +1001,7 @@ export const AIPromptsView: React.FC = () => {
                         {provider.provider === 'Ollama' ? (
                           <span>Base URL: <span className="text-gray-200">{provider.baseUrl || 'http://localhost:11434 (default)'}</span></span>
                         ) : (
-                          <span>API Key: <span className="text-gray-200">{provider.apiKey ? '•••• configured' : 'not set'}</span></span>
+                          <span>API Key: <span className="text-gray-200">{provider.apiKey ? (provider.persistKey === false ? '•••• session only' : '•••• configured') : provider.persistKey === false ? 'not set (session only)' : 'not set'}</span></span>
                         )}
                       </div>
                       {provider.provider !== 'Ollama' && provider.baseUrl && (
@@ -1348,6 +1353,21 @@ export const AIPromptsView: React.FC = () => {
                     data-1p-ignore="true"
                     className="font-mono"
                   />
+                  <label className="flex items-start gap-2 mt-2 text-[10.5px] text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={providerPersistKey}
+                      onChange={(e) => setProviderPersistKey(e.target.checked)}
+                      className="mt-0.5"
+                      aria-describedby="sf-ai-provider-persist-hint"
+                    />
+                    <span>
+                      Remember this key in this browser (localStorage)
+                      <span id="sf-ai-provider-persist-hint" className="block text-gray-500">
+                        Uncheck for a session-only key: kept in sessionStorage and cleared when the tab is closed.
+                      </span>
+                    </span>
+                  </label>
                   {providerVendor === 'Azure OpenAI' && (
                     <div className="mt-2">
                       <label className="text-[10px] text-gray-400 block mb-1">
