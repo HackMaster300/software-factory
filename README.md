@@ -19,6 +19,13 @@ View your app in AI Studio: https://ai.studio/apps/de11f175-ff9f-442a-825b-5ccbb
 3. Run the app:
    `npm run dev`
 
+## API auth (optional)
+
+Set `API_TOKEN` on the server to require `Authorization: Bearer <token>` on every `/api/*` route
+(enforced in `middleware.ts`; `GET /api/v1/health` stays public). The UI sends the token from
+`localStorage["sf.apiToken"]` or, if set at build time, `NEXT_PUBLIC_API_TOKEN` — note the latter
+is visible to anyone who can load the UI. Unset `API_TOKEN` = open API (solo/local use).
+
 ---
 
 Developed by zharak
