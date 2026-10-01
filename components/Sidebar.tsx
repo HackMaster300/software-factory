@@ -135,6 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isO
           <div className="text-[10px] text-gray-400 font-mono">
             Ready for REST API Handshake
           </div>
+          <div className="text-[10px] text-gray-500">Developed by zharak</div>
         </div>
       </aside>
     </>
