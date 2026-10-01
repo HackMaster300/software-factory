@@ -1,4 +1,5 @@
 import type { Organization } from '../../../types/factory';
+import { apiAuthHeaders } from '../../../lib/client-auth';
 
 /**
  * Phase 8-full — API repository (async) para Organizations.
@@ -15,7 +16,7 @@ export interface IOrganizationRepositoryAsync {
 
 export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
   async getOrganizations(): Promise<Organization[]> {
-    const res = await fetch('/api/v1/organizations');
+    const res = await fetch('/api/v1/organizations', { headers: apiAuthHeaders() });
     if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
     const { data } = (await res.json()) as { data: Organization[] };
     return data;
@@ -24,7 +25,7 @@ export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
   async createOrganization(input: Omit<Organization, 'id'> & { id?: string }): Promise<Organization> {
     const res = await fetch('/api/v1/organizations', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...apiAuthHeaders() },
       body: JSON.stringify(input),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
@@ -35,7 +36,7 @@ export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
   async updateOrganization(id: string, input: Omit<Organization, 'id'>): Promise<Organization> {
     const res = await fetch(`/api/v1/organizations/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...apiAuthHeaders() },
       body: JSON.stringify(input),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
@@ -44,7 +45,7 @@ export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
   }
 
   async deleteOrganization(id: string): Promise<void> {
-    const res = await fetch(`/api/v1/organizations/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/v1/organizations/${id}`, { method: 'DELETE', headers: apiAuthHeaders() });
     if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
   }
 }

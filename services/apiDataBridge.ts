@@ -1,6 +1,7 @@
 import { Organization, Workspace } from '../types/factory';
 import { apiOrganizationRepository } from './repositories/api/organization.repository';
 import { apiWorkspaceRepository } from './repositories/api/workspace.repository';
+import { showToast } from '../hooks/use-toasts';
 
 /**
  * Phase 22 (going-home): liga de facto o seam assíncrono (Phase 8) que
@@ -88,66 +89,92 @@ export function getWorkspacesBridged(notify: NotifyFn, fallback: Workspace[]): W
  * Reconcilia a lista completa recebida de saveOrganizations(novaLista)
  * com a cache atual: cria o que é novo, atualiza o que mudou, apaga o
  * que desapareceu. Atualiza a cache de forma otimista (antes da API
- * responder) para a UI continuar instantânea; se uma chamada falhar,
- * fica registado em consola e a próxima leitura da API corrige o
- * estado (não há rollback automático nesta primeira versão).
+ * responder) para a UI continuar instantânea. Se alguma chamada falhar,
+ * a cache é reposta a partir da API (fonte de verdade) — ou, se nem isso
+ * for possível, volta à lista anterior — e o utilizador é avisado por toast.
  */
-export function saveOrganizationsBridged(newList: Organization[], notify: NotifyFn): void {
+function syncListWithApi<T extends { id: string }>(
+  label: string,
+  previous: T[],
+  newList: T[],
+  ops: {
+    create: (item: T) => Promise<unknown>;
+    update: (item: T) => Promise<unknown>;
+    remove: (id: string) => Promise<unknown>;
+    reload: () => Promise<T[]>;
+    setCache: (list: T[]) => void;
+  },
+  notify: NotifyFn
+): Promise<void> {
+  const newIds = new Set(newList.map((item) => item.id));
+  const calls: Promise<unknown>[] = [];
+
+  for (const item of newList) {
+    const before = previous.find((p) => p.id === item.id);
+    if (!before) calls.push(ops.create(item));
+    else if (JSON.stringify(before) !== JSON.stringify(item)) calls.push(ops.update(item));
+  }
+  for (const item of previous) {
+    if (!newIds.has(item.id)) calls.push(ops.remove(item.id));
+  }
+
+  return Promise.allSettled(calls).then(async (results) => {
+    const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    if (failures.length === 0) return;
+
+    console.error(`Falha ao sincronizar ${label} com a API:`, failures.map((f) => f.reason));
+    try {
+      ops.setCache(await ops.reload());
+    } catch {
+      ops.setCache(previous);
+    }
+    notify();
+    showToast(`Não foi possível guardar ${label} no servidor — as alterações foram revertidas.`);
+  });
+}
+
+export function saveOrganizationsBridged(newList: Organization[], notify: NotifyFn): Promise<void> {
   const previous = organizationsCache ?? [];
   organizationsCache = newList;
   notify();
 
-  const previousIds = new Set(previous.map((o) => o.id));
-  const newIds = new Set(newList.map((o) => o.id));
-
-  for (const org of newList) {
-    const before = previous.find((o) => o.id === org.id);
-    if (!before) {
-      apiOrganizationRepository
-        .createOrganization(org)
-        .catch((err) => console.error(`Falha ao criar organization ${org.id} na API:`, err));
-    } else if (JSON.stringify(before) !== JSON.stringify(org)) {
-      apiOrganizationRepository
-        .updateOrganization(org.id, org)
-        .catch((err) => console.error(`Falha ao atualizar organization ${org.id} na API:`, err));
-    }
-  }
-  for (const org of previous) {
-    if (!newIds.has(org.id)) {
-      apiOrganizationRepository
-        .deleteOrganization(org.id)
-        .catch((err) => console.error(`Falha ao apagar organization ${org.id} na API:`, err));
-    }
-  }
-  void previousIds;
+  return syncListWithApi(
+    'organizations',
+    previous,
+    newList,
+    {
+      create: (org) => apiOrganizationRepository.createOrganization(org),
+      update: (org) => apiOrganizationRepository.updateOrganization(org.id, org),
+      remove: (id) => apiOrganizationRepository.deleteOrganization(id),
+      reload: () => apiOrganizationRepository.getOrganizations(),
+      setCache: (list) => {
+        organizationsCache = list;
+      },
+    },
+    notify
+  );
 }
 
-export function saveWorkspacesBridged(newList: Workspace[], notify: NotifyFn): void {
+export function saveWorkspacesBridged(newList: Workspace[], notify: NotifyFn): Promise<void> {
   const previous = workspacesCache ?? [];
   workspacesCache = newList;
   notify();
 
-  const newIds = new Set(newList.map((w) => w.id));
-
-  for (const ws of newList) {
-    const before = previous.find((w) => w.id === ws.id);
-    if (!before) {
-      apiWorkspaceRepository
-        .createWorkspace(ws)
-        .catch((err) => console.error(`Falha ao criar workspace ${ws.id} na API:`, err));
-    } else if (JSON.stringify(before) !== JSON.stringify(ws)) {
-      apiWorkspaceRepository
-        .updateWorkspace(ws.id, ws)
-        .catch((err) => console.error(`Falha ao atualizar workspace ${ws.id} na API:`, err));
-    }
-  }
-  for (const ws of previous) {
-    if (!newIds.has(ws.id)) {
-      apiWorkspaceRepository
-        .deleteWorkspace(ws.id)
-        .catch((err) => console.error(`Falha ao apagar workspace ${ws.id} na API:`, err));
-    }
-  }
+  return syncListWithApi(
+    'workspaces',
+    previous,
+    newList,
+    {
+      create: (ws) => apiWorkspaceRepository.createWorkspace(ws),
+      update: (ws) => apiWorkspaceRepository.updateWorkspace(ws.id, ws),
+      remove: (id) => apiWorkspaceRepository.deleteWorkspace(id),
+      reload: () => apiWorkspaceRepository.getWorkspaces(),
+      setCache: (list) => {
+        workspacesCache = list;
+      },
+    },
+    notify
+  );
 }
 
 /** Só para testes: repõe as caches em memória entre casos de teste. */

@@ -7,11 +7,12 @@
 
 import type { Organization, Workspace } from '../types/factory';
 import type { RedactedProvider } from './api-validation';
+import { apiAuthHeaders } from './client-auth';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...apiAuthHeaders(), ...(init?.headers || {}) },
   });
   const data = await res.json().catch(() => ({}) as Record<string, unknown>);
   if (!res.ok || (data as { error?: string }).error) {

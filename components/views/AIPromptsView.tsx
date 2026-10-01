@@ -33,6 +33,7 @@ import { AIProviderConfig, PromptTemplate, AIAgent } from '../../types/factory';
 import { StorageService, useAIAgents, useAIProviders } from '../../services/storageService';
 import { aiAgentRepository, aiProviderRepository } from '../../services/repositories';
 import { AIService } from '../../services/aiService';
+import { aiDebug } from '../../lib/debug-log';
 import { DEFAULT_BASE_URLS, getVendorDisplayLabel } from '../../services/aiProviderRouting';
 import { buildGroundedPrompt, getGroundedSystemInstruction } from '../../lib/ai-grounding';
 import { Card } from '../ui/Card';
@@ -411,19 +412,18 @@ export const AIPromptsView: React.FC = () => {
   };
 
   const handleTestConnection = async (provider: AIProviderConfig) => {
-    console.log('[TestConnection] Sending:', {
+    aiDebug('[TestConnection] Sending:', {
       id: provider.id,
       name: provider.name,
       provider: provider.provider,
       model: provider.model,
       baseUrl: provider.baseUrl || '(default)',
       hasKey: !!provider.apiKey,
-      keyPrefix: provider.apiKey ? `${provider.apiKey.slice(0, 7)}…${provider.apiKey.slice(-4)}` : '(none)',
     });
     setConnectionTests((prev) => ({ ...prev, [provider.id]: { status: 'testing', message: 'Testing…' } }));
     try {
       const result = await AIService.testConnection(provider);
-      console.log('[TestConnection] Result:', result);
+      aiDebug('[TestConnection] Result:', result);
       setConnectionTests((prev) => ({
         ...prev,
         [provider.id]: {

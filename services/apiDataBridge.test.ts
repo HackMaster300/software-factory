@@ -167,4 +167,43 @@ describe('apiDataBridge', () => {
     expect(fetchMock.mock.calls[1][0]).toBe(`/api/v1/workspaces/${sampleWs.id}`);
     expect(fetchMock.mock.calls[1][1].method).toBe('DELETE');
   });
+
+  it('reverte a cache para o estado do servidor e avisa quando uma escrita falha', async () => {
+    const showToast = vi.fn();
+    vi.doMock('../hooks/use-toasts', () => ({ showToast }));
+    const { getOrganizationsBridged, saveOrganizationsBridged, __resetBridgeCachesForTests } = await import('./apiDataBridge');
+    __resetBridgeCachesForTests();
+    const notify = vi.fn();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: [sampleOrg] }));
+    getOrganizationsBridged(notify, []);
+    await vi.waitFor(() => expect(getOrganizationsBridged(notify, [])).toEqual([sampleOrg]));
+
+    const renamed = { ...sampleOrg, name: 'Acme 2' };
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ error: 'boom' }, 500)) // PATCH falha
+      .mockResolvedValueOnce(jsonResponse({ data: [sampleOrg] })); // reload do servidor
+    await saveOrganizationsBridged([renamed], notify);
+
+    expect(getOrganizationsBridged(notify, [])).toEqual([sampleOrg]);
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining('revertidas'));
+    vi.doUnmock('../hooks/use-toasts');
+  });
+
+  it('volta à lista anterior se a escrita e o reload falharem', async () => {
+    const { getOrganizationsBridged, saveOrganizationsBridged, __resetBridgeCachesForTests } = await import('./apiDataBridge');
+    __resetBridgeCachesForTests();
+    const notify = vi.fn();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: [sampleOrg] }));
+    getOrganizationsBridged(notify, []);
+    await vi.waitFor(() => expect(getOrganizationsBridged(notify, [])).toEqual([sampleOrg]));
+
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ error: 'boom' }, 500)) // DELETE falha
+      .mockRejectedValueOnce(new Error('offline')); // reload falha
+    await saveOrganizationsBridged([], notify);
+
+    expect(getOrganizationsBridged(notify, [])).toEqual([sampleOrg]);
+  });
 });

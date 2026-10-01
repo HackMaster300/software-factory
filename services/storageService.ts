@@ -259,7 +259,7 @@ export class StorageService {
 
   static saveOrganizations(organizations: Organization[]): void {
     if (API_DATA_SOURCE_ENABLED) {
-      saveOrganizationsBridged(organizations, notifyStorageChange);
+      void saveOrganizationsBridged(organizations, notifyStorageChange);
       return;
     }
     setItem(STORAGE_KEYS.ORGANIZATIONS, organizations);
@@ -274,7 +274,7 @@ export class StorageService {
 
   static saveWorkspaces(workspaces: Workspace[]): void {
     if (API_DATA_SOURCE_ENABLED) {
-      saveWorkspacesBridged(workspaces, notifyStorageChange);
+      void saveWorkspacesBridged(workspaces, notifyStorageChange);
       return;
     }
     setItem(STORAGE_KEYS.WORKSPACES, workspaces);

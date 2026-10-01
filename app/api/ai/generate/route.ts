@@ -1,6 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
-import { ProxyAgent } from 'undici';
+import { Agent, ProxyAgent } from 'undici';
+import { aiDebug } from '../../../../lib/debug-log';
+import { assertSafeOutboundUrl, createGuardedLookup, SsrfBlockedError } from '../../../../lib/ssrf';
 import {
   AIProviderName,
   buildProviderRequest,
@@ -22,6 +24,16 @@ function getProxyDispatcher(targetUrl: string) {
   } catch {
     return undefined;
   }
+}
+
+// Direct (non-proxied) connections re-validate every resolved address at
+// connect time, so a DNS-rebinding answer can't slip past the pre-check.
+let guardedAgent: Agent | undefined;
+function getGuardedAgent(): Agent {
+  if (!guardedAgent) {
+    guardedAgent = new Agent({ connect: { lookup: createGuardedLookup() as never } });
+  }
+  return guardedAgent;
 }
 
 const ALLOWED_PROVIDERS: AIProviderName[] = [
@@ -56,14 +68,7 @@ async function callGemini(
   prompt: string,
   systemInstruction: string
 ): Promise<{ text: string; isSimulated: boolean }> {
-  const ai = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
+  const ai = new GoogleGenAI({ apiKey });
 
   const primaryModel = model || GEMINI_PRIMARY_MODEL;
 
@@ -160,13 +165,12 @@ export async function POST(req: NextRequest) {
     // the provider's own display name (sent by the client as providerLabel) in user-facing error
     // text; fall back to the vendor family only when no display name was provided.
     const displayName = (providerLabel as string | undefined)?.trim() || typedProvider;
-    console.log('[AI Generate] Incoming:', {
+    aiDebug('[AI Generate] Incoming:', {
       provider: typedProvider,
       providerLabel: displayName,
       model: model || '(default)',
       baseUrl: (baseUrl as string) || '(default)',
       hasKey: !!(apiKey as string),
-      keyPrefix: (apiKey as string) ? `${(apiKey as string).slice(0, 7)}…${(apiKey as string).slice(-4)}` : '(none)',
       promptLen: (prompt as string).length,
     });
 
@@ -201,25 +205,44 @@ export async function POST(req: NextRequest) {
     });
 
     if ('error' in built) {
-      console.log('[AI Generate] Build error:', built.error);
+      aiDebug('[AI Generate] Build error:', built.error);
       return NextResponse.json({ error: built.error }, { status: 400 });
     }
-    console.log('[AI Generate] Outgoing:', { url: built.url, hasAuth: !!built.headers.Authorization, model: (built.body as Record<string, unknown>).model });
+    aiDebug('[AI Generate] Outgoing:', { url: built.url, hasAuth: !!built.headers.Authorization, model: (built.body as Record<string, unknown>).model });
+
+    // SSRF guard: a user-supplied baseUrl (or Ollama's localhost default) is
+    // resolved and refused if it lands on a private/loopback/link-local/
+    // metadata address, unless explicitly allowlisted (AI_PRIVATE_HOST_ALLOWLIST).
+    const userControlledTarget = !!(baseUrl as string | undefined)?.trim() || typedProvider === 'Ollama';
+    if (userControlledTarget) {
+      try {
+        await assertSafeOutboundUrl(built.url);
+      } catch (err) {
+        if (err instanceof SsrfBlockedError) {
+          return NextResponse.json({ error: err.message }, { status: 400 });
+        }
+        throw err;
+      }
+    }
 
     let res: Response;
     try {
-      const dispatcher = getProxyDispatcher(built.url);
-      if (dispatcher) console.log('[AI Generate] Using proxy:', process.env.HTTPS_PROXY || process.env.HTTP_PROXY);
-      else console.log('[AI Generate] No proxy for:', built.url);
+      const dispatcher = getProxyDispatcher(built.url) ?? (userControlledTarget ? getGuardedAgent() : undefined);
+      aiDebug('[AI Generate] Dispatch:', dispatcher instanceof ProxyAgent ? 'via proxy' : 'direct', built.url);
       res = await fetch(built.url, {
         method: 'POST',
         headers: built.headers,
         body: JSON.stringify(built.body),
+        redirect: 'error',
         ...(dispatcher ? ({ dispatcher } as unknown as Record<string, unknown>) : {}),
       } as RequestInit & { dispatcher?: unknown });
-      console.log('[AI Generate] Response:', res.status, res.statusText, 'headers:', Object.fromEntries(res.headers.entries()));
+      aiDebug('[AI Generate] Response:', res.status, res.statusText);
     } catch (networkErr) {
-      console.log('[AI Generate] Network error:', networkErr instanceof Error ? networkErr.message : String(networkErr), 'cause:', (networkErr as Error & { cause?: unknown })?.cause);
+      console.warn(
+        '[AI Generate] Network error:',
+        networkErr instanceof Error ? networkErr.message : String(networkErr),
+        (networkErr as Error & { cause?: { code?: string } })?.cause?.code ?? ''
+      );
       return NextResponse.json(
         { error: friendlyProviderErrorMessage(networkErr, displayName) },
         { status: 502 }
@@ -233,11 +256,10 @@ export async function POST(req: NextRequest) {
     } catch {
       json = null;
     }
-    if (!res.ok && rawText && !json) console.log('[AI Generate] Non-JSON error body:', rawText.slice(0, 1000));
+    if (!res.ok && rawText && !json) aiDebug('[AI Generate] Non-JSON error body:', rawText.slice(0, 1000));
 
     if (!res.ok) {
       const message = extractProviderErrorMessage(json, res.status, res.statusText);
-      if (!json && rawText) console.log('[AI Generate] Fallback message from rawText');
       return NextResponse.json({ error: `${displayName} rejected the request: ${message}` }, { status: res.status });
     }
 

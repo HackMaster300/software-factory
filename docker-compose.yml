@@ -10,25 +10,29 @@ services:
       # Para simulação real com SSMS, o serviço `mssql` abaixo sobe SQL Server 2022;
       # a factory continua em SQLite até `npm i mssql` + `lib/sql.ts` plugado no driver.
       SQLITE_PATH: /app/data/factory.db
-      # Connection strings de exemplo (usadas quando o driver real for plugado):
-      DATABASE_URL: postgresql://factory:factory@db:5432/factory
+      # Connection strings de exemplo (usadas quando o driver real for plugado).
+      # DATABASE_URL só faz sentido com o serviço `db` (Postgres) descomentado abaixo:
+      # DATABASE_URL: postgresql://factory:factory@db:5432/factory
       # Dentro da rede Docker, o container do mssql escuta sempre na porta
       # interna 1433 — o "1434:1433" nos `ports:` do serviço mssql só vale
       # para acesso a partir do host (ex: SSMS), nunca entre containers.
       MSSQL_CONNECTION_STRING: "Server=mssql,1433;Database=factory;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Factory123!};TrustServerCertificate=True;"
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Opcional: exige Bearer token em /api/* (ver README › Security configuration).
+      API_TOKEN: ${API_TOKEN:-}
+      AI_PRIVATE_HOST_ALLOWLIST: ${AI_PRIVATE_HOST_ALLOWLIST:-}
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Factory123!}
     volumes:
       - appdata:/app/data
-    depends_on:
-      mssql:
-        condition: service_healthy
+    # Sem depends_on: a factory corre em SQLite e não precisa do mssql para arrancar.
     restart: unless-stopped
 
   # SQL Server 2022 — para simulação real local com SSMS (Windows).
   # Imagem já em cache neste runner (mssql/server:2022-latest).
   # Schema T-SQL em db/schema-mssql.sql é aplicado automaticamente no primeiro start.
+  # Opcional (profile): só sobe com `docker compose --profile mssql up`.
   mssql:
+    profiles: ["mssql"]
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"

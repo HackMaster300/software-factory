@@ -116,6 +116,22 @@ Revisões de código já encontraram e corrigiram, entre outros:
 
 Em desenvolvimento ativo, por ciclos de revisão/melhoria — ver `PLAN.md` (plano de realinhamento em curso, por fases) e `GOING_HOME_REPORT.md` (histórico detalhado de cada sessão de trabalho) para o estado mais aprofundado.
 
+## Configuração de segurança (opcional)
+
+Set `API_TOKEN` on the server to require `Authorization: Bearer <token>` on every `/api/*` route
+(enforced in `middleware.ts`; `GET /api/v1/health` stays public). The UI sends the token from
+`localStorage["sf.apiToken"]` or, if set at build time, `NEXT_PUBLIC_API_TOKEN` — note the latter
+is visible to anyone who can load the UI. Unset `API_TOKEN` = open API (solo/local use).
+
+`/api/ai/generate` refuses custom `baseUrl`s that resolve to private, loopback, link-local or
+cloud-metadata addresses. To use a local/LAN endpoint (e.g. Ollama), opt in explicitly:
+`AI_PRIVATE_HOST_ALLOWLIST=localhost,127.0.0.1`. Verbose AI request logging is off by default;
+enable with `AI_DEBUG_LOGS=1` (server) / `NEXT_PUBLIC_AI_DEBUG_LOGS=1` (browser).
+
 ## Licença
 
 MIT
+
+---
+
+Developed by zharak

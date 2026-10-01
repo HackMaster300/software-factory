@@ -1,5 +1,6 @@
 import { AIProviderConfig } from '../types/factory';
 import { aiProviderRepository } from './repositories/aiProvider.repository';
+import { apiAuthHeaders } from '../lib/client-auth';
 
 export interface AIGenerateResult {
   text: string;
@@ -33,7 +34,7 @@ export class AIService {
 
     const response = await fetch('/api/ai/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...apiAuthHeaders() },
       body: JSON.stringify({
         prompt,
         role,
@@ -70,7 +71,7 @@ export class AIService {
     try {
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...apiAuthHeaders() },
         body: JSON.stringify({
           prompt: 'Reply with the single word: OK',
           role: 'Connection Test',
