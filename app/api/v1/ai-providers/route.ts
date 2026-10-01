@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../../../../lib/sql';
+import { encryptSecret, InvalidEncryptionKeyError, MissingEncryptionKeyError } from '../../../../lib/secret-crypto';
 import {
   redactProvider,
   validateProviderUpsert,
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest) {
 
     const v = parsed.value;
     const id = v.id || randomUUID();
+    // Encrypted at rest (AES-256-GCM); throws in production without SF_ENCRYPTION_KEY.
+    const storedKey = encryptSecret(v.apiKey ?? null);
     const db = getDb();
 
     if (v.isActiveDefault) {
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
          api_key=COALESCE(?, api_key), base_url=?, is_active_default=? WHERE id=?`
       ).run(
         v.name, v.model, v.provider, v.status || 'configured', v.costPer1k || 'n/a',
-        v.latency || 'n/a', v.apiKey ?? null, v.baseUrl ?? null, v.isActiveDefault ? 1 : 0, id
+        v.latency || 'n/a', storedKey, v.baseUrl ?? null, v.isActiveDefault ? 1 : 0, id
       );
     } else {
       db.prepare(
@@ -59,13 +62,17 @@ export async function POST(req: NextRequest) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         id, v.name, v.model, v.provider, v.status || 'configured', v.costPer1k || 'n/a',
-        v.latency || 'n/a', v.apiKey ?? null, v.baseUrl ?? null, v.isActiveDefault ? 1 : 0
+        v.latency || 'n/a', storedKey, v.baseUrl ?? null, v.isActiveDefault ? 1 : 0
       );
     }
 
     const row = db.prepare(`SELECT ${PUBLIC_COLUMNS} FROM ai_providers WHERE id = ?`).get(id) as ProviderRow;
     return NextResponse.json({ data: redactProvider(row) }, { status: existing ? 200 : 201 });
   } catch (err) {
+    if (err instanceof MissingEncryptionKeyError || err instanceof InvalidEncryptionKeyError) {
+      console.error('POST /api/v1/ai-providers: encryption misconfigured:', err.message);
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
     console.error('POST /api/v1/ai-providers failed:', err);
     return NextResponse.json({ error: 'Database unavailable. Check server logs.' }, { status: 500 });
   }

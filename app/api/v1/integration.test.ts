@@ -91,6 +91,43 @@ describe('API v1 integration (SQLite isolado, sem rede)', () => {
     expect(JSON.stringify(list)).not.toContain('SECRET');
   });
 
+  it('ai-providers: api_key is encrypted at rest and legacy plaintext rows are migrated on open', async () => {
+    const dbPath = process.env.SQLITE_PATH!;
+    process.env.SF_ENCRYPTION_KEY = 'a'.repeat(64);
+    try {
+      // Legacy row written before encryption existed (plaintext).
+      const { DatabaseSync } = await import('node:sqlite');
+      const { getDb } = await import('../../../lib/sql');
+      getDb(); // creates schema
+      const raw = new DatabaseSync(dbPath);
+      raw.prepare(
+        "INSERT INTO ai_providers (id, name, model, provider, api_key) VALUES ('legacy', 'L', 'm', 'OpenAI', 'PLAIN-LEGACY')"
+      ).run();
+      raw.close();
+
+      vi.resetModules(); // new singleton -> migration runs on open
+      const route = await import('../../../app/api/v1/ai-providers/route');
+      const postRes = await route.POST(
+        new NextRequest('http://localhost/api/v1/ai-providers', {
+          method: 'POST',
+          body: JSON.stringify({ id: 'new', name: 'N', provider: 'OpenAI', model: 'm', apiKey: 'SECRET-NEW' }),
+        })
+      );
+      expect([200, 201]).toContain(postRes.status);
+
+      const check = new DatabaseSync(dbPath);
+      const rows = check.prepare('SELECT id, api_key FROM ai_providers ORDER BY id').all() as Array<{ id: string; api_key: string }>;
+      check.close();
+      expect(rows.map((r) => r.api_key.startsWith('enc:v1:'))).toEqual([true, true]);
+      expect(JSON.stringify(rows)).not.toMatch(/PLAIN-LEGACY|SECRET-NEW/);
+
+      const { decryptSecret } = await import('../../../lib/secret-crypto');
+      expect(rows.map((r) => decryptSecret(r.api_key))).toEqual(['PLAIN-LEGACY', 'SECRET-NEW']);
+    } finally {
+      delete process.env.SF_ENCRYPTION_KEY;
+    }
+  });
+
   it('seed-catalog + import/export round-trip', async () => {
     const seedRoute = await import('../../../app/api/v1/admin/seed-catalog/route');
     const importRoute = await import('../../../app/api/v1/admin/import/route');

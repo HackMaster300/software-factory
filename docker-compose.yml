@@ -21,6 +21,8 @@ services:
       # Opcional: exige Bearer token em /api/* (ver README › Security configuration).
       API_TOKEN: ${API_TOKEN:-}
       AI_PRIVATE_HOST_ALLOWLIST: ${AI_PRIVATE_HOST_ALLOWLIST:-}
+      # Obrigatória em produção: cifra ai_providers.api_key em repouso (ver README).
+      SF_ENCRYPTION_KEY: ${SF_ENCRYPTION_KEY:-}
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Factory123!}
     volumes:
       - appdata:/app/data

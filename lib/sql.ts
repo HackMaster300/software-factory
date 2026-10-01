@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { migratePlaintextSecrets } from './secret-crypto';
 
 /**
  * Phase 8 — runtime SQL com zero novas dependências (Node 22 `node:sqlite`).
@@ -85,6 +86,15 @@ export function getDb(): DatabaseSync {
   // CASCADE mas nada é de facto cumprido (encontrado nesta revisão).
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec(SQLITE_DDL);
+  // API keys are encrypted at rest (AES-256-GCM, SF_ENCRYPTION_KEY). Rows
+  // written before encryption existed are migrated in place on first open.
+  try {
+    const migrated = migratePlaintextSecrets(db);
+    if (migrated) console.info(`[sql] encrypted ${migrated} legacy plaintext ai_providers.api_key value(s).`);
+  } catch (err) {
+    // Malformed key: don't take the whole DB down; writes will fail loudly.
+    console.error('[sql] could not migrate plaintext API keys:', (err as Error).message);
+  }
   return db;
 }
 
