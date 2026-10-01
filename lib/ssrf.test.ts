@@ -1,6 +1,24 @@
 // @vitest-environment node
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
 import { assertSafeOutboundUrl, classifyIp, SsrfBlockedError } from './ssrf';
+
+// No real network/DNS in unit tests: any code path that falls back to the
+// default resolver (e.g. the route handler, which can't inject `lookupAll`)
+// gets a deterministic fake. `localhost` -> loopback, everything else fails.
+vi.mock('node:dns', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:dns')>();
+  const lookup = (hostname: string, options: unknown, cb?: unknown) => {
+    const callback = (typeof options === 'function' ? options : cb) as (
+      err: NodeJS.ErrnoException | null,
+      addresses: { address: string; family: number }[]
+    ) => void;
+    queueMicrotask(() => {
+      if (hostname === 'localhost') callback(null, [{ address: '127.0.0.1', family: 4 }]);
+      else callback(Object.assign(new Error(`ENOTFOUND ${hostname}`), { code: 'ENOTFOUND' }), []);
+    });
+  };
+  return { ...actual, default: { ...actual, lookup }, lookup };
+});
 
 const resolvesTo = (...addresses: string[]) => async () =>
   addresses.map((address) => ({ address, family: address.includes(':') ? 6 : 4 }));
@@ -107,9 +125,18 @@ describe('/api/ai/generate SSRF guard', () => {
     vi.unstubAllGlobals();
   });
 
+  // The route module pulls in next/server, undici and @google/genai; cold
+  // importing it inside the first test could exceed the 5s default test
+  // timeout under full-suite load. Warm it once here with an explicit,
+  // generous hook timeout so the tests themselves only measure the handler.
+  let NextRequest: typeof import('next/server').NextRequest;
+  let POST: typeof import('../app/api/ai/generate/route').POST;
+  beforeAll(async () => {
+    ({ NextRequest } = await import('next/server'));
+    ({ POST } = await import('../app/api/ai/generate/route'));
+  }, 60_000);
+
   async function post(body: Record<string, unknown>) {
-    const { NextRequest } = await import('next/server');
-    const { POST } = await import('../app/api/ai/generate/route');
     return POST(
       new NextRequest('http://localhost/api/ai/generate', { method: 'POST', body: JSON.stringify({ prompt: 'hi', ...body }) })
     );
