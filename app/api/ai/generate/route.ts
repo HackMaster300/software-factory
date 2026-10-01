@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
-import { ProxyAgent } from 'undici';
+import { Agent, ProxyAgent } from 'undici';
+import { assertSafeOutboundUrl, createGuardedLookup, SsrfBlockedError } from '../../../../lib/ssrf';
 import {
   AIProviderName,
   buildProviderRequest,
@@ -22,6 +23,16 @@ function getProxyDispatcher(targetUrl: string) {
   } catch {
     return undefined;
   }
+}
+
+// Direct (non-proxied) connections re-validate every resolved address at
+// connect time, so a DNS-rebinding answer can't slip past the pre-check.
+let guardedAgent: Agent | undefined;
+function getGuardedAgent(): Agent {
+  if (!guardedAgent) {
+    guardedAgent = new Agent({ connect: { lookup: createGuardedLookup() as never } });
+  }
+  return guardedAgent;
 }
 
 const ALLOWED_PROVIDERS: AIProviderName[] = [
@@ -206,15 +217,31 @@ export async function POST(req: NextRequest) {
     }
     console.log('[AI Generate] Outgoing:', { url: built.url, hasAuth: !!built.headers.Authorization, model: (built.body as Record<string, unknown>).model });
 
+    // SSRF guard: a user-supplied baseUrl (or Ollama's localhost default) is
+    // resolved and refused if it lands on a private/loopback/link-local/
+    // metadata address, unless explicitly allowlisted (AI_PRIVATE_HOST_ALLOWLIST).
+    const userControlledTarget = !!(baseUrl as string | undefined)?.trim() || typedProvider === 'Ollama';
+    if (userControlledTarget) {
+      try {
+        await assertSafeOutboundUrl(built.url);
+      } catch (err) {
+        if (err instanceof SsrfBlockedError) {
+          return NextResponse.json({ error: err.message }, { status: 400 });
+        }
+        throw err;
+      }
+    }
+
     let res: Response;
     try {
-      const dispatcher = getProxyDispatcher(built.url);
+      const dispatcher = getProxyDispatcher(built.url) ?? (userControlledTarget ? getGuardedAgent() : undefined);
       if (dispatcher) console.log('[AI Generate] Using proxy:', process.env.HTTPS_PROXY || process.env.HTTP_PROXY);
       else console.log('[AI Generate] No proxy for:', built.url);
       res = await fetch(built.url, {
         method: 'POST',
         headers: built.headers,
         body: JSON.stringify(built.body),
+        redirect: 'error',
         ...(dispatcher ? ({ dispatcher } as unknown as Record<string, unknown>) : {}),
       } as RequestInit & { dispatcher?: unknown });
       console.log('[AI Generate] Response:', res.status, res.statusText, 'headers:', Object.fromEntries(res.headers.entries()));
