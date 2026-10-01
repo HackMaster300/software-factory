@@ -1,0 +1,22 @@
+# Normalise text files to LF in the repository.
+* text=auto
+
+# The committed dotnet template is a golden snapshot of the scaffold
+# generator (see services/scaffoldDotnetNew.test.ts drift guard), which emits
+# LF. Force LF in the working tree too, otherwise a Windows checkout with
+# core.autocrlf=true rewrites them to CRLF and the drift test fails.
+dotnet-template/** text eol=lf
+
+# Shell scripts must stay LF to run in Linux containers / CI.
+*.sh text eol=lf
+
+# Binary assets
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.db   binary
+*.sqlite binary
