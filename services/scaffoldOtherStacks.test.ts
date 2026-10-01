@@ -160,3 +160,24 @@ describe('other stacks presence + validity (Phase 19, sem toolchain nativo)', ()
     expect(files.filter((f) => f.name === 'package.json')).toHaveLength(0);
   });
 });
+
+describe('identifier-safe package/module names for native toolchains', () => {
+  it('sanitises project names that would break javac / dart pub / go mod', () => {
+    const java = collectFiles(ProjectService.generateSolutionPreview(makeBlueprint('stack-java-spring', 'Hexagonal'), 'My App-2').solutionTree);
+    for (const f of java.filter((f) => f.name.endsWith('.java'))) {
+      expect(f.contentSnippet, f.path).toMatch(/^package com\.acme\.myapp2\.[a-z]+;/);
+    }
+    const dart = collectFiles(ProjectService.generateSolutionPreview(makeBlueprint('stack-flutter'), 'My App-2').solutionTree);
+    expect(dart.find((f) => f.name === 'pubspec.yaml')?.contentSnippet).toMatch(/^name: my_app_2\n/);
+    const go = collectFiles(ProjectService.generateSolutionPreview(makeBlueprint('stack-gofiber', 'Microservices'), 'My App').solutionTree);
+    expect(go.find((f) => f.name === 'go.mod')?.contentSnippet).toMatch(/^module github\.com\/acme\/my-app\n/);
+  });
+
+  it('Rust: every workspace member gets a lib.rs target, even without sources', () => {
+    const bp = makeBlueprint('stack-rust-axum');
+    const files = collectFiles(ProjectService.generateSolutionPreview(bp, 'Acme.Rust').solutionTree);
+    for (const proj of bp.projects) {
+      expect(files.some((f) => f.path === `src/${proj.name}/src/lib.rs`), proj.name).toBe(true);
+    }
+  });
+});

@@ -175,6 +175,18 @@ export class ProjectService {
     // Phase 7: sem estimativa inventada — contagem real computada da árvore no final.
     const rootNodes: SolutionTreeNode[] = [];
 
+    // Identifier-safe forms of the project name for package/module names
+    // (e.g. "My App-2" -> Java "myapp2", Dart "my_app_2"); invalid names break
+    // javac / `dart pub get` respectively.
+    const javaPackageBase =
+      projectName.toLowerCase().replace(/[^a-z0-9.]/g, '').split('.').filter(Boolean)
+        .map((seg) => (/^[0-9]/.test(seg) ? `_${seg}` : seg)).join('.') || 'app';
+    const dartPackageName = (() => {
+      const n = projectName.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      return !n ? 'app' : /^[0-9]/.test(n) ? `app_${n}` : n;
+    })();
+    const goModulePath = projectName.toLowerCase().replace(/[^a-z0-9._-]/g, '-');
+
     // Language-specific root files
     let buildFileName = `${projectName}.sln`;
     let buildFileSnippet = `Microsoft Visual Studio Solution File, Format Version 12.00`;
@@ -182,11 +194,13 @@ export class ProjectService {
 
     if (lang === 'java') {
       buildFileName = 'pom.xml';
-      buildFileSnippet = `<project xmlns="http://maven.apache.org/POM/4.0.0">\n  <modelVersion>4.0.0</modelVersion>\n  <groupId>com.acme</groupId>\n  <artifactId>${projectName.toLowerCase()}</artifactId>\n  <version>1.0.0-SNAPSHOT</version>\n</project>`;
+      // Aggregator POM: `mvn compile` at the root builds every module.
+      const modulesXml = blueprint.projects.map((p) => `    <module>src/${p.name}</module>`).join('\n');
+      buildFileSnippet = `<project xmlns="http://maven.apache.org/POM/4.0.0">\n  <modelVersion>4.0.0</modelVersion>\n  <groupId>com.acme</groupId>\n  <artifactId>${projectName.toLowerCase().replace(/[^a-z0-9.-]/g, '-')}</artifactId>\n  <version>1.0.0-SNAPSHOT</version>\n  <packaging>pom</packaging>\n  <modules>\n${modulesXml}\n  </modules>\n</project>`;
       buildFileLang = 'xml';
     } else if (lang === 'go') {
       buildFileName = 'go.mod';
-      buildFileSnippet = `module github.com/acme/${projectName.toLowerCase()}\n\ngo 1.22`;
+      buildFileSnippet = `module github.com/acme/${goModulePath}\n\ngo 1.22`;
       buildFileLang = 'plaintext';
     } else if (lang === 'rust') {
       // Phase 20: virtual manifest — membros explícitos (cada projeto tem Cargo.toml
@@ -208,7 +222,7 @@ export class ProjectService {
       buildFileLang = 'kotlin';
     } else if (lang === 'dart') {
       buildFileName = 'pubspec.yaml';
-      buildFileSnippet = `name: ${projectName.toLowerCase()}\ndescription: Flutter Multiplatform Application\nversion: 1.0.0+1\nenvironment:\n  sdk: '>=3.4.0 <4.0.0'`;
+      buildFileSnippet = `name: ${dartPackageName}\ndescription: Flutter Multiplatform Application\nversion: 1.0.0+1\nenvironment:\n  sdk: '>=3.4.0 <4.0.0'`;
       buildFileLang = 'yaml';
     }
 
@@ -552,7 +566,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
               path: `src/${proj.name}/Entities/BaseEntity.${fileExt}`,
               language: codeLang,
               contentSnippet:
-                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.domain;\n\npublic abstract class BaseEntity {\n    private String id;\n    private long createdAt;\n}` :
+                lang === 'java' ? `package com.acme.${javaPackageBase}.domain;\n\npublic abstract class BaseEntity {\n    private String id;\n    private long createdAt;\n}` :
                 lang === 'go' ? `package domain\n\ntype BaseEntity struct {\n\tID string\n\tCreatedAt int64\n}` :
                 lang === 'rust' ? `pub struct BaseEntity {\n    pub id: String,\n    pub created_at: i64,\n}` :
                 lang === 'python' ? `from pydantic import BaseModel\nfrom datetime import datetime\n\nclass BaseEntity(BaseModel):\n    id: str\n    created_at: datetime` :
@@ -593,7 +607,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
               path: `src/${proj.name}/Commands/CreateTransactionCommand.${fileExt}`,
               language: codeLang,
               contentSnippet:
-                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.usecase;\n\npublic record CreateTransactionCommand(double amount, String currency) {}` :
+                lang === 'java' ? `package com.acme.${javaPackageBase}.usecase;\n\npublic record CreateTransactionCommand(double amount, String currency) {}` :
                 lang === 'go' ? `package usecase\n\ntype CreateTransactionCommand struct {\n\tAmount float64\n\tCurrency string\n}` :
                 lang === 'rust' ? `pub struct CreateTransactionCommand {\n    pub amount: f64,\n    pub currency: String,\n}` :
                 lang === 'python' ? `class CreateTransactionCommand(BaseModel):\n    amount: float\n    currency: str` :
@@ -660,7 +674,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
               path: `src/${proj.name}/Persistence/${lang === 'csharp' ? 'InMemoryRepository.cs' : `Repository.${fileExt}`}`,
               language: codeLang,
               contentSnippet:
-                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.repository;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class TransactionRepository {\n    private final Map<String, Object> store = new HashMap<>();\n\n    public Object findById(String id) {\n        return store.get(id);\n    }\n\n    public void save(String id, Object entity) {\n        store.put(id, entity);\n    }\n}` :
+                lang === 'java' ? `package com.acme.${javaPackageBase}.repository;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class Repository {\n    private final Map<String, Object> store = new HashMap<>();\n\n    public Object findById(String id) {\n        return store.get(id);\n    }\n\n    public void save(String id, Object entity) {\n        store.put(id, entity);\n    }\n}` :
                 lang === 'go' ? `package persistence\n\ntype InMemoryRepository struct {\n\tstore map[string]interface{}\n}\n\nfunc NewInMemoryRepository() *InMemoryRepository {\n\treturn &InMemoryRepository{store: make(map[string]interface{})}\n}\n\nfunc (r *InMemoryRepository) FindByID(id string) interface{} {\n\treturn r.store[id]\n}\n\nfunc (r *InMemoryRepository) Save(id string, entity interface{}) {\n\tr.store[id] = entity\n}\n` :
                 lang === 'rust' ? `use std::collections::HashMap;\n\npub struct InMemoryRepository {\n    store: HashMap<String, String>,\n}\n\nimpl InMemoryRepository {\n    pub fn new() -> Self {\n        Self { store: HashMap::new() }\n    }\n\n    pub fn find_by_id(&self, id: &str) -> Option<&String> {\n        self.store.get(id)\n    }\n\n    pub fn save(&mut self, id: String, entity: String) {\n        self.store.insert(id, entity);\n    }\n}\n` :
                 lang === 'python' ? `from typing import Dict, Optional\n\nclass InMemoryRepository:\n    def __init__(self):\n        self._store: Dict[str, object] = {}\n\n    async def get_by_id(self, id: str) -> Optional[object]:\n        return self._store.get(id)\n\n    async def add(self, entity) -> None:\n        self._store[getattr(entity, 'id', str(id(entity)))] = entity\n` :
@@ -703,7 +717,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
               path: `${projBasePath}/Controllers/ApiController.${fileExt}`,
               language: codeLang,
               contentSnippet:
-                lang === 'java' ? `package com.acme.${projectName.toLowerCase()}.api;\n\npublic class ApiController {\n    public String healthz() {\n        return "ok";\n    }\n}` :
+                lang === 'java' ? `package com.acme.${javaPackageBase}.api;\n\npublic class ApiController {\n    public String healthz() {\n        return "ok";\n    }\n}` :
                 lang === 'go' ? `package handler\n\nimport "net/http"\n\nfunc HealthCheck(w http.ResponseWriter, r *http.Request) {\n\tw.Header().Set("Content-Type", "application/json")\n\tw.Write([]byte("{\\"status\\":\\"ok\\"}"))\n}\n` :
                 lang === 'rust' ? `pub fn health_check() -> &'static str {\n    "ok"\n}\n` :
                 lang === 'python' ? `from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get("/healthz")\nasync def healthz():\n    return {"status": "ok"}\n\n@router.post("/transactions")\nasync def create_transaction(payload: dict):\n    return {"id": "00000000-0000-0000-0000-000000000000"}\n` :
@@ -754,7 +768,7 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
             type: 'file',
             path: `src/${proj.name}/Application.java`,
             language: 'java',
-            contentSnippet: `package com.acme.${projectName.toLowerCase()}.api;\n\npublic class Application {\n    public static void main(String[] args) {\n        System.out.println("${projectName} — ${proj.name} started");\n    }\n}\n`,
+            contentSnippet: `package com.acme.${javaPackageBase}.api;\n\npublic class Application {\n    public static void main(String[] args) {\n        System.out.println("${projectName} — ${proj.name} started");\n    }\n}\n`,
           });
         }
 
@@ -1318,13 +1332,18 @@ echo " 4) JetBrains:      rider ${projectName}.sln"
               const rel = n.path.startsWith(`src/${proj.name}/`)
                 ? n.path.slice(`src/${proj.name}/`.length)
                 : n.name;
-              collectRs(n.children, `${prefix}${rel}/`);
+              // rel is already relative to the crate root — don't prepend prefix again
+              // (otherwise nested folders become "A/A/B/x.rs").
+              collectRs(n.children, n.path.startsWith(`src/${proj.name}/`) ? `${rel}/` : `${prefix}${rel}/`);
             }
           }
         };
         collectRs(crateFolder.children, '');
-        if (rsFiles.length === 0) continue;
-        const libContent = rsFiles.map((f) => `include!("../${f}");`).join('\n') + '\n';
+        // Every workspace member needs a target, otherwise `cargo build` fails with
+        // "no targets specified in the manifest" for source-less crates (e.g. tests).
+        const libContent = rsFiles.length
+          ? rsFiles.map((f) => `include!("../${f}");`).join('\n') + '\n'
+          : '// No sources generated for this crate yet.\n';
         let srcFolder = crateFolder.children?.find((n) => n.name === 'src');
         if (!srcFolder) {
           srcFolder = {
