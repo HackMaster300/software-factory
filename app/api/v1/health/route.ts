@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb, getDbPath, getTableCounts } from '../../../../lib/sql';
+import { getTableCounts } from '../../../../lib/sql';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +8,8 @@ export async function GET() {
     const counts = getTableCounts();
     return NextResponse.json({
       status: 'ok',
-      db: { engine: 'sqlite', path: getDbPath(), counts },
+      // Never expose the server filesystem path of the DB file.
+      db: { engine: 'sqlite', counts },
     });
   } catch (err) {
     console.error('GET /api/v1/health failed:', err);
