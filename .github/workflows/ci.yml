@@ -29,6 +29,45 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
+      # Toolchains nativos: os testes services/scaffoldNativeBuild.test.ts
+      # compilam de verdade os scaffolds Java/Go/Rust/Kotlin/Dart (localmente
+      # ficam skipIf quando o toolchain não está no PATH).
+      - name: Configurar JDK 21 (Java + Kotlin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Configurar Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: false
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Configurar Kotlin (kotlinc)
+        env:
+          KOTLIN_VERSION: "2.0.21"
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/kotlin.zip" "https://github.com/JetBrains/kotlin/releases/download/v${KOTLIN_VERSION}/kotlin-compiler-${KOTLIN_VERSION}.zip"
+          unzip -q "$RUNNER_TEMP/kotlin.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/kotlinc/bin" >> "$GITHUB_PATH"
+
+      - name: Configurar Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Versões dos toolchains
+        run: |
+          javac -version
+          go version
+          cargo --version
+          kotlinc -version
+          dart --version
+
       - name: Instalar dependências
         run: npm ci
 
