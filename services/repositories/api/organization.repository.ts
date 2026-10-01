@@ -8,7 +8,9 @@ import type { Organization } from '../../../types/factory';
  */
 export interface IOrganizationRepositoryAsync {
   getOrganizations(): Promise<Organization[]>;
-  createOrganization(input: Omit<Organization, 'id'>): Promise<Organization>;
+  createOrganization(input: Omit<Organization, 'id'> & { id?: string }): Promise<Organization>;
+  updateOrganization(id: string, input: Omit<Organization, 'id'>): Promise<Organization>;
+  deleteOrganization(id: string): Promise<void>;
 }
 
 export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
@@ -19,7 +21,7 @@ export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
     return data;
   }
 
-  async createOrganization(input: Omit<Organization, 'id'>): Promise<Organization> {
+  async createOrganization(input: Omit<Organization, 'id'> & { id?: string }): Promise<Organization> {
     const res = await fetch('/api/v1/organizations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -28,6 +30,22 @@ export class ApiOrganizationRepository implements IOrganizationRepositoryAsync {
     if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
     const { data } = (await res.json()) as { data: Organization };
     return data;
+  }
+
+  async updateOrganization(id: string, input: Omit<Organization, 'id'>): Promise<Organization> {
+    const res = await fetch(`/api/v1/organizations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
+    const { data } = (await res.json()) as { data: Organization };
+    return data;
+  }
+
+  async deleteOrganization(id: string): Promise<void> {
+    const res = await fetch(`/api/v1/organizations/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({} as Record<string, string>))).error || `HTTP ${res.status}`);
   }
 }
 

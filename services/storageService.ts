@@ -1,5 +1,12 @@
 import { useSyncExternalStore } from 'react';
 import {
+  API_DATA_SOURCE_ENABLED,
+  getOrganizationsBridged,
+  getWorkspacesBridged,
+  saveOrganizationsBridged,
+  saveWorkspacesBridged,
+} from './apiDataBridge';
+import {
   Organization,
   Workspace,
   TechStack,
@@ -244,18 +251,32 @@ export class StorageService {
   }
 
   static getOrganizations(): Organization[] {
+    if (API_DATA_SOURCE_ENABLED) {
+      return getOrganizationsBridged(notifyStorageChange, initialOrganizations);
+    }
     return getItem(STORAGE_KEYS.ORGANIZATIONS, initialOrganizations);
   }
 
   static saveOrganizations(organizations: Organization[]): void {
+    if (API_DATA_SOURCE_ENABLED) {
+      saveOrganizationsBridged(organizations, notifyStorageChange);
+      return;
+    }
     setItem(STORAGE_KEYS.ORGANIZATIONS, organizations);
   }
 
   static getWorkspaces(): Workspace[] {
+    if (API_DATA_SOURCE_ENABLED) {
+      return getWorkspacesBridged(notifyStorageChange, initialWorkspaces);
+    }
     return getItem(STORAGE_KEYS.WORKSPACES, initialWorkspaces);
   }
 
   static saveWorkspaces(workspaces: Workspace[]): void {
+    if (API_DATA_SOURCE_ENABLED) {
+      saveWorkspacesBridged(workspaces, notifyStorageChange);
+      return;
+    }
     setItem(STORAGE_KEYS.WORKSPACES, workspaces);
   }
 

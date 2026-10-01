@@ -130,4 +130,147 @@ describe('API v1 integration (SQLite isolado, sem rede)', () => {
     expect(data.organizations).toHaveLength(1);
     expect(JSON.stringify(data)).not.toContain('SECRET-MUST-DROP');
   });
+
+  it('organizations: PATCH atualiza, DELETE apaga e arrasta os workspaces (CASCADE)', async () => {
+    const orgRoute = await import('../../../app/api/v1/organizations/route');
+    const orgIdRoute = await import('../../../app/api/v1/organizations/[id]/route');
+    const wsRoute = await import('../../../app/api/v1/workspaces/route');
+    const wsListRoute = wsRoute;
+
+    const postRes = await orgRoute.POST(
+      new NextRequest('http://localhost/api/v1/organizations', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Acme', code: 'ACME', plan: 'Team' }),
+      })
+    );
+    const { data: org } = await postRes.json();
+
+    const wsRes = await wsRoute.POST(
+      new NextRequest('http://localhost/api/v1/workspaces', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'WS1', organizationId: org.id }),
+      })
+    );
+    expect(wsRes.status).toBe(201);
+
+    // PATCH
+    const patchRes = await orgIdRoute.PATCH(
+      new NextRequest(`http://localhost/api/v1/organizations/${org.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Acme Corp', code: 'ACME', plan: 'Enterprise' }),
+      }),
+      { params: Promise.resolve({ id: org.id }) }
+    );
+    expect(patchRes.status).toBe(200);
+    const { data: patched } = await patchRes.json();
+    expect(patched.name).toBe('Acme Corp');
+    expect(patched.plan).toBe('Enterprise');
+
+    // PATCH num id inexistente -> 404
+    const patch404 = await orgIdRoute.PATCH(
+      new NextRequest('http://localhost/api/v1/organizations/nao-existe', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'X', code: 'X', plan: 'Team' }),
+      }),
+      { params: Promise.resolve({ id: 'nao-existe' }) }
+    );
+    expect(patch404.status).toBe(404);
+
+    // DELETE -> deve arrastar o workspace (CASCADE, PRAGMA foreign_keys=ON)
+    const deleteRes = await orgIdRoute.DELETE(
+      new NextRequest(`http://localhost/api/v1/organizations/${org.id}`, { method: 'DELETE' }),
+      { params: Promise.resolve({ id: org.id }) }
+    );
+    expect(deleteRes.status).toBe(200);
+
+    const orgsAfter = await (await orgRoute.GET()).json();
+    expect(orgsAfter.data).toHaveLength(0);
+
+    const wsAfter = await (await wsListRoute.GET(new NextRequest('http://localhost/api/v1/workspaces'))).json();
+    expect(wsAfter.data).toHaveLength(0);
+
+    // DELETE outra vez no mesmo id -> 404 (já não existe)
+    const delete404 = await orgIdRoute.DELETE(
+      new NextRequest(`http://localhost/api/v1/organizations/${org.id}`, { method: 'DELETE' }),
+      { params: Promise.resolve({ id: org.id }) }
+    );
+    expect(delete404.status).toBe(404);
+  });
+
+  it('workspaces: PATCH valida organizationId e DELETE funciona isoladamente', async () => {
+    const orgRoute = await import('../../../app/api/v1/organizations/route');
+    const wsRoute = await import('../../../app/api/v1/workspaces/route');
+    const wsIdRoute = await import('../../../app/api/v1/workspaces/[id]/route');
+
+    const { data: org1 } = await (
+      await orgRoute.POST(
+        new NextRequest('http://localhost/api/v1/organizations', {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Org1', code: 'O1', plan: 'Team' }),
+        })
+      )
+    ).json();
+    const { data: org2 } = await (
+      await orgRoute.POST(
+        new NextRequest('http://localhost/api/v1/organizations', {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Org2', code: 'O2', plan: 'Team' }),
+        })
+      )
+    ).json();
+
+    const { data: ws } = await (
+      await wsRoute.POST(
+        new NextRequest('http://localhost/api/v1/workspaces', {
+          method: 'POST',
+          body: JSON.stringify({ name: 'WS1', organizationId: org1.id }),
+        })
+      )
+    ).json();
+
+    // PATCH movendo o workspace para outra organização válida
+    const patchRes = await wsIdRoute.PATCH(
+      new NextRequest(`http://localhost/api/v1/workspaces/${ws.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'WS1 renomeado', organizationId: org2.id }),
+      }),
+      { params: Promise.resolve({ id: ws.id }) }
+    );
+    expect(patchRes.status).toBe(200);
+    const { data: patched } = await patchRes.json();
+    expect(patched.organizationId).toBe(org2.id);
+
+    // PATCH com organizationId inexistente -> 400
+    const badPatch = await wsIdRoute.PATCH(
+      new NextRequest(`http://localhost/api/v1/workspaces/${ws.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'WS1', organizationId: 'org-fantasma' }),
+      }),
+      { params: Promise.resolve({ id: ws.id }) }
+    );
+    expect(badPatch.status).toBe(400);
+
+    // DELETE do workspace não afeta as organizações
+    const deleteRes = await wsIdRoute.DELETE(
+      new NextRequest(`http://localhost/api/v1/workspaces/${ws.id}`, { method: 'DELETE' }),
+      { params: Promise.resolve({ id: ws.id }) }
+    );
+    expect(deleteRes.status).toBe(200);
+
+    const orgsAfter = await (await orgRoute.GET()).json();
+    expect(orgsAfter.data).toHaveLength(2);
+  });
+
+  it('organizations: POST aceita um id vindo do cliente (passthrough para a ponte StorageService -> API)', async () => {
+    const orgRoute = await import('../../../app/api/v1/organizations/route');
+    const res = await orgRoute.POST(
+      new NextRequest('http://localhost/api/v1/organizations', {
+        method: 'POST',
+        body: JSON.stringify({ id: 'org-cliente-123', name: 'Acme', code: 'ACME', plan: 'Team' }),
+      })
+    );
+    expect(res.status).toBe(201);
+    const { data } = await res.json();
+    expect(data.id).toBe('org-cliente-123');
+  });
 });

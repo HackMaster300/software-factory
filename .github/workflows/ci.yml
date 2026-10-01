@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      # O SDK do .NET já vem pré-instalado nos runners do GitHub Actions,
+      # mas fixamos a versão explicitamente para builds reprodutíveis.
+      # Isto também faz os 2 testes "golden path" de C# (que no ambiente
+      # de desenvolvimento ficam skipIf(!hasDotnetSdk())) correrem de
+      # verdade aqui, em vez de serem sempre pulados.
+      - name: Configurar .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # O build também faz o type-check completo do TypeScript
+      # (next.config.ts tem typescript.ignoreBuildErrors: false).
+      # Nota: next.config.ts tem eslint.ignoreDuringBuilds: true, por
+      # isso o lint corre como passo à parte acima — o build sozinho
+      # NÃO apanharia erros de lint.
+      - name: Build (inclui type-check)
+        run: npm run build
+
+      - name: Testes (Vitest)
+        run: npm run test
+
+      - name: Auditoria de dependências (não bloqueia o CI, só reporta)
+        run: npm audit --audit-level=critical || true

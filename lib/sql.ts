@@ -80,6 +80,10 @@ export function getDb(): DatabaseSync {
   const path = getDbPath();
   mkdirSync(dirname(path), { recursive: true });
   db = new DatabaseSync(path);
+  // O SQLite não aplica FOREIGN KEY / ON DELETE CASCADE por omissão —
+  // é preciso ativar explicitamente por ligação, ou o schema declara
+  // CASCADE mas nada é de facto cumprido (encontrado nesta revisão).
+  db.exec('PRAGMA foreign_keys = ON;');
   db.exec(SQLITE_DDL);
   return db;
 }

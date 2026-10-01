@@ -12,7 +12,10 @@ services:
       SQLITE_PATH: /app/data/factory.db
       # Connection strings de exemplo (usadas quando o driver real for plugado):
       DATABASE_URL: postgresql://factory:factory@db:5432/factory
-      MSSQL_CONNECTION_STRING: "Server=mssql,1434;Database=factory;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Factory123!};TrustServerCertificate=True;"
+      # Dentro da rede Docker, o container do mssql escuta sempre na porta
+      # interna 1433 — o "1434:1433" nos `ports:` do serviço mssql só vale
+      # para acesso a partir do host (ex: SSMS), nunca entre containers.
+      MSSQL_CONNECTION_STRING: "Server=mssql,1433;Database=factory;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Factory123!};TrustServerCertificate=True;"
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Factory123!}
     volumes:

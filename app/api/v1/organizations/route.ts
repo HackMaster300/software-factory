@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../../../../lib/sql';
-import { validateOrganization } from '../../../../lib/api-validation';
+import { validateOrganization, isRecord } from '../../../../lib/api-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
     const parsed = validateOrganization(body);
     if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
-    const id = randomUUID();
+    // Aceita um id vindo do cliente (usado pela ponte StorageService -> API,
+    // que já gera o id localmente antes de persistir); gera um novo só se
+    // não vier nenhum, para manter o POST direto (ex: curl, testes) a funcionar.
+    const clientId = isRecord(body) && typeof body.id === 'string' && body.id.trim() ? body.id.trim() : null;
+    const id = clientId || randomUUID();
     const createdAt = new Date().toISOString();
     getDb()
       .prepare('INSERT INTO organizations (id, name, code, plan, created_at) VALUES (?, ?, ?, ?, ?)')

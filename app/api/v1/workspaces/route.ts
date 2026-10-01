@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../../../../lib/sql';
-import { validateWorkspace } from '../../../../lib/api-validation';
+import { validateWorkspace, isRecord } from '../../../../lib/api-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const id = randomUUID();
+    const id = (isRecord(body) && typeof body.id === 'string' && body.id.trim()) ? body.id.trim() : randomUUID();
     const createdAt = new Date().toISOString();
     getDb()
       .prepare('INSERT INTO workspaces (id, organization_id, name, description, created_at) VALUES (?, ?, ?, ?, ?)')
